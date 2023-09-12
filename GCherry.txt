@@ -1,0 +1,10 @@
+Integrator
+	- Moon gravity
+	- Constant thrust
+	- Initial velocity due to rotation
+	- Fuel flow
+	- moves instantly to commanded angle
+	- Thrust control
+
+First I'm going to make an integrator for just gravity, then do plots of the orbit.
+Then I make an integrator for a constant thrust rocket and test a short deceleration under gravity.
