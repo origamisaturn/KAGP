@@ -38,6 +38,10 @@ def rocket_ode(t, state, mu, Isp, F_thrust_max, guidance_func):
 
     thrust_mag, thrust_angle = guidance_func(t, state)
 
+    position_angle = math.atan2(y, x)
+    # converts local thrust_angle above horizon to angle in global frame.
+    global_angle = position_angle - 90*math.pi/180 + thrust_angle
+
     r = np.array([x, y])
     v = np.array([xdot, ydot])
 
@@ -46,9 +50,9 @@ def rocket_ode(t, state, mu, Isp, F_thrust_max, guidance_func):
     mdot = F_thrust/ve
 
     a_g = -mu/np.linalg.norm(r)**3 * r
-    a_t = F_thrust/m * np.array([math.cos(thrust_angle), math.sin(thrust_angle)])
+    a_t = F_thrust/m * np.array([math.cos(global_angle), math.sin(global_angle)])
     a = a_g + a_t
-    return np.concatenate((v, a, [mdot]))
+    return np.concatenate((v, a, [-mdot]))
 
 
 def gravity_ode(t, state, mu):
