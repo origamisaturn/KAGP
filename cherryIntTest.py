@@ -66,7 +66,8 @@ class TestRocketOde(unittest.TestCase):
         self.assertTrue(abs(r_mag - rp)<1e-2)
 
     def test_funct__rocket_ode__3(self):
-        # Tests a fall from 10m along with thrusting horizontally
+        # Tests a fall from 10m along with thrusting horizontally, checks 
+        # mass state before and after stopping thrusting
         dv = 10
         T = 1
         m0 = 100
@@ -106,6 +107,44 @@ class TestRocketOde(unittest.TestCase):
 
         self.assertTrue(abs(r_mag - r0) < 1e-3)
         self.assertTrue(v - dv< 1e-3)
+
+    def test_funct__rocket_ode__4(self):
+        # Tests a suicide burn with landing at time T.
+        m0 = 100
+        ve = 2350
+        F_thrust = 997.8753551745272
+        def guidance_func(t, state):
+            thrust_mag = 0
+            thrust_angle = 90 * math.pi/180
+            if t >= 0 and t <= 3:
+                thrust_mag = 1
+            return thrust_mag, thrust_angle
+        g0 = 9.80665
+        Isp = ve/g0
+        r0 = 6375.416e3
+
+        T = 3
+        x0 = 6375417.159500072
+        v0 = -0.7086221494046185
+        xT = r0
+        theta = -30 * math.pi/180
+
+        r = x0 * np.array([math.cos(theta), math.sin(theta)])
+        v = v0 * np.array([math.cos(theta), math.sin(theta)])
+        state = np.concatenate((r, v ,[m0]))
+
+        tspan = [0, 3]
+        res = solve_ivp(rocket_ode, tspan, state, args=(self.mu_earth, Isp, F_thrust, guidance_func), atol=1e-9, rtol = 1e-9)
+
+        # Check against final radius and final velocity magnitudes
+        res_r = res.y[0:2, -1]
+        res_v = res.y[2:4, -1]
+        res_r_mag = np.linalg.norm(res_r)
+        res_v_mag = np.linalg.norm(res_v)
+        self.assertTrue(abs(res_r_mag - xT)<1e-5)
+        self.assertTrue(abs(res_v_mag - 0)<1e-5)
+        print("final", res.y[:, -1])
+        print("rmag: {}".format(res_r_mag))
 
 if __name__ == '__main__':
     unittest.main()
