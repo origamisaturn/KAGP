@@ -10,7 +10,7 @@ def rot_mat_2d(theta):
     return rot_mat
 
 
-class radialControl(om.ExplicitComponent):
+class RadialControl(om.ExplicitComponent):
     """
     Component containing radial rate control block.
     """
@@ -36,8 +36,10 @@ class radialControl(om.ExplicitComponent):
         self.add_input('v_e', val=0.0)
         self.add_input('m_dot', val=0.0)
         self.add_input('m0', val = 0.0)
-        # This needs to be replaced with its own block
-        self.add_output('alpha', val = 0.0)
+
+        output_names = ['T', 'a0', 'a1', 'a2', 'c1', 'c2', 'tau', 'g_eff']
+        for name in output_names:
+            self.add_output(name, val=0.0)
 
     def setup_partials(self):
         self.declare_partials('*', '*', method='fd')
@@ -101,17 +103,56 @@ class radialControl(om.ExplicitComponent):
         g_eff = -mu/r0**2 + v_theta_0**2/r0
 
 
-        # I am making several functions of t. Determine later on if this is 
-        # something I actually want.
-        p1 = lambda t : a0 + a1*(T-t) + a2*(T-t)**2
-        p2 = lambda t : p1(t) * (T-t)
-        r_dot_dot = lambda t : c1 * p1(t) + c2 * p2(t)
-        a_thrust = lambda t : v_e/(tau - t)
+
+
+class PitchQuery(om.ExplicitComponent):
+    """
+    Component containing the equation for pitch of the fixed-thrust control
+    law. Accepts equation terms from the radialControl block. This is
+    called at a much higher rate than radialControl, which is called whenver 
+    we want to update Tgo (at approximately 1hz).
+    """
+
+    def setup(self):
+        input_names = ['t', 'T', 'a0', 'a1', 'a2', 'c1', 'c2', 'g_eff', 'm0', 'm_dot']
+        for name in input_names:
+            self.add_input(name, val=0.0)
+        
+        output_names = ['alpha']
+        for name in output_names:
+            self.add_output(name, val=0.0)
+
+    # Did not add setup_partials
+    def compute(self, inputs, outputs):
+        t = inputs['t']
+        T = inputs['T']
+        a0 = inputs['a0']
+        a1 = inputs['a1']
+        a2 = inputs['a2']
+        c1 = inputs['c1']
+        c2 = inputs['c2']
+        g_eff = inputs['g_eff']
+        m0 = inputs['m0']
+        mdot = inputs['m_dot']
+        tau = m0/mdot
+
+        # here g_eff is calculated once, so it is an approximation.
+
+        p1 = a0 + a1*(T-t) + a2*(T-t)**2
+        p2 = p1(t) * (T-t)
+        r_dot_dot = c1 * p1(t) + c2 * p2(t)
+        a_thrust = v_e/(tau - t)
         # Note: g_eff is based on time (state actually) but we will assume
         # it is static for each iteration.
-        alpha = lambda t : math.asin((r_dot_dot(t) - g_eff)/(a_thrust(t)))
+        alpha = math.asin((r_dot_dot - g_eff)/(a_thrust))
 
-        outputs['alpha'] = alpha(0)
+        outputs['alpha'] = alpha
+
+def FixedThrustGuidance(om.Group):
+    # What is the difference between a group and an explicit component? just the name?
+    def setup(self):
+        self.
+    
 
 if __name__ == "__main__":
 
