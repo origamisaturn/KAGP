@@ -8,3 +8,9 @@ Integrator
 
 First I'm going to make an integrator for just gravity, then do plots of the orbit.
 Then I make an integrator for a constant thrust rocket and test a short deceleration under gravity.
+
+09/20/2023
+	I wonder if group components have a compute, or what the behavior of the subsystems are. Currently I am creating a group which has both radial rate and alpha query connected, and we will take it from there. I don't think it will work, since my inputs and outputs are such a mess. I wonder how I should handle inputs of parameters, which would go to all blocks (i.e. mu, r0, v_e, etc.)
+	For some reason OpenMDAO makes every input an ndarray.
+	Can I create an IndepVarComp for all params?
+	I think I will be at 2h required tomorrow
