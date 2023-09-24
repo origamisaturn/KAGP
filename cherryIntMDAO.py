@@ -32,15 +32,10 @@ class RadialControl(om.ExplicitComponent):
         # stuff yet.
         self.add_input('x', val=np.zeros((2)))
         self.add_input('v', val=np.zeros((2)))
-        self.add_input('sample_t', val=0.0)
-        self.add_input('last_sample_t', val=0.0)
-        self.add_input('r_dot_T', val = 0)
-        self.add_input('r_T', val = 0)
-        self.add_input('T', val=0.0)
-        self.add_input('mu', val=0.0)
-        self.add_input('v_e', val=0.0)
-        self.add_input('m_dot', val=0.0)
-        self.add_input('m0', val = 0.0)
+        input_names = ['t', 'r_dot_T',
+                        'r_T', 'T', 'mu', 'v_e', 'm_dot', 'm0']
+        for name in input_names:
+            self.add_input(name, val=0.0)
 
         output_names = ['a0', 'a1', 'a2', 'c1', 'c2', 'tau', 'g_eff']
         for name in output_names:
@@ -55,7 +50,7 @@ class RadialControl(om.ExplicitComponent):
         # get radial components of these, these are x0 vectors
         x0 = np.array(inputs['x'])
         v0 = np.array(inputs['v'])
-        t = inputs['sample_t'][0]
+        t = inputs['t'][0]
         T = inputs['T'][0]
         mu = inputs['mu'][0]
         v_e = inputs['v_e'][0]
@@ -113,6 +108,57 @@ class RadialControl(om.ExplicitComponent):
             val = output_vals[i]
             outputs[name] = val
 
+class OuterLoopRadialControl(om.ExplicitComponent):
+    # This is just the radial control block with extra logic. Drop-in
+    # for when I introduce Tgo.
+    # ooh I can have equal input and output function blocks if I call 
+    # them from the components and substitute my self object into them.
+    def setup(self):
+        model = om.Group()
+        model.add_subsystem('radial_control', RadialControl(), 
+                            promotes=['*'])
+        
+        self.prob = om.Problem(model)
+        self.prob.setup()
+        # recorder = om.SqliteRecorder('cases.sql')
+        # self.prob.add_recorder(recorder)
+
+        self.add_input('x', val=np.zeros((2)))
+        self.add_input('v', val=np.zeros((2)))
+        # SAMPLE T SHOULD BE negative interval since t0 = 0.
+        input_names = ['t', 'r_dot_T',
+                        'r_T', 'T', 'mu', 'v_e', 'm_dot', 'm0']
+        for name in input_names:
+            self.add_input(name, val=0.0)
+
+        output_names = ['last_sample_t', 'a0', 'a1', 'a2', 'c1',
+                         'c2', 'tau', 'g_eff']
+        for name in output_names:
+            self.add_output(name, val=0.0)
+        
+        self.outer_loop_interval = 7 #s
+        self.last_sample_t = -self.outer_loop_interval
+
+    def compute(self, inputs, outputs):
+        t = inputs['t'][0]
+        if t - self.last_sample_t >= self.outer_loop_interval:
+            # This should be its own function
+            self.prob['x'] = inputs['x']
+            self.prob['v'] = inputs['v']
+            input_names = ['t', 'r_dot_T',
+                        'r_T', 'T', 'mu', 'v_e', 'm_dot', 'm0']
+            for name in input_names:
+                self.prob[name] = inputs[name][0]
+
+            self.prob.run_model()
+
+            output_names = ['a0', 'a1', 'a2', 'c1',
+                    'c2', 'tau', 'g_eff']
+            for name in output_names:
+                outputs[name] = self.prob[name]
+
+            self.last_sample_t = t
+            outputs['last_sample_t'] = self.last_sample_t
 
 
 class PitchQuery(om.ExplicitComponent):
@@ -124,11 +170,12 @@ class PitchQuery(om.ExplicitComponent):
     """
 
     def setup(self):
-        input_names = ['t', 'T', 'a0', 'a1', 'a2', 'c1', 'c2', 'g_eff', 'm0', 'm_dot']
+        input_names = ['t', 'T', 'a0', 'a1', 'a2', 'c1', 'c2', 
+                       'g_eff', 'm0', 'm_dot', 'v_e']
         for name in input_names:
             self.add_input(name, val=0.0)
         
-        output_names = ['alpha']
+        output_names = ['alpha', 'a_thrust', 'r_dot_dot', 'p1', 'p2']
         for name in output_names:
             self.add_output(name, val=0.0)
 
@@ -144,6 +191,7 @@ class PitchQuery(om.ExplicitComponent):
         g_eff = inputs['g_eff'][0]
         m0 = inputs['m0'][0]
         mdot = inputs['m_dot'][0]
+        v_e = inputs['v_e'][0]
         tau = m0/mdot
 
         # here g_eff is calculated once, so it is an approximation.
@@ -157,13 +205,20 @@ class PitchQuery(om.ExplicitComponent):
         alpha = math.asin((r_dot_dot - g_eff)/(a_thrust))
 
         outputs['alpha'] = alpha
+        outputs['a_thrust'] = a_thrust
+        outputs['r_dot_dot'] = r_dot_dot
+        outputs['p1'] = p1
+        outputs['p2'] = p2
 
 class FixedThrustGuidance(om.Group):
     # What is the difference between a group and an explicit component? 
     # just the name?
     def setup(self):
-        self.add_subsystem('radial_control', RadialControl(), promotes=['*'])
+        self.add_subsystem('radial_control', OuterLoopRadialControl(),
+                            promotes=['*'])
         self.add_subsystem('pitch_query', PitchQuery(), promotes=['*'])
+
+
     
 
 if __name__ == "__main__":
@@ -177,9 +232,10 @@ if __name__ == "__main__":
     m0 = 500
     T_go_guess = 438
 
-    # model = om.Group()
+    model = om.Group()
     # model.add_subsystem('radial_comp', radialControl())
-    model = FixedThrustGuidance()
+    model.add_subsystem('outer_loop', OuterLoopRadialControl(), promotes=['*'])
+    model.add_subsystem('pitch_query', PitchQuery(), promotes=['*'])
     #model.set_input_defaults('mu', mu)
 
     prob = om.Problem(model)
@@ -187,7 +243,7 @@ if __name__ == "__main__":
     # Initial conditions
     prob['x'] = x0
     prob['v'] = v0
-    prob['sample_t'] = 0
+    prob['t'] = 0
     # Other inputs
     prob['T'] = T_go_guess
     # Boundary conditions
@@ -201,44 +257,39 @@ if __name__ == "__main__":
     prob['m_dot'] = m_dot
     prob['m0'] = m0
     # Query Input
-    prob['t'] = 10
+    # prob['t'] = 10
 
-    """
-      self.add_input('x', val=np.zeros((2,1)))
-        self.add_input('v', val=np.zeros((2,1)))
-        self.add_input('t', val = 0)
-        self.add_input('r_dot_T', val = 0)
-        self.add_input('r_T', val = 0)
-        self.add_input('T_go', val=0.0)
-        self.add_input('mu', val=0.0)
-        self.add_input('v_e', val=0.0)
-        self.add_input('m_dot', val=0.0)
-        self.add_input('m0', val = 0.0)
-        # This needs to be replaced with its own block
-        self.add_output('alpha', val = 0.0)
-    """
-    """
-    prob.set_val('radial_comp.x', x0)
-    prob.set_val('radial_comp.v', v0)
-    prob.set_val('radial_comp.t', 0)
-    prob.set_val('radial_comp.r_dot_T', 1)
-    prob.set_val('radial_comp.r_T', r0 + 100e3)
-    prob.set_val('radial_comp.T_go', 820)
-    prob.set_val('radial_comp.mu', mu)
-    prob.set_val('radial_comp.v_e', v_e)
-    prob.set_val('radial_comp.m_dot', m_dot)
-    prob.set_val('radial_comp.m0', m0)
-    """
+    #recorder = om.SqliteRecorder('cases.sql')
+    #prob.add_recorder(recorder)
     prob.run_model()
+    print(prob['alpha'])
 
-    t_vals = np.linspace(0, T_go_guess, 100)
-    alpha_vals = np.zeros(100)
+    N = 10
+    t_vals = np.linspace(0, 20, N)
+    var_names = ['last_sample_t', 'alpha', 'a_thrust', 'r_dot_dot', 'p1', 'p2']
+    M = len(var_names)
+    alpha_vals = np.zeros((M, N))
     for i, time in enumerate(t_vals):
         prob['t'] = time
         prob.run_model()
-        alpha_vals[i] = prob['alpha']
-    plt.plot(t_vals, alpha_vals)
+        prob.record(str(time))
+        for j, var_name in enumerate(var_names):
+            alpha_vals[j, i] = prob[var_name]
+    for i, var_name in enumerate(var_names):
+        plt.figure()
+        plt.plot(t_vals, alpha_vals[i, :])
+        plt.title(var_name)
     plt.show()
 
-    print(prob['alpha'])
-    #print(prob['radial_comp.alpha'])
+#     print(prob['alpha'])
+#     prob.cleanup()
+#     cr = om.CaseReader("cases.sql")
+#     print("test")
+#     problem_cases = cr.get_cases('problem', recurse=False)
+#     test_vals = []
+#     for case in problem_cases:
+#         test_vals.append(case['alpha'][0])
+#     plt.figure()
+#     plt.plot(test_vals)
+#     plt.show()
+#     #print(prob['radial_comp.alpha'])

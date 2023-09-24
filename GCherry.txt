@@ -14,3 +14,17 @@ Then I make an integrator for a constant thrust rocket and test a short decelera
 	For some reason OpenMDAO makes every input an ndarray.
 	Can I create an IndepVarComp for all params?
 	I think I will be at 2h required tomorrow
+
+09/23/2023
+	I will have to write documentation and organize inputs/outputs with prefixes at some point. For now I will plot all t-dependent values, then connect it to the integrator, then plot all the intermediate values.
+	I feel like OpenMDAO provides a way to plot multiple calls. Will look into it after plotting my debugging stuff.
+	Found a way to plot from cases.
+	I think the integrator will be weird, not sure if it will become messed up with what I'm doing.
+	I have decided that the rdot and tgo loop will be a group contained within an explicit component. It will not be visible if I call n2 for debugging, but it is the simplest way I currently know. The setup will create the groups and the compute will handle the calculation timing.
+	The radial control component could actually handle itself in terms of evaluating or not, but I will need an encapsulating explicit component when I introduce Tgo. I will then add a bypass to the encapsulation instead and evaluate the model when necessary.
+	Find a way to automate selecting variables.
+	problem.model.list_inputs/list_outputs
+	locals()
+	or just use dictionaries.
+09/24/23
+	I am going to have to add the thing where the attitude is maintained in the last 10 seconds to prevent the program from going singular and exploding.
