@@ -9,7 +9,7 @@ test_vals = []
 t_vals = []
 for case in problem_cases:
     test_vals.append(case['alpha'][0])
-    t_vals.append(case['t'])
+    t_vals.append(case['t'][0])
 plt.figure()
 plt.plot(t_vals, test_vals)
 plt.figure()

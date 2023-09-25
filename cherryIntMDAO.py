@@ -32,7 +32,7 @@ class RadialControl(om.ExplicitComponent):
         # stuff yet.
         self.add_input('x', val=np.zeros((2)))
         self.add_input('v', val=np.zeros((2)))
-        input_names = ['t', 'r_dot_T',
+        input_names = ['sample_t', 'r_dot_T',
                         'r_T', 'T', 'mu', 'v_e', 'm_dot', 'm0']
         for name in input_names:
             self.add_input(name, val=0.0)
@@ -50,7 +50,7 @@ class RadialControl(om.ExplicitComponent):
         # get radial components of these, these are x0 vectors
         x0 = np.array(inputs['x'])
         v0 = np.array(inputs['v'])
-        t = inputs['t'][0]
+        t = inputs['sample_t'][0]
         T = inputs['T'][0]
         mu = inputs['mu'][0]
         v_e = inputs['v_e'][0]
@@ -113,6 +113,7 @@ class OuterLoopRadialControl(om.ExplicitComponent):
     # for when I introduce Tgo.
     # ooh I can have equal input and output function blocks if I call 
     # them from the components and substitute my self object into them.
+    # Only updates itself when sample_t changes from last iteration.
     def setup(self):
         model = om.Group()
         model.add_subsystem('radial_control', RadialControl(), 
@@ -126,7 +127,7 @@ class OuterLoopRadialControl(om.ExplicitComponent):
         self.add_input('x', val=np.zeros((2)))
         self.add_input('v', val=np.zeros((2)))
         # SAMPLE T SHOULD BE negative interval since t0 = 0.
-        input_names = ['t', 'r_dot_T',
+        input_names = ['sample_t', 'r_dot_T',
                         'r_T', 'T', 'mu', 'v_e', 'm_dot', 'm0']
         for name in input_names:
             self.add_input(name, val=0.0)
@@ -140,12 +141,12 @@ class OuterLoopRadialControl(om.ExplicitComponent):
         self.last_sample_t = -self.outer_loop_interval
 
     def compute(self, inputs, outputs):
-        t = inputs['t'][0]
-        if t - self.last_sample_t >= self.outer_loop_interval:
+        sample_t = inputs['sample_t'][0]
+        if self.last_sample_t != sample_t:
             # This should be its own function
             self.prob['x'] = inputs['x']
             self.prob['v'] = inputs['v']
-            input_names = ['t', 'r_dot_T',
+            input_names = ['sample_t', 'r_dot_T',
                         'r_T', 'T', 'mu', 'v_e', 'm_dot', 'm0']
             for name in input_names:
                 self.prob[name] = inputs[name][0]
@@ -157,7 +158,7 @@ class OuterLoopRadialControl(om.ExplicitComponent):
             for name in output_names:
                 outputs[name] = self.prob[name]
 
-            self.last_sample_t = t
+            self.last_sample_t = sample_t
             outputs['last_sample_t'] = self.last_sample_t
 
 

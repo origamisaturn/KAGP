@@ -39,9 +39,10 @@ def guidance_func_base(t, state, prob):
         # perform calculation
         x = state[0:2]
         v = state[2:4]
-        m = state[4] #???
-        prob['x'] = x
-        prob['v'] = v
+        #
+        # m = state[4] #???
+        #prob['x'] = x
+        #prob['v'] = v
         prob['t'] = t
         # There is no estimator for m since it is perfectly known already.
         prob.run_model()
@@ -51,8 +52,7 @@ def guidance_func_base(t, state, prob):
     
     return thrust_mag, thrust_angle
 
-if __name__ == "__main__":
-    
+def lunar_trajectory():
     r0 = 1737.4e3
     mu = 4.90e12
     x0 = np.array([r0, 0])
@@ -70,6 +70,7 @@ if __name__ == "__main__":
     prob['x'] = x0
     prob['v'] = v0
     prob['t'] = 0
+    prob['sample_t'] = 0
     # Other inputs
     prob['T'] = T_go_guess
     # Boundary conditions
@@ -82,7 +83,6 @@ if __name__ == "__main__":
     prob['v_e'] = v_e
     prob['m_dot'] = m_dot
     prob['m0'] = m0
-    # specific gravity only for calculating Isp
 
     recorder = om.SqliteRecorder('rocket_ode.sql')
     prob.add_recorder(recorder)
@@ -94,18 +94,81 @@ if __name__ == "__main__":
     initial_state = np.concatenate((x0, v0, [m0]))
     guidance_func = lambda t, state: guidance_func_base(t, state, prob)
 
-    deriv = rocket_ode(initial_time, initial_state, mu, Isp, F_thrust_max, 
-               guidance_func)
-    print(deriv)
-
-    t_span = [0, T_go_guess]
-    res = solve_ivp(rocket_ode, t_span, initial_state, args=(mu, Isp, 
-                        F_thrust_max, guidance_func), t_eval=np.arange(t_span[0], t_span[1], 0.5))
-    print(res)
-    print("Length: {}".format(len(res.t)))
-    x = res.y[0, :]
-    y = res.y[1, :]
-    t = res.t
-    plt.plot(x, y, '-o')
+    outer_loop_interval = 7
+    eval_points = np.arange(0, 30, outer_loop_interval)
+    N = len(eval_points)
+    res_list = []
+    for i in range(N-1):
+        t_span = eval_points[i:i+2] 
+        print("t: {}".format(t_span[0]))
+        res = solve_ivp(rocket_ode, t_span, initial_state, args=(mu, Isp, 
+                        F_thrust_max, guidance_func))
+        x = res.y[:2, -1]
+        v = res.y[2:4, -1]
+        prob['sample_t'] = t_span[1]
+        prob['x'] = x
+        prob['v'] = v
+        res_list.append(res)
+    plt.plot(x)
     plt.show()
+    print(res)
+
+
+if __name__ == "__main__":
+    lunar_trajectory()
+    # r0 = 1737.4e3
+    # mu = 4.90e12
+    # x0 = np.array([r0, 0])
+    # v0 = np.array([0, 0])
+    # v_e = 3900
+    # m_dot = 0.42
+    # m0 = 500
+    # T_go_guess = 438
+
+    # model = FixedThrustGuidance()
+
+    # prob = om.Problem(model)
+    # prob.setup()
+    # # Initial conditions
+    # prob['x'] = x0
+    # prob['v'] = v0
+    # prob['t'] = 0
+    # # Other inputs
+    # prob['T'] = T_go_guess
+    # # Boundary conditions
+    # #   (Loosely following Apollo 11 LM ascent profile:
+    # #   https://history.nasa.gov/alsj/nasa-tnd-6846pt.1.pdf)
+    # prob['r_dot_T'] = 0
+    # prob['r_T'] = r0 + 18.52e3 # m
+    # # Physical constants 
+    # prob['mu'] = mu
+    # prob['v_e'] = v_e
+    # prob['m_dot'] = m_dot
+    # prob['m0'] = m0
+    # # specific gravity only for calculating Isp
+
+    # recorder = om.SqliteRecorder('rocket_ode.sql')
+    # prob.add_recorder(recorder)
+
+    # g0 = 9.80665
+    # Isp = v_e/g0
+    # F_thrust_max = m_dot * v_e
+    # initial_time = 0
+    # initial_state = np.concatenate((x0, v0, [m0]))
+    # guidance_func = lambda t, state: guidance_func_base(t, state, prob)
+
+    # deriv = rocket_ode(initial_time, initial_state, mu, Isp, F_thrust_max, 
+    #            guidance_func)
+    # print(deriv)
+
+    # t_span = [0, T_go_guess]
+    # res = solve_ivp(rocket_ode, t_span, initial_state, args=(mu, Isp, 
+    #                     F_thrust_max, guidance_func), t_eval=np.arange(t_span[0], t_span[1], 0.5))
+    # print(res)
+    # print("Length: {}".format(len(res.t)))
+    # x = res.y[0, :]
+    # y = res.y[1, :]
+    # t = res.t
+    # plt.plot(x, y, '-o')
+    # plt.show()
 
