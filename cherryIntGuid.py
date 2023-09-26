@@ -46,7 +46,7 @@ def guidance_func_base(t, state, prob):
         prob['t'] = t
         # There is no estimator for m since it is perfectly known already.
         prob.run_model()
-        prob.record("{:.3f}".format(t))
+        #prob.record("{:.3f}".format(t))
         thrust_mag = 1
         thrust_angle = prob['alpha']
     
@@ -85,7 +85,7 @@ def lunar_trajectory():
     prob['m0'] = m0
 
     recorder = om.SqliteRecorder('rocket_ode.sql')
-    prob.add_recorder(recorder)
+    #prob.add_recorder(recorder)
 
     g0 = 9.80665
     Isp = v_e/g0
@@ -98,6 +98,8 @@ def lunar_trajectory():
     eval_points = np.arange(0, 30, outer_loop_interval)
     N = len(eval_points)
     res_list = []
+    prob.run_model()
+    #prob.record("{:.3f}".format(prob['t'][0]))
     for i in range(N-1):
         t_span = eval_points[i:i+2] 
         print("t: {}".format(t_span[0]))
@@ -108,6 +110,7 @@ def lunar_trajectory():
         prob['sample_t'] = t_span[1]
         prob['x'] = x
         prob['v'] = v
+        #prob.record("{:.3f}".format(prob['t'][0]))
         res_list.append(res)
     plt.plot(x)
     plt.show()

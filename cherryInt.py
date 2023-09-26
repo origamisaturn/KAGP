@@ -67,15 +67,16 @@ def gravity_ode(t, state, mu):
     a = -mu/np.linalg.norm(r)**3 * r
     return np.concatenate((v, a))
 
-lunar_radius = 1740e3
-earth_radius = 6378.1370e3
-theta = 0
-lunar_state = [lunar_radius*math.cos(theta), lunar_radius*math.sin(theta), 0, 0]
-earth_state = [earth_radius*math.cos(theta), earth_radius*math.sin(theta), 0, 0]
 
-t = 0
-mu_lunar = 4.9048695e12 #Lunar gravitational parameter
-mu_earth = 3.986004418e14
-t_span = [0, 4]
+# lunar_radius = 1740e3
+# earth_radius = 6378.1370e3
+# theta = 0
+# lunar_state = [lunar_radius*math.cos(theta), lunar_radius*math.sin(theta), 0, 0]
+# earth_state = [earth_radius*math.cos(theta), earth_radius*math.sin(theta), 0, 0]
+
+# t = 0
+# mu_lunar = 4.9048695e12 #Lunar gravitational parameter
+# mu_earth = 3.986004418e14
+# t_span = [0, 4]
 #print(gravity_ode(t, earth_state, mu_earth))
 #print(solve_ivp(gravity_ode, t_span, earth_state, args=(mu_earth,)))
