@@ -28,3 +28,6 @@ Then I make an integrator for a constant thrust rocket and test a short decelera
 	or just use dictionaries.
 09/24/23
 	I am going to have to add the thing where the attitude is maintained in the last 10 seconds to prevent the program from going singular and exploding.
+	Put thing into integrator, currently returning very strange results, likely due to the time selected not being monotonic. Will instead give the integrator the pitch query to sample infinitely while stopping integration at every major loop iteration of the guidance.
+09/26/23
+	Sqlite recorder seems to be slow and I can't find any easy documentation for speeding up the recorder. I might just use pandas or numpy instead for recording data between each iteration.

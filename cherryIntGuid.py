@@ -5,13 +5,55 @@ import matplotlib.pyplot as plt
 from cherryIntMDAO import FixedThrustGuidance
 from cherryInt import rocket_ode
 from scipy.integrate import solve_ivp
+import pickle as pkl
 
-def guidance_func_base(t, state, prob):
+def init_log(prob):
+    log = {'inputs': {}, 'outputs': {}, 'state': {}}
+    model = prob.model
+    inputs = model.list_inputs()
+    outputs = model.list_outputs()
+    state_names = ['t', 'x', 'y', 'vx', 'vy', 'm']
+    for var in inputs:
+        var_name = var[0]
+        var_val = var[1]['val']
+        log['inputs'][var_name] = list()
+    for var in outputs:
+        var_name = var[0]
+        var_val = var[1]['val']
+        log['outputs'][var_name] = list()
+    for var_name in state_names:
+        log['state'][var_name] = list()
+    return log
+def log_problem(prob, log):
+    model = prob.model
+    inputs = log['inputs'].keys()
+    outputs = log['outputs'].keys()
+    for var_name in inputs:
+        var_val = prob[var_name][0]
+        log['inputs'][var_name].append(var_val)
+    for var_name in outputs:
+        var_val = prob[var_name][0]
+        log['outputs'][var_name].append(var_val)
+
+def log_res(res, log):
+    t = res.t
+    x = res.y[0, :]
+    y = res.y[1, :]
+    vx = res.y[2, :]
+    vy = res.y[3, :]
+    m = res.y[4, :]
+    state = {'t': t, 'x': x, 'y': y, 'vx': vx, 'vy': vy, 'm': m}
+    for var_name in state:
+        var_val = state[var_name]
+        log['state'][var_name].extend(var_val)
+
+def guidance_func_base(t, state, prob, log):
     """ Given t and state, will compute desired thrust and thrust angle.
         Inputs:
             t       double  [s] Simulation time
             state   list    Equivalent 
             prob    om.Problem  Contains FixedThrustGuidance model.
+            log     dict    XX
         Outputs:
             thrust_mag      double  In interval [0,1], indicates
                             percentage of max_thrust.
@@ -46,6 +88,7 @@ def guidance_func_base(t, state, prob):
         prob['t'] = t
         # There is no estimator for m since it is perfectly known already.
         prob.run_model()
+        log_problem(prob, log)
         #prob.record("{:.3f}".format(t))
         thrust_mag = 1
         thrust_angle = prob['alpha']
@@ -53,6 +96,7 @@ def guidance_func_base(t, state, prob):
     return thrust_mag, thrust_angle
 
 def lunar_trajectory():
+    log_file = "log.pkl"
     r0 = 1737.4e3
     mu = 4.90e12
     x0 = np.array([r0, 0])
@@ -83,8 +127,9 @@ def lunar_trajectory():
     prob['v_e'] = v_e
     prob['m_dot'] = m_dot
     prob['m0'] = m0
+    prob.run_model()
 
-    recorder = om.SqliteRecorder('rocket_ode.sql')
+    #recorder = om.SqliteRecorder('rocket_ode.sql', record_viewer_data=False)
     #prob.add_recorder(recorder)
 
     g0 = 9.80665
@@ -92,13 +137,15 @@ def lunar_trajectory():
     F_thrust_max = m_dot * v_e
     initial_time = 0
     initial_state = np.concatenate((x0, v0, [m0]))
-    guidance_func = lambda t, state: guidance_func_base(t, state, prob)
+    # temp value for log
+    log = init_log(prob)
+    guidance_func = lambda t, state: guidance_func_base(t, state, prob, log)
 
     outer_loop_interval = 7
-    eval_points = np.arange(0, 30, outer_loop_interval)
+    eval_points = np.arange(0, 428, outer_loop_interval)
     N = len(eval_points)
     res_list = []
-    prob.run_model()
+
     #prob.record("{:.3f}".format(prob['t'][0]))
     for i in range(N-1):
         t_span = eval_points[i:i+2] 
@@ -110,11 +157,21 @@ def lunar_trajectory():
         prob['sample_t'] = t_span[1]
         prob['x'] = x
         prob['v'] = v
+        log_res(res, log)
         #prob.record("{:.3f}".format(prob['t'][0]))
         res_list.append(res)
-    plt.plot(x)
+        final_state = res.y[:, -1]
+        initial_state = final_state
+    plt.plot(log['inputs']['pitch_query.t'],
+             log['outputs']['pitch_query.alpha'])
+    plt.figure()
+    plt.plot(log['state']['x'], log['state']['y'])
     plt.show()
     print(res)
+    # print(log)
+    print("test")
+    with open(log_file, 'wb') as fh:
+        pkl.dump(log, fh)
 
 
 if __name__ == "__main__":
