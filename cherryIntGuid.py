@@ -35,7 +35,7 @@ def log_problem(prob, log):
         var_val = prob[var_name][0]
         log['outputs'][var_name].append(var_val)
 
-def log_res(res, log):
+def log_res(res, log, omit_final=False):
     t = res.t
     x = res.y[0, :]
     y = res.y[1, :]
@@ -44,7 +44,10 @@ def log_res(res, log):
     m = res.y[4, :]
     state = {'t': t, 'x': x, 'y': y, 'vx': vx, 'vy': vy, 'm': m}
     for var_name in state:
-        var_val = state[var_name]
+        if omit_final == False:
+            var_val = state[var_name]
+        else:
+            var_val = state[var_name][:-1]
         log['state'][var_name].extend(var_val)
 
 def guidance_func_base(t, state, prob, log):
@@ -144,7 +147,6 @@ def lunar_trajectory():
     outer_loop_interval = 7
     eval_points = np.arange(0, 428, outer_loop_interval)
     N = len(eval_points)
-    res_list = []
 
     #prob.record("{:.3f}".format(prob['t'][0]))
     for i in range(N-1):
@@ -157,9 +159,11 @@ def lunar_trajectory():
         prob['sample_t'] = t_span[1]
         prob['x'] = x
         prob['v'] = v
-        log_res(res, log)
+        if i == N-2:
+            log_res(res, log, omit_final=False)
+        else:
+            log_res(res, log, omit_final=True)
         #prob.record("{:.3f}".format(prob['t'][0]))
-        res_list.append(res)
         final_state = res.y[:, -1]
         initial_state = final_state
     plt.plot(log['inputs']['pitch_query.t'],
