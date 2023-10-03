@@ -70,21 +70,55 @@ def get_orbital_elements(log):
 def get_alpha(log):
     # the input and output already have alpha
     ...
+def plot_state(log):
+    # based on the amount of variables in the log, choose
+    # the shape of the subplots. Lets do variable rows, 
+    # fixed columns. title based on variable name. the only label.
+    # OK this is good.
+    columns = 4
+    state_var_names = list(log['state'].keys())
+    t = log['state']['t']
+    y_var_names = state_var_names
+    y_var_names.remove('t')
+    # -1 to ignore the 't' key
+    plot_total = len(log['state'].keys()) - 1
+    # rows*columns must be *just* greater than necessary.
+    # do plot_total divided by 4 and round to the next highest
+    # number
+    rows = int(np.ceil(plot_total/columns))
+    fig, axs = plt.subplots(rows, columns)
+    for i in range(rows):
+        for j in range(columns):
+            plot_index = i*columns + j
+            if plot_index >= plot_total:
+                continue
+            else:
+                y_var_name = y_var_names[plot_index]
+                y = log['state'][y_var_name]
+                axs[i, j].plot(t, y)
+                axs[i, j].set_title(y_var_name)
 
+    return fig, axs
+    ...
+def plot_derived_state(log):
+    # also n by 4, based on my custom functions.
+    ...
 if __name__ == '__main__':    
     log_file = "log.pkl"
     with open(log_file, 'rb') as fh:
         log = pkl.load(fh)
-    #print(log)
-    r = get_radius(log)
-    #y = get_r_dot_dot(log)
-    y = get_r_dot(log)
-    origin = [log['state']['x'][0], log['state']['y'][0]]
-    s = get_ground_distance(log, origin)
-    t = log['state']['t']
-    t_samp = log['inputs']['pitch_query.t']
-    r_dot_dot_pred = log['outputs']['pitch_query.r_dot_dot']
-    plt.plot(t, y)
-    plt.figure()
-    plt.plot(t_samp, r_dot_dot_pred)
+    fig, axs = plot_state(log)
     plt.show()
+    #print(log)
+    # r = get_radius(log)
+    # #y = get_r_dot_dot(log)
+    # y = get_r_dot(log)
+    # origin = [log['state']['x'][0], log['state']['y'][0]]
+    # s = get_ground_distance(log, origin)
+    # t = log['state']['t']
+    # t_samp = log['inputs']['pitch_query.t']
+    # r_dot_dot_pred = log['outputs']['pitch_query.r_dot_dot']
+    # plt.plot(t, y)
+    # plt.figure()
+    # plt.plot(t_samp, r_dot_dot_pred)
+    # plt.show()
