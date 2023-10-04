@@ -75,13 +75,13 @@ def plot_state(log):
     # the shape of the subplots. Lets do variable rows, 
     # fixed columns. title based on variable name. the only label.
     # OK this is good.
-    columns = 4
+    columns = 3
     state_var_names = list(log['state'].keys())
     t = log['state']['t']
     y_var_names = state_var_names
     y_var_names.remove('t')
     # -1 to ignore the 't' key
-    plot_total = len(log['state'].keys()) - 1
+    plot_total = len(log['state']) - 1
     # rows*columns must be *just* greater than necessary.
     # do plot_total divided by 4 and round to the next highest
     # number
@@ -102,12 +102,48 @@ def plot_state(log):
     ...
 def plot_derived_state(log):
     # also n by 4, based on my custom functions.
-    ...
+    t = log['state']['t']
+
+    ref_pos = [log['state']['x'][0], log['state']['y'][0]]
+    r = get_radius(log)
+    #s = get_ground_distance(log, ref_pos)
+    r_hat = get_r_hat(log)
+    theta_hat = get_theta_hat(log)
+    r_dot = get_r_dot(log)
+    v_theta = get_v_theta(log)
+    r_dot_dot = get_r_dot_dot(log)
+    a_theta = get_a_theta(log)
+    acc = get_acc(log)
+    acc_x = acc[0]
+    acc_y = acc[1]
+    vars = {"radius": r, "ground_distance": t, "r_dot": r_dot, "v_theta":v_theta,
+            "r_dot_dot":r_dot_dot, "a_theta":a_theta, "acc_x":acc_x,
+            "acc_y":acc_y}
+    columns = 3
+    plot_total = len(vars)
+    rows = int(np.ceil(plot_total/columns))
+    fig, axs = plt.subplots(rows, columns)
+    for i in range(rows):
+        for j in range(columns):
+            plot_index = i*columns + j
+            if plot_index >= plot_total:
+                continue
+            else:
+                var_names = list(vars.keys())
+                var_name = var_names[plot_index]
+                var_val = vars[var_name]
+                print("var_name: {}".format(var_name))
+
+                axs[i, j].plot(t, var_val)
+                axs[i, j].set_title(var_name)
+    return fig, axs
+
 if __name__ == '__main__':    
     log_file = "log.pkl"
     with open(log_file, 'rb') as fh:
         log = pkl.load(fh)
-    fig, axs = plot_state(log)
+    #fig, axs = plot_state(log)
+    plot_derived_state(log)
     plt.show()
     #print(log)
     # r = get_radius(log)
