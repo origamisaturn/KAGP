@@ -137,7 +137,7 @@ class OuterLoopRadialControl(om.ExplicitComponent):
         for name in output_names:
             self.add_output(name, val=0.0)
         
-        self.outer_loop_interval = 7 #s
+        self.outer_loop_interval = 1 #s
         self.last_sample_t = -self.outer_loop_interval
 
     def compute(self, inputs, outputs):

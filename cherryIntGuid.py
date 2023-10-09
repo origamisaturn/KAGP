@@ -144,8 +144,8 @@ def lunar_trajectory():
     log = init_log(prob)
     guidance_func = lambda t, state: guidance_func_base(t, state, prob, log)
 
-    outer_loop_interval = 7
-    eval_points = np.arange(0, 428, outer_loop_interval)
+    outer_loop_interval = 1
+    eval_points = np.arange(0, T_go_guess, outer_loop_interval)
     N = len(eval_points)
 
     #prob.record("{:.3f}".format(prob['t'][0]))

@@ -45,15 +45,21 @@ def get_v_theta(log):
     return v_theta
 
 def get_r_dot_dot(log):
-    acc = get_acc(log)
-    r_hat = get_r_hat(log)
-    r_dot_dot = col_mult(acc, r_hat)
+    #acc = get_acc(log)
+    #r_hat = get_r_hat(log)
+    #r_dot_dot = col_mult(acc, r_hat)
+    r_dot = get_r_dot(log)
+    t = log['state']['t']
+    r_dot_dot = np.gradient(r_dot, t)
     return r_dot_dot
 
 def get_a_theta(log):
-    acc = get_acc(log)
-    theta_hat = get_theta_hat(log)
-    a_theta = col_mult(acc, theta_hat)
+    #acc = get_acc(log)
+    #theta_hat = get_theta_hat(log)
+    #a_theta = col_mult(acc, theta_hat)
+    v_theta = get_v_theta(log)
+    t = log['state']['t']
+    a_theta = np.gradient(v_theta, t)
     return a_theta
 
 def get_acc(log):
@@ -100,6 +106,41 @@ def plot_state(log):
 
     return fig, axs
     ...
+def plot_problem_outputs(log):
+    outputs = log['outputs']
+    t = log['inputs']['pitch_query.t']
+    fig, ax = plot_vars(outputs, t, 3)
+    return fig, ax
+
+def plot_problem_inputs(log):
+    inputs = log['inputs']
+    t = log['inputs']['pitch_query.t']
+    fig, ax = plot_vars(inputs, t, 3)
+    return fig, ax
+
+def plot_vars(vars, t, columns, keys=None):
+    columns = 3
+    plot_total = len(vars)
+    rows = int(np.ceil(plot_total/columns))
+    fig, axs = plt.subplots(rows, columns)
+    if keys:
+        var_names = keys
+    else:
+        var_names = list(vars.keys())
+    for i in range(rows):
+        for j in range(columns):
+            plot_index = i*columns + j
+            if plot_index >= plot_total:
+                continue
+            else:
+                var_name = var_names[plot_index]
+                var_val = vars[var_name]
+                print("var_name: {}".format(var_name))
+
+                axs[i, j].plot(t, var_val)
+                axs[i, j].set_title(var_name)
+    return fig, axs
+
 def plot_derived_state(log):
     # also n by 4, based on my custom functions.
     t = log['state']['t']
@@ -123,13 +164,13 @@ def plot_derived_state(log):
     plot_total = len(vars)
     rows = int(np.ceil(plot_total/columns))
     fig, axs = plt.subplots(rows, columns)
+    var_names = list(vars.keys())
     for i in range(rows):
         for j in range(columns):
             plot_index = i*columns + j
             if plot_index >= plot_total:
                 continue
             else:
-                var_names = list(vars.keys())
                 var_name = var_names[plot_index]
                 var_val = vars[var_name]
                 print("var_name: {}".format(var_name))
@@ -144,6 +185,14 @@ if __name__ == '__main__':
         log = pkl.load(fh)
     #fig, axs = plot_state(log)
     plot_derived_state(log)
+    plot_problem_inputs(log)
+    plot_problem_outputs(log)
+    r0 = 1737.4e3
+    expected_fin_r = r0 + 18.52e3
+    fin_r_error = get_radius(log)[-1] - expected_fin_r
+    fin_r_dot = get_r_dot(log)[-1]
+    print("Final r err: {}".format(fin_r_error))
+    print("Final r_dot: {}".format(fin_r_dot))
     plt.show()
     #print(log)
     # r = get_radius(log)
