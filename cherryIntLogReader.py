@@ -76,36 +76,20 @@ def get_orbital_elements(log):
 def get_alpha(log):
     # the input and output already have alpha
     ...
+
 def plot_state(log):
     # based on the amount of variables in the log, choose
     # the shape of the subplots. Lets do variable rows, 
     # fixed columns. title based on variable name. the only label.
     # OK this is good.
-    columns = 3
-    state_var_names = list(log['state'].keys())
     t = log['state']['t']
-    y_var_names = state_var_names
+    y_var_names = list(log['state'].keys())
     y_var_names.remove('t')
+    vars = log['state']
     # -1 to ignore the 't' key
-    plot_total = len(log['state']) - 1
-    # rows*columns must be *just* greater than necessary.
-    # do plot_total divided by 4 and round to the next highest
-    # number
-    rows = int(np.ceil(plot_total/columns))
-    fig, axs = plt.subplots(rows, columns)
-    for i in range(rows):
-        for j in range(columns):
-            plot_index = i*columns + j
-            if plot_index >= plot_total:
-                continue
-            else:
-                y_var_name = y_var_names[plot_index]
-                y = log['state'][y_var_name]
-                axs[i, j].plot(t, y)
-                axs[i, j].set_title(y_var_name)
-
+    fig, axs = plot_vars(vars, t, 3, keys=y_var_names)
     return fig, axs
-    ...
+
 def plot_problem_outputs(log):
     outputs = log['outputs']
     t = log['inputs']['pitch_query.t']
@@ -119,14 +103,14 @@ def plot_problem_inputs(log):
     return fig, ax
 
 def plot_vars(vars, t, columns, keys=None):
-    columns = 3
-    plot_total = len(vars)
-    rows = int(np.ceil(plot_total/columns))
-    fig, axs = plt.subplots(rows, columns)
     if keys:
         var_names = keys
     else:
         var_names = list(vars.keys())
+    columns = 3
+    plot_total = len(var_names)
+    rows = int(np.ceil(plot_total/columns))
+    fig, axs = plt.subplots(rows, columns)
     for i in range(rows):
         for j in range(columns):
             plot_index = i*columns + j
@@ -160,23 +144,7 @@ def plot_derived_state(log):
     vars = {"radius": r, "ground_distance": t, "r_dot": r_dot, "v_theta":v_theta,
             "r_dot_dot":r_dot_dot, "a_theta":a_theta, "acc_x":acc_x,
             "acc_y":acc_y}
-    columns = 3
-    plot_total = len(vars)
-    rows = int(np.ceil(plot_total/columns))
-    fig, axs = plt.subplots(rows, columns)
-    var_names = list(vars.keys())
-    for i in range(rows):
-        for j in range(columns):
-            plot_index = i*columns + j
-            if plot_index >= plot_total:
-                continue
-            else:
-                var_name = var_names[plot_index]
-                var_val = vars[var_name]
-                print("var_name: {}".format(var_name))
-
-                axs[i, j].plot(t, var_val)
-                axs[i, j].set_title(var_name)
+    fig, axs = plot_vars(vars, t, 3)
     return fig, axs
 
 if __name__ == '__main__':    
@@ -184,6 +152,7 @@ if __name__ == '__main__':
     with open(log_file, 'rb') as fh:
         log = pkl.load(fh)
     #fig, axs = plot_state(log)
+    plot_state(log)
     plot_derived_state(log)
     plot_problem_inputs(log)
     plot_problem_outputs(log)
