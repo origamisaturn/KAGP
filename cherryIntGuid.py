@@ -36,6 +36,11 @@ def log_problem(prob, log):
         log['outputs'][var_name].append(var_val)
 
 def log_res(res, log, omit_final=False):
+    """
+    unlike log_problem, log_res is called outside of the ode_func 
+    as the ode evaluations may not accurately represent the state
+    at the given time.
+    """
     t = res.t
     x = res.y[0, :]
     y = res.y[1, :]
@@ -97,6 +102,93 @@ def guidance_func_base(t, state, prob, log):
         thrust_angle = prob['alpha']
     
     return thrust_mag, thrust_angle
+
+def lunar_trajectory_final():
+    log_file = "log.pkl"
+    r0 = 1737.4e3
+    mu = 4.90e12
+    x0 = np.array([r0, 0]) # CHANGE
+    v0 = np.array([0, 0]) # CHANGE
+    v_e = 3900
+    m_dot = 0.42
+    m0 = 500 # CHANGE
+    T_go_guess = 438 #CHANGE
+
+    model = FixedThrustGuidance()
+
+    prob = om.Problem(model)
+    prob.setup()
+    # Initial conditions
+    prob['x'] = x0
+    prob['v'] = v0
+    prob['t'] = 0
+    prob['sample_t'] = 0
+    # Other inputs
+    prob['T'] = T_go_guess
+    # Boundary conditions
+    #   (Loosely following Apollo 11 LM ascent profile:
+    #   https://history.nasa.gov/alsj/nasa-tnd-6846pt.1.pdf)
+    prob['r_dot_T'] = 0
+    prob['r_T'] = r0 + 18.52e3 # m
+    # Physical constants 
+    prob['mu'] = mu
+    prob['v_e'] = v_e
+    prob['m_dot'] = m_dot
+    prob['m0'] = m0
+    prob.run_model()
+
+    #recorder = om.SqliteRecorder('rocket_ode.sql', record_viewer_data=False)
+    #prob.add_recorder(recorder)
+
+    g0 = 9.80665
+    Isp = v_e/g0
+    F_thrust_max = m_dot * v_e
+    initial_time = 0
+    initial_state = np.concatenate((x0, v0, [m0]))
+    # temp value for log
+    log = init_log(prob)
+    guidance_func = lambda t, state: guidance_func_base(t, state, prob, log)
+
+    outer_loop_interval = 1
+    eval_points = np.arange(0, T_go_guess, outer_loop_interval) # LOOK AT THIS
+
+def run_simulation(ode_func, eval_points, prob, log, log_file):
+    # please encode arg information in ode_func when passec
+    # extract initial state from problem
+    x0 = prob['x']
+    v0 = prob['v']
+    m0 = prob['m0']
+    initial_state = np.concatenate((x0, v0, m0))
+
+    # MAKE THIS A FUNCTION
+    N = len(eval_points)
+    # Evaluate every time interval in eval_points
+    for i in range(N-1):
+        t_span = eval_points[i:i+2] 
+        # Print progress
+        print("t: {}".format(t_span[0]))
+
+        res = solve_ivp(ode_func, t_span, initial_state)
+
+        # Avoid duplicating end of previous and start of current res.y
+        if i == N-2:
+            log_res(res, log, omit_final=False)
+        else:
+            log_res(res, log, omit_final=True)
+
+        # Update guidance loop
+        x = res.y[:2, -1]
+        v = res.y[2:4, -1]
+        prob['sample_t'] = t_span[1]
+        prob['x'] = x
+        prob['v'] = v
+
+        # Set up next problem loop.
+        final_state = res.y[:, -1]
+        initial_state = final_state
+
+    with open(log_file, 'wb') as fh:
+        pkl.dump(log, fh) 
 
 def lunar_trajectory():
     log_file = "log.pkl"
