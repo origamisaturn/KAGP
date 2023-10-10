@@ -24,6 +24,7 @@ def init_log(prob):
     for var_name in state_names:
         log['state'][var_name] = list()
     return log
+
 def log_problem(prob, log):
     model = prob.model
     inputs = log['inputs'].keys()
@@ -57,6 +58,7 @@ def log_res(res, log, omit_final=False):
 
 def guidance_func_base(t, state, prob, log):
     """ Given t and state, will compute desired thrust and thrust angle.
+        Essentially a wrapper for the OpenMDAO guidance problem.
         Inputs:
             t       double  [s] Simulation time
             state   list    Equivalent 
@@ -69,8 +71,8 @@ def guidance_func_base(t, state, prob, log):
                             pi]. 0 degrees indicates eastward, incre
                             asing angle counter clockwise.
                             
-        Update outer guidance every second, inner guidance can be sample
-        infinitely.
+        Update outer guidance every second, inner guidance can be 
+        sampled infinitely.
         Take in t, state, put into problem inputs. t goes both into
         sample_t and just t. call run_model(). Extract T. If t > T, then
         send thrust-off command and hold pitch.
@@ -97,14 +99,13 @@ def guidance_func_base(t, state, prob, log):
         # There is no estimator for m since it is perfectly known already.
         prob.run_model()
         log_problem(prob, log)
-        #prob.record("{:.3f}".format(t))
         thrust_mag = 1
         thrust_angle = prob['alpha']
     
     return thrust_mag, thrust_angle
 
 def lunar_trajectory_final():
-    log_file = "log.pkl"
+    log_file = "log_final.pkl"
     r0 = 1737.4e3
     mu = 4.90e12
     x0 = np.array([r0, 0]) # CHANGE
@@ -118,7 +119,7 @@ def lunar_trajectory_final():
 
     prob = om.Problem(model)
     prob.setup()
-    # Initial conditions
+    # Initial conditions (Also IC for run_simulation)
     prob['x'] = x0
     prob['v'] = v0
     prob['t'] = 0
@@ -135,48 +136,57 @@ def lunar_trajectory_final():
     prob['v_e'] = v_e
     prob['m_dot'] = m_dot
     prob['m0'] = m0
+    # Why do we need this?
     prob.run_model()
 
-    #recorder = om.SqliteRecorder('rocket_ode.sql', record_viewer_data=False)
-    #prob.add_recorder(recorder)
+    # temp value for log
+    log = init_log(prob)
+
+    # Integral time boundaries based on the rate we want to recalculate 
+    # the outer loop guidance block.
+    outer_loop_guidance_interval = 1
+    eval_points = np.arange(0, T_go_guess, outer_loop_guidance_interval) # LOOK AT THIS
 
     g0 = 9.80665
     Isp = v_e/g0
     F_thrust_max = m_dot * v_e
-    initial_time = 0
-    initial_state = np.concatenate((x0, v0, [m0]))
-    # temp value for log
-    log = init_log(prob)
     guidance_func = lambda t, state: guidance_func_base(t, state, prob, log)
+    ode_func = lambda t, state: rocket_ode(
+        t, state, mu, Isp, F_thrust_max, guidance_func)
 
-    outer_loop_interval = 1
-    eval_points = np.arange(0, T_go_guess, outer_loop_interval) # LOOK AT THIS
+    run_simulation(ode_func, eval_points, prob, log, log_file)
 
 def run_simulation(ode_func, eval_points, prob, log, log_file):
     # please encode arg information in ode_func when passec
+    # somehow align eval_points and outer loop guidance rate.
     # extract initial state from problem
     x0 = prob['x']
     v0 = prob['v']
     m0 = prob['m0']
     initial_state = np.concatenate((x0, v0, m0))
 
-    # MAKE THIS A FUNCTION
-    N = len(eval_points)
     # Evaluate every time interval in eval_points
+    N = len(eval_points)
     for i in range(N-1):
+        # Select time interval
         t_span = eval_points[i:i+2] 
+
         # Print progress
         print("t: {}".format(t_span[0]))
 
+        # Calculate time step
         res = solve_ivp(ode_func, t_span, initial_state)
 
-        # Avoid duplicating end of previous and start of current res.y
+        # Log time-step result and avoid duplicating end of previous 
+        # and start of current res.y
         if i == N-2:
             log_res(res, log, omit_final=False)
         else:
             log_res(res, log, omit_final=True)
 
         # Update guidance loop
+        # sample_t, x, v is changed only here. Otherwise the openMDAO problem
+        # recomputes the outer loop.
         x = res.y[:2, -1]
         v = res.y[2:4, -1]
         prob['sample_t'] = t_span[1]
@@ -272,59 +282,4 @@ def lunar_trajectory():
 
 if __name__ == "__main__":
     lunar_trajectory()
-    # r0 = 1737.4e3
-    # mu = 4.90e12
-    # x0 = np.array([r0, 0])
-    # v0 = np.array([0, 0])
-    # v_e = 3900
-    # m_dot = 0.42
-    # m0 = 500
-    # T_go_guess = 438
-
-    # model = FixedThrustGuidance()
-
-    # prob = om.Problem(model)
-    # prob.setup()
-    # # Initial conditions
-    # prob['x'] = x0
-    # prob['v'] = v0
-    # prob['t'] = 0
-    # # Other inputs
-    # prob['T'] = T_go_guess
-    # # Boundary conditions
-    # #   (Loosely following Apollo 11 LM ascent profile:
-    # #   https://history.nasa.gov/alsj/nasa-tnd-6846pt.1.pdf)
-    # prob['r_dot_T'] = 0
-    # prob['r_T'] = r0 + 18.52e3 # m
-    # # Physical constants 
-    # prob['mu'] = mu
-    # prob['v_e'] = v_e
-    # prob['m_dot'] = m_dot
-    # prob['m0'] = m0
-    # # specific gravity only for calculating Isp
-
-    # recorder = om.SqliteRecorder('rocket_ode.sql')
-    # prob.add_recorder(recorder)
-
-    # g0 = 9.80665
-    # Isp = v_e/g0
-    # F_thrust_max = m_dot * v_e
-    # initial_time = 0
-    # initial_state = np.concatenate((x0, v0, [m0]))
-    # guidance_func = lambda t, state: guidance_func_base(t, state, prob)
-
-    # deriv = rocket_ode(initial_time, initial_state, mu, Isp, F_thrust_max, 
-    #            guidance_func)
-    # print(deriv)
-
-    # t_span = [0, T_go_guess]
-    # res = solve_ivp(rocket_ode, t_span, initial_state, args=(mu, Isp, 
-    #                     F_thrust_max, guidance_func), t_eval=np.arange(t_span[0], t_span[1], 0.5))
-    # print(res)
-    # print("Length: {}".format(len(res.t)))
-    # x = res.y[0, :]
-    # y = res.y[1, :]
-    # t = res.t
-    # plt.plot(x, y, '-o')
-    # plt.show()
-
+    # lunar_trajectory_final()

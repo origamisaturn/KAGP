@@ -32,4 +32,5 @@ Then I make an integrator for a constant thrust rocket and test a short decelera
 09/26/23
 	Sqlite recorder seems to be slow and I can't find any easy documentation for speeding up the recorder. I might just use pandas or numpy instead for recording data between each iteration.
 10/08/23
-	
+10/10/23
+	Once this gives good results I should clean it all up, before introducing the new Tgo block.
