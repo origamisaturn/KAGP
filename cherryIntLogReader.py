@@ -148,7 +148,7 @@ def plot_derived_state(log):
     return fig, axs
 
 if __name__ == '__main__':    
-    log_file = "log.pkl"
+    log_file = "log_apollo_ascent"
     with open(log_file, 'rb') as fh:
         log = pkl.load(fh)
     #fig, axs = plot_state(log)
@@ -157,13 +157,16 @@ if __name__ == '__main__':
     plot_problem_inputs(log)
     plot_problem_outputs(log)
     r0 = 1737.4e3
-    expected_fin_r = r0 + 18.52e3
+    expected_fin_r = r0 + 18.24e3
     fin_r_error = get_radius(log)[-1] - expected_fin_r
     fin_r_dot = get_r_dot(log)[-1]
     print("Final r err: {}".format(fin_r_error))
     print("Final r_dot: {}".format(fin_r_dot))
     plt.show()
-    #print(log)
+    r_dot_dot = get_r_dot_dot(log)
+    t = log['state']['t']
+    print("t")
+    # print(log)
     # r = get_radius(log)
     # #y = get_r_dot_dot(log)
     # y = get_r_dot(log)
