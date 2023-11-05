@@ -2,6 +2,7 @@ import openmdao.api as om
 import numpy as np
 import math
 import matplotlib.pyplot as plt
+from scipy.integrate import solve_ivp
 
 def rot_mat_2d(theta):
     cos = math.cos
@@ -160,7 +161,6 @@ class OuterLoopRadialControl(om.ExplicitComponent):
             self.last_sample_t = sample_t
             outputs['last_sample_t'] = self.last_sample_t
 
-
 class PitchQuery(om.ExplicitComponent):
     """
     Component containing the equation for pitch of the fixed-thrust control
@@ -217,9 +217,156 @@ class FixedThrustGuidance(om.Group):
         self.add_subsystem('radial_control', OuterLoopRadialControl(),
                             promotes=['*'])
         self.add_subsystem('pitch_query', PitchQuery(), promotes=['*'])
+        # self.add_subsystem('v_theta', VThetaSolver(), promotes=['*'])
+        # self.nonlinear_solver = om.NonlinearBlockGS()
 
 
-    
+
+class VThetaSolver(om.ExplicitComponent):
+    def setup(self):
+        self.add_input('x', val=np.zeros((2)))
+        self.add_input('v', val=np.zeros((2)))
+        input_names = ['a0', 'a1', 'a2', 'c1', 'c2', 'sample_t', 'T',
+                       'v_e', 'm0', 'm_dot', 'mu']
+        for name in input_names:
+            self.add_input(name, val=0.0)
+        
+        output_names = ['v_theta_T', 'v_theta_loss_T']
+        for name in output_names:
+            self.add_output(name, val=0.0)
+
+    def compute(self, inputs, outputs):
+        # model = om.Group()
+        # model.add_subsystem('pitch_query', PitchQuery(),
+        #                                  promotes=['*'])
+        # pitch_query = om.Problem(model)
+        # prob.setup()
+        #
+        # self.pitch_query_input(pitch_query, inputs)
+        #
+        pos = inputs['x']
+        vel = inputs['v']
+
+        a0 = inputs['a0'][0]
+        a1 = inputs['a1'][0]
+        a2 = inputs['a2'][0]
+        c1 = inputs['c1'][0]
+        c2 = inputs['c2'][0]
+        t0 = inputs['sample_t'][0]
+        T = inputs['T'][0]
+        m0 = inputs['m0'][0]
+        mdot = inputs['m_dot'][0]
+        v_e = inputs['v_e'][0]
+        mu = inputs['mu'][0]
+        #g_eff = inputs['g_eff'][0]
+        tau = m0 / mdot
+
+        r0 = np.linalg.norm(pos, axis=0)
+        r_hat_0 = pos/r0
+        r_dot_0 = np.dot(vel, r_hat_0)
+
+        rot_mat = np.array([[0, -1], [1, 0]])
+        theta_hat_0 = rot_mat@r_hat_0
+        v_theta_0 = np.dot(vel, theta_hat_0)
+
+
+
+        def get_time_dependent_vars(t, v_theta):
+            # Note, this is not the f_matrix based on T_got used in
+            # OuterLoopRadial
+            t_rel = t - t0
+
+            f11 = a0*t_rel + a1*t_rel**2/2 + a2*t_rel**3/3
+            f21 = a0*t_rel**2/2 + a1*t_rel**3/3 + a2*t_rel**4/4
+            f22 = a0*t_rel**3/3 + a1*t_rel**4/4 + a2*t_rel**5/5
+            f12 = f21
+            r_dot = f11*c1 + f12*c2 + r_dot_0
+            r = f21*c1 + f22*c2 + (r0 + r_dot_0*t_rel)
+
+            p1 = a0 + a1 * (T - t) + a2 * (T - t) ** 2
+            p2 = p1 * (T - t)
+            r_dot_dot = c1 * p1 + c2 * p2
+            a_thrust = v_e / (tau - t)
+            # Note: g_eff is based on time (state actually) but we will assume
+            # it is static for each iteration.
+            # ASSUMPTION WRONG FOR v_theta, calculate g_eff
+            g_eff = -mu/r**2 + v_theta**2/r
+            alpha = math.asin((r_dot_dot - g_eff) / (a_thrust))
+
+            return a_thrust, alpha, r_dot, r
+
+        def v_theta_dot(t, v_theta):
+            v_theta = -v_theta[0]
+            # butchering the sign
+            a_T, alpha, r_dot, r = get_time_dependent_vars(t, v_theta)
+            v_theta_dot = a_T * math.cos(alpha) - r_dot*v_theta/r
+            return -v_theta_dot
+        
+        def v_theta_dot_loss(t, v_theta):
+            v_theta = -v_theta[0]
+            a_T, alpha, r_dot, r = get_time_dependent_vars(t, v_theta)
+            v_theta_dot_loss = (1-math.cos(alpha))*a_T + r_dot*v_theta/r
+            return -v_theta_dot_loss
+        
+        t_span = [t0, T]
+        res1 = solve_ivp(v_theta_dot, t_span, [v_theta_0], atol=1e-9, rtol=1e-9)
+        res2 = solve_ivp(v_theta_dot_loss, t_span, [v_theta_0], atol=1e-9, rtol=1e-9)
+        outputs['v_theta_T'] = res1.y[0, -1]
+        outputs['v_theta_loss_T'] = res2.y[0, -1]
+
+
+class TimeToGo(om.ExplicitComponent):
+    def setup(self):
+        self.add_input('x', val=np.zeros((2)))
+        self.add_input('v', val=np.zeros((2)))
+        input_names = ['v_theta_loss_T', 'v_theta_T', 
+                       'target_v_theta_T', 'sample_t',
+                       'v_e', 'm0', 'm_dot']
+        for name in input_names:
+            self.add_input(name, val=0.0)
+        
+        output_names = ['T']
+        for name in output_names:
+            self.add_output(name, val=0.0)
+
+    def compute(self, inputs, outputs):
+        v_theta_loss_Tn = inputs['v_theta_loss_T']
+        v_theta_Tn = inputs['v_theta_T']
+        target_v_theta_T = inputs['target_v_theta_T']
+        t0 = inputs['sample_t']
+        v_e = inputs['v_e']
+        m0 = inputs['m0']
+        m_dot = inputs['m_dot']
+
+        pos = inputs['x']
+        vel = inputs['v']
+        r_hat = pos/np.linalg.norm(pos, axis=0)
+        rot_mat = np.array([[0, -1], [1, 0]])
+        theta_hat = rot_mat@r_hat
+        v_theta_0 = np.dot(theta_hat, vel)
+
+        tau = m0/m_dot
+        tau0 = tau - t0
+        v_theta_loss_Tn_1 = target_v_theta_T - v_theta_Tn + v_theta_loss_Tn
+        # Normally not negative but I have done unfortunate things with the
+        # sign of v_theta
+        #CHANGED V_THETA_LOSS TO TN
+        T_go_n_1 = tau0 * (1 - math.exp(-(-(target_v_theta_T - v_theta_0 + v_theta_loss_Tn)/v_e)))
+        T_n_1 = T_go_n_1 + t0
+        
+        outputs['T'] = T_n_1
+
+class FixedThrustGuidanceFull(om.Group):
+    def setup(self):
+        self.add_subsystem('radial_control', OuterLoopRadialControl(),
+                            promotes=['*'])
+        self.add_subsystem('pitch_query', PitchQuery(), promotes=['*'])
+        self.add_subsystem('v_theta', VThetaSolver(), promotes=['*'])
+        self.add_subsystem("time_to_go", TimeToGo(), promotes=['*'])
+        self.nonlinear_solver = om.NonlinearBlockGS()
+        self.nonlinear_solver.options['maxiter'] = 100
+        #self.nonlinear_solver.options['atol'] = 1e-3
+
 
 if __name__ == "__main__":
 
@@ -236,6 +383,7 @@ if __name__ == "__main__":
     # model.add_subsystem('radial_comp', radialControl())
     model.add_subsystem('outer_loop', OuterLoopRadialControl(), promotes=['*'])
     model.add_subsystem('pitch_query', PitchQuery(), promotes=['*'])
+    model.add_subsystem('v_theta', VThetaSolver(), promotes=['*'])
     #model.set_input_defaults('mu', mu)
 
     prob = om.Problem(model)
@@ -243,7 +391,7 @@ if __name__ == "__main__":
     # Initial conditions
     prob['x'] = x0
     prob['v'] = v0
-    prob['t'] = 0
+    prob['sample_t'] = 0
     # Other inputs
     prob['T'] = T_go_guess
     # Boundary conditions
@@ -257,39 +405,11 @@ if __name__ == "__main__":
     prob['m_dot'] = m_dot
     prob['m0'] = m0
     # Query Input
-    # prob['t'] = 10
+    prob['t'] = 10
 
     #recorder = om.SqliteRecorder('cases.sql')
     #prob.add_recorder(recorder)
     prob.run_model()
-    print(prob['alpha'])
+    print(prob['v_theta_T'])
 
-    N = 10
-    t_vals = np.linspace(0, 20, N)
-    var_names = ['last_sample_t', 'alpha', 'a_thrust', 'r_dot_dot', 'p1', 'p2']
-    M = len(var_names)
-    alpha_vals = np.zeros((M, N))
-    for i, time in enumerate(t_vals):
-        prob['t'] = time
-        prob.run_model()
-        prob.record(str(time))
-        for j, var_name in enumerate(var_names):
-            alpha_vals[j, i] = prob[var_name]
-    for i, var_name in enumerate(var_names):
-        plt.figure()
-        plt.plot(t_vals, alpha_vals[i, :])
-        plt.title(var_name)
-    plt.show()
 
-#     print(prob['alpha'])
-#     prob.cleanup()
-#     cr = om.CaseReader("cases.sql")
-#     print("test")
-#     problem_cases = cr.get_cases('problem', recurse=False)
-#     test_vals = []
-#     for case in problem_cases:
-#         test_vals.append(case['alpha'][0])
-#     plt.figure()
-#     plt.plot(test_vals)
-#     plt.show()
-#     #print(prob['radial_comp.alpha'])

@@ -35,8 +35,8 @@ def init_guidance(T_go, init_pos, init_vel):
     v_e = Isp*g0
     F_thrust_max = 15.6e3
     m_dot = F_thrust_max / v_e
-    m0 = 3.762e3
-    #T_go_guess = 438
+    m0 = 3.967e3
+    T_go = 335
 
     model = cherryIntMDAO.FixedThrustGuidance()
 
@@ -133,8 +133,8 @@ velocity = conn.add_stream(vessel.velocity, ref_frame)
 time = conn.add_stream(getattr, conn.space_center, 'ut')     
 
 
-log_file = "log_ksp_ascent_7T.pkl"
-burn_time = 438
+log_file = "log_ksp_ascent_7T_adj.pkl"
+burn_time = 345
 outer_loop_interval = 7
 next_outer_loop_time = -1
 pos = position()
@@ -150,7 +150,7 @@ vessel.auto_pilot.engage()
 vessel.control.throttle = 1
 
 while rel_time < burn_time:
-    if (burn_time - rel_time > 10 and 
+    if (burn_time > rel_time + 10 and 
         next_outer_loop_time < rel_time):
         update_outer_loop(prob, log, pos, vel, rel_time)
         next_outer_loop_time = next_outer_loop_time + outer_loop_interval

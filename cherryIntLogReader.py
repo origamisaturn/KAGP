@@ -148,7 +148,8 @@ def plot_derived_state(log):
     return fig, axs
 
 if __name__ == '__main__':    
-    log_file = "log_ksp_ascent_7T.pkl"
+    log_file = "log_lunar_traj_full.pkl"
+    #log_file = "log_final.pkl"
     with open(log_file, 'rb') as fh:
         log = pkl.load(fh)
     #fig, axs = plot_state(log)
