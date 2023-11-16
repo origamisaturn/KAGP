@@ -16,6 +16,7 @@ def get_radius(log):
 
 def get_ground_distance(log, ref_pos):
     # ref_pos determines ground radius and origin angle
+    # INCOMPLETE
     radius_ref = np.linalg.norm(ref_pos)
     angle_ref = np.arctan2(ref_pos[1], ref_pos[0])
     distance_ref = radius_ref * angle_ref
@@ -148,8 +149,12 @@ def plot_derived_state(log):
     return fig, axs
 
 if __name__ == '__main__':    
-    log_file = "log_lunar_traj_full.pkl"
+    log_file = "log_apollo_ascent_perfect.pkl"
     #log_file = "log_final.pkl"
+    #log_file = "log_vtheta_test.pkl"
+    #log_file = "log_lunar_traj_full.pkl"
+    #log_file = "log_lunar_traj.pkl"
+    #log_file = "incomp.pkl"
     with open(log_file, 'rb') as fh:
         log = pkl.load(fh)
     #fig, axs = plot_state(log)
@@ -161,8 +166,12 @@ if __name__ == '__main__':
     expected_fin_r = r0 + 18.24e3
     fin_r_error = get_radius(log)[-1] - expected_fin_r
     fin_r_dot = get_r_dot(log)[-1]
+    fin_v_theta = get_v_theta(log)[-1]
+    #pred_fin_v_theta = log['outputs']['v_theta_solver.v_theta_T'][0]
     print("Final r err: {}".format(fin_r_error))
     print("Final r_dot: {}".format(fin_r_dot))
+    print("Final v_theta: {}".format(fin_v_theta))
+    #print("Predicted v_theta: {}".format(pred_fin_v_theta))
     plt.show()
     r_dot_dot = get_r_dot_dot(log)
     t = log['state']['t']

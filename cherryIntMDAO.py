@@ -133,8 +133,10 @@ class OuterLoopRadialControl(om.ExplicitComponent):
         for name in input_names:
             self.add_input(name, val=0.0)
 
-        output_names = ['last_sample_t', 'a0', 'a1', 'a2', 'c1',
-                         'c2', 'tau', 'g_eff']
+        self.add_output('sample_x', val=np.zeros((2)))
+        self.add_output('sample_v', val=np.zeros((2)))
+        output_names = ['last_sample_t', 'a0',
+                        'a1', 'a2', 'c1', 'c2', 'tau', 'g_eff']
         for name in output_names:
             self.add_output(name, val=0.0)
         
@@ -159,6 +161,8 @@ class OuterLoopRadialControl(om.ExplicitComponent):
                 outputs[name] = self.prob[name]
 
             self.last_sample_t = sample_t
+            outputs['sample_x'] = inputs['x']
+            outputs['sample_v'] = inputs['v']
             outputs['last_sample_t'] = self.last_sample_t
 
 class PitchQuery(om.ExplicitComponent):
@@ -217,15 +221,15 @@ class FixedThrustGuidance(om.Group):
         self.add_subsystem('radial_control', OuterLoopRadialControl(),
                             promotes=['*'])
         self.add_subsystem('pitch_query', PitchQuery(), promotes=['*'])
-        # self.add_subsystem('v_theta', VThetaSolver(), promotes=['*'])
+        self.add_subsystem('v_theta', VThetaSolver(), promotes=['*'])
         # self.nonlinear_solver = om.NonlinearBlockGS()
 
 
 
 class VThetaSolver(om.ExplicitComponent):
     def setup(self):
-        self.add_input('x', val=np.zeros((2)))
-        self.add_input('v', val=np.zeros((2)))
+        self.add_input('sample_x', val=np.zeros((2)))
+        self.add_input('sample_v', val=np.zeros((2)))
         input_names = ['a0', 'a1', 'a2', 'c1', 'c2', 'sample_t', 'T',
                        'v_e', 'm0', 'm_dot', 'mu']
         for name in input_names:
@@ -244,8 +248,8 @@ class VThetaSolver(om.ExplicitComponent):
         #
         # self.pitch_query_input(pitch_query, inputs)
         #
-        pos = inputs['x']
-        vel = inputs['v']
+        pos = inputs['sample_x']
+        vel = inputs['sample_v']
 
         a0 = inputs['a0'][0]
         a1 = inputs['a1'][0]
@@ -317,8 +321,8 @@ class VThetaSolver(om.ExplicitComponent):
 
 class TimeToGo(om.ExplicitComponent):
     def setup(self):
-        self.add_input('x', val=np.zeros((2)))
-        self.add_input('v', val=np.zeros((2)))
+        self.add_input('sample_x', val=np.zeros((2)))
+        self.add_input('sample_v', val=np.zeros((2)))
         input_names = ['v_theta_loss_T', 'v_theta_T', 
                        'target_v_theta_T', 'sample_t',
                        'v_e', 'm0', 'm_dot']
