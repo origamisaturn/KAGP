@@ -97,7 +97,10 @@ def apollo_ascent(model = PerfectFixedThrust(), log_file = "log_apollo_ascent_pe
     F_thrust_max = 15.87e3
     m_dot = F_thrust_max / v_e
     m0 = 5100
+   
     T_go_guess = 438
+     # DEBUG CHANGED FOR V_THETA_TESTS
+    #T_go_guess = 448
 
     #model = PerfectFixedThrust()
 

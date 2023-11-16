@@ -4,7 +4,7 @@ import math
 import matplotlib.pyplot as plt
 from cherryIntMDAO import OuterLoopRadialControl
 from perfectTests import PerfectPitchQuery, apollo_ascent
-from cherryIntLogReader import get_v_theta, get_radius, get_r_dot
+from cherryIntLogReader import plot_derived_state, get_v_theta, get_radius, get_r_dot
 from scipy.integrate import solve_ivp
 
 def get_v_theta_dot(log):
@@ -33,7 +33,7 @@ class VThetaTest(om.ExplicitComponent):
         self.add_input('sample_v', val=np.zeros((2)))
         self.add_input('x_state', val=np.zeros((2)))
         self.add_input('v_state', val=np.zeros((2)))
-        input_names = ['a0', 'a1', 'a2', 'c1', 'c2', 'sample_t', 'T', 't_state',
+        input_names = ['a0', 'a1', 'a2', 'c1', 'c2', 'sample_t', 'T', 't_state', 'r_dot_T', 'r_T',
                        'v_e', 'm0', 'm_dot', 'mu']
         for name in input_names:
             self.add_input(name, val=0.0)
@@ -60,6 +60,8 @@ class VThetaTest(om.ExplicitComponent):
         v_e = inputs['v_e'][0]
         mu = inputs['mu'][0]
         #g_eff = inputs['g_eff'][0]
+        r_dot_T = inputs['r_dot_T'][0]
+        r_T = inputs['r_T'][0]
         tau = m0 / mdot
 
         r0 = np.linalg.norm(pos, axis=0)
@@ -87,15 +89,23 @@ class VThetaTest(om.ExplicitComponent):
         def get_time_dependent_vars(t, v_theta):
             # Note, this is not the f_matrix based on T_got used in
             # OuterLoopRadial
-            t_rel = t - t0
+            #t_rel = t - t0
+            t_rel = T - t
 
+            # These values somehow messed up
             f11 = a0*t_rel + a1*t_rel**2/2 + a2*t_rel**3/3
             f21 = a0*t_rel**2/2 + a1*t_rel**3/3 + a2*t_rel**4/4
             f22 = a0*t_rel**3/3 + a1*t_rel**4/4 + a2*t_rel**5/5
             f12 = f21
-            r_dot = f11*c1 + f12*c2 + r_dot_0
-            r = f21*c1 + f22*c2 + (r0 + r_dot_0*t_rel)
+            #r_dot = f11*c1 + f12*c2 + r_dot_0
+            #weird thing but IT WORKS
+            r_dot = r_dot_T - f11*c1 - f12*c2
 
+            #r = f21*c1 + f22*c2 + (r0 + r_dot_0*t_rel)
+            #BROKEN
+            r = r_T - (f21*c1 + f22*c2 + r_dot*t_rel)
+
+            # r_dot_dot and alpha also can't be right, they rely on T
             p1 = a0 + a1 * (T - t) + a2 * (T - t) ** 2
             p2 = p1 * (T - t)
             r_dot_dot = c1 * p1 + c2 * p2
@@ -127,7 +137,7 @@ class VThetaTest(om.ExplicitComponent):
         output_names = ['a_thrust_calc', 'alpha_calc', 'r_dot_calc',
                         'r_calc', 'v_theta_calc', 'v_theta_dot_calc']
         # V_THETA_CALC IS NOT ACTUALLY CALC
-        output_vals = [a_thrust, alpha, r_dot, r, v_theta_0, v_theta_dot_calc]
+        output_vals = [a_thrust, alpha, r_dot, r, state_v_theta, v_theta_dot_calc]
         for i, name in enumerate(output_names):
             val = output_vals[i]
             outputs[name] = val
@@ -137,16 +147,33 @@ class VThetaTest(om.ExplicitComponent):
         t_span = [t0, T]
         res1 = solve_ivp(v_theta_dot, t_span, [v_theta_0], atol=1e-9, rtol=1e-9)
         res2 = solve_ivp(v_theta_dot_loss, t_span, [v_theta_0], atol=1e-9, rtol=1e-9)
-        outputs['v_theta_T'] = res1.y[0, -1]
-        outputs['v_theta_loss_T'] = res2.y[0, -1]
+        outputs['v_theta_T_calc'] = res1.y[0, -1]
+        outputs['v_theta_loss_T_calc'] = res2.y[0, -1]
 
-def plot_v_theta_error(log):
-    a_thrust_calc = log['outputs']['v_theta_test.a_thrust_calc'] 
-    ...
+def plot_v_theta_error(log, prob):
+    #a_thrust_calc = log['outputs']['v_theta_test.a_thrust_calc'] 
+    v_theta_test_vals, t = get_v_theta_test_vals(log, prob)
+    state_test_vals, t = get_state_test_vals(log)
+    r_dot_error = state_test_vals['r_dot'] - v_theta_test_vals['r_dot_calc']
+    r_error = state_test_vals['r'] - v_theta_test_vals['r_calc']
+    v_theta_error = state_test_vals['v_theta'] - v_theta_test_vals['v_theta_calc']
+    v_theta_dot_error = state_test_vals['v_theta_dot'] - v_theta_test_vals['v_theta_dot_calc']
+    plt.figure()
+    plt.plot(t, -r_dot_error)
+    plt.ylabel("r_dot")
+    plt.figure()
+    plt.plot(t, -r_error)
+    plt.ylabel("r")
+    plt.figure()
+    plt.plot(t, -v_theta_error)
+    plt.ylabel("v_theta")
+    plt.figure()
+    plt.plot(t, -v_theta_dot_error)
+    plt.ylabel("v_theta_dot")
 
-def get_v_theta_test_vals(log, prob):
+def get_v_theta_test_vals(log, prob, SLICE=-1):
     #For each point in the state, get the calculated values from VThetaTest
-    t = log['state']['t']
+    t = log['state']['t'][:SLICE]
     state = log['state']
 
     # Initialize output_dict with empty lists
@@ -157,6 +184,9 @@ def get_v_theta_test_vals(log, prob):
         output_dict[name] = list()
 
     # determine x shape
+    #DEBUG
+    #DEBUG_VAL = 0
+    #print("len(t): ", len(t))
     for i in range(len(t)):
         prob['t_state'] = t[i]
         prob['x_state'] = [state['x'][i], state['y'][i]]
@@ -169,16 +199,17 @@ def get_v_theta_test_vals(log, prob):
 
     return output_dict, t
 
-def get_state_test_vals(log):
+def get_state_test_vals(log, SLICE=-1):
         # Also get the relevant calculated values from the state too
-    t = log['state']['t']
+    # DEBUG SLICE
+    t = log['state']['t'][:SLICE]
 
     output_dict = dict()
 
-    output_dict['r_dot'] = get_r_dot(log)
-    output_dict['r'] = get_radius(log)
-    output_dict['v_theta'] = get_v_theta(log)
-    output_dict['v_theta_dot'] = get_v_theta_dot(log)
+    output_dict['r_dot'] = get_r_dot(log)[:SLICE]
+    output_dict['r'] = get_radius(log)[:SLICE]
+    output_dict['v_theta'] = get_v_theta(log)[:SLICE]
+    output_dict['v_theta_dot'] = get_v_theta_dot(log)[:SLICE]
 
     return output_dict, t
 
@@ -203,5 +234,11 @@ if __name__ == '__main__':
 
     v_theta_test_vals, t = get_v_theta_test_vals(log, prob)
     state_test_vals, t = get_state_test_vals(log)
+    plot_derived_state(log)
+    plot_v_theta_error(log, prob)
+    plt.figure()
+    plt.title("actual r_dot_calc")
+    plt.plot(t, v_theta_test_vals['r_dot_calc'])
+    plt.show()
 
     print(v_theta_test_vals)
