@@ -149,10 +149,10 @@ def plot_derived_state(log):
     return fig, axs
 
 if __name__ == '__main__':    
-    log_file = "log_apollo_ascent_perfect.pkl"
+    #log_file = "log_apollo_ascent_perfect.pkl"
     #log_file = "log_final.pkl"
     #log_file = "log_vtheta_test.pkl"
-    #log_file = "log_lunar_traj_full.pkl"
+    log_file = "log_lunar_traj_full.pkl"
     #log_file = "log_lunar_traj.pkl"
     #log_file = "incomp.pkl"
     with open(log_file, 'rb') as fh:

@@ -214,6 +214,7 @@ def lunar_trajectory_full():
     prob['r_dot_T'] = 0
     prob['r_T'] = r0 + 18.52e3 # m
     prob['target_v_theta_T'] = -1685 # m/s
+    #prob['target_v_theta_T'] = -1652.2326567 # m/s
     # Physical constants 
     prob['mu'] = mu
     prob['v_e'] = v_e
@@ -233,7 +234,7 @@ def lunar_trajectory_full():
     log = init_log(prob)
 
     outer_loop_interval = 2
-    eval_points = np.arange(0, T_go_guess + 
+    eval_points = np.arange(0, -10+T_go_guess + 
                             outer_loop_interval/2, 
                             outer_loop_interval)
 
@@ -246,7 +247,7 @@ def lunar_trajectory_full():
 
 
 if __name__ == "__main__":
-    lunar_trajectory()
+    #lunar_trajectory()
     #lunar_trajectory_final()
     #apollo_ascent()
-    #lunar_trajectory_full()
+    lunar_trajectory_full()

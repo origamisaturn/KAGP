@@ -221,7 +221,7 @@ class FixedThrustGuidance(om.Group):
         self.add_subsystem('radial_control', OuterLoopRadialControl(),
                             promotes=['*'])
         self.add_subsystem('pitch_query', PitchQuery(), promotes=['*'])
-        self.add_subsystem('v_theta', VThetaSolver(), promotes=['*'])
+        # self.add_subsystem('v_theta', VThetaSolver(), promotes=['*'])
         # self.nonlinear_solver = om.NonlinearBlockGS()
 
 
@@ -231,7 +231,7 @@ class VThetaSolver(om.ExplicitComponent):
         self.add_input('sample_x', val=np.zeros((2)))
         self.add_input('sample_v', val=np.zeros((2)))
         input_names = ['a0', 'a1', 'a2', 'c1', 'c2', 'sample_t', 'T',
-                       'v_e', 'm0', 'm_dot', 'mu']
+                       'v_e', 'm0', 'm_dot', 'mu', 'r_dot_T', 'r_T']
         for name in input_names:
             self.add_input(name, val=0.0)
         
@@ -262,6 +262,8 @@ class VThetaSolver(om.ExplicitComponent):
         mdot = inputs['m_dot'][0]
         v_e = inputs['v_e'][0]
         mu = inputs['mu'][0]
+        r_dot_T = inputs['r_dot_T'][0]
+        r_T = inputs['r_T'][0]
         #g_eff = inputs['g_eff'][0]
         tau = m0 / mdot
 
@@ -278,14 +280,20 @@ class VThetaSolver(om.ExplicitComponent):
         def get_time_dependent_vars(t, v_theta):
             # Note, this is not the f_matrix based on T_got used in
             # OuterLoopRadial
-            t_rel = t - t0
+            t_rel = T - t
 
+            # These values somehow messed up
             f11 = a0*t_rel + a1*t_rel**2/2 + a2*t_rel**3/3
             f21 = a0*t_rel**2/2 + a1*t_rel**3/3 + a2*t_rel**4/4
             f22 = a0*t_rel**3/3 + a1*t_rel**4/4 + a2*t_rel**5/5
             f12 = f21
-            r_dot = f11*c1 + f12*c2 + r_dot_0
-            r = f21*c1 + f22*c2 + (r0 + r_dot_0*t_rel)
+            #r_dot = f11*c1 + f12*c2 + r_dot_0
+            #weird thing but IT WORKS
+            r_dot = r_dot_T - f11*c1 - f12*c2
+
+            #r = f21*c1 + f22*c2 + (r0 + r_dot_0*t_rel)
+            #BROKEN
+            r = r_T - (f21*c1 + f22*c2 + r_dot*t_rel)
 
             p1 = a0 + a1 * (T - t) + a2 * (T - t) ** 2
             p2 = p1 * (T - t)
@@ -316,7 +324,12 @@ class VThetaSolver(om.ExplicitComponent):
         res1 = solve_ivp(v_theta_dot, t_span, [v_theta_0], atol=1e-9, rtol=1e-9)
         res2 = solve_ivp(v_theta_dot_loss, t_span, [v_theta_0], atol=1e-9, rtol=1e-9)
         outputs['v_theta_T'] = res1.y[0, -1]
-        outputs['v_theta_loss_T'] = res2.y[0, -1]
+
+        #outputs['v_theta_loss_T'] = res2.y[0, -1]
+        v_theta_T_calc = res1.y[0, -1]
+        T_go = T - t0
+        expected_v_theta_loss_T_calc = -v_e*math.log(1 - T_go/(tau-t0)) - (-(v_theta_T_calc - v_theta_0))
+        outputs['v_theta_loss_T'] = -expected_v_theta_loss_T_calc
 
 
 class TimeToGo(om.ExplicitComponent):
@@ -342,8 +355,8 @@ class TimeToGo(om.ExplicitComponent):
         m0 = inputs['m0']
         m_dot = inputs['m_dot']
 
-        pos = inputs['x']
-        vel = inputs['v']
+        pos = inputs['sample_x']
+        vel = inputs['sample_v']
         r_hat = pos/np.linalg.norm(pos, axis=0)
         rot_mat = np.array([[0, -1], [1, 0]])
         theta_hat = rot_mat@r_hat
@@ -356,6 +369,7 @@ class TimeToGo(om.ExplicitComponent):
         # sign of v_theta
         #CHANGED V_THETA_LOSS TO TN
         T_go_n_1 = tau0 * (1 - math.exp(-(-(target_v_theta_T - v_theta_0 + v_theta_loss_Tn)/v_e)))
+        #T_go_n_1 = tau0 * (1 - math.exp(-(-(target_v_theta_T - v_theta_0 - v_theta_loss_Tn)/v_e)))
         T_n_1 = T_go_n_1 + t0
         
         outputs['T'] = T_n_1
@@ -368,7 +382,7 @@ class FixedThrustGuidanceFull(om.Group):
         self.add_subsystem('v_theta', VThetaSolver(), promotes=['*'])
         self.add_subsystem("time_to_go", TimeToGo(), promotes=['*'])
         self.nonlinear_solver = om.NonlinearBlockGS()
-        self.nonlinear_solver.options['maxiter'] = 100
+        #self.nonlinear_solver.options['maxiter'] = 100
         #self.nonlinear_solver.options['atol'] = 1e-3
 
 

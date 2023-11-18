@@ -40,7 +40,8 @@ class VThetaTest(om.ExplicitComponent):
         
         output_names = ['a_thrust_calc', 'alpha_calc', 'r_dot_calc',
                         'r_calc', 'v_theta_calc', 'v_theta_dot_calc',
-                        'v_theta_T', 'v_theta_loss_T']
+                        'v_theta_T_calc', 'v_theta_loss_T_calc',
+                        'expected_v_theta_loss_T_calc']
         for name in output_names:
             self.add_output(name, val=0.0)
 
@@ -147,8 +148,14 @@ class VThetaTest(om.ExplicitComponent):
         t_span = [t0, T]
         res1 = solve_ivp(v_theta_dot, t_span, [v_theta_0], atol=1e-9, rtol=1e-9)
         res2 = solve_ivp(v_theta_dot_loss, t_span, [v_theta_0], atol=1e-9, rtol=1e-9)
-        outputs['v_theta_T_calc'] = res1.y[0, -1]
+        v_theta_T_calc = res1.y[0, -1]
+        T_go = T - t0
+        #Negating v_T and v_0 due to negative sign shenanigans
+        #expected_v_theta_loss_T_calc = -v_e*math.log(1 - T_go/(tau-t0)) - (v_theta_T_calc - v_theta_0)
+        expected_v_theta_loss_T_calc = -v_e*math.log(1 - T_go/(tau-t0)) - (-(v_theta_T_calc - v_theta_0))
+        outputs['v_theta_T_calc'] = v_theta_T_calc
         outputs['v_theta_loss_T_calc'] = res2.y[0, -1]
+        outputs['expected_v_theta_loss_T_calc'] = -expected_v_theta_loss_T_calc
 
 def plot_v_theta_error(log, prob):
     #a_thrust_calc = log['outputs']['v_theta_test.a_thrust_calc'] 
@@ -178,7 +185,9 @@ def get_v_theta_test_vals(log, prob, SLICE=-1):
 
     # Initialize output_dict with empty lists
     output_names = ['a_thrust_calc', 'alpha_calc', 'r_dot_calc',
-                        'r_calc', 'v_theta_calc', 'v_theta_dot_calc', 'v_theta_T']
+                        'r_calc', 'v_theta_calc', 'v_theta_dot_calc', 
+                        'v_theta_T_calc', 'v_theta_loss_T_calc',
+                        'expected_v_theta_loss_T_calc']
     output_dict = dict()
     for name in output_names:
         output_dict[name] = list()
@@ -237,8 +246,12 @@ if __name__ == '__main__':
     plot_derived_state(log)
     plot_v_theta_error(log, prob)
     plt.figure()
-    plt.title("actual r_dot_calc")
-    plt.plot(t, v_theta_test_vals['r_dot_calc'])
+    plt.title("actual v_theta_loss_T_calc")
+    plt.plot(t, v_theta_test_vals['v_theta_loss_T_calc'])
+
+    plt.figure()
+    plt.title("actual expected v_theta loss")
+    plt.plot(t, v_theta_test_vals['expected_v_theta_loss_T_calc'])
     plt.show()
 
     print(v_theta_test_vals)
