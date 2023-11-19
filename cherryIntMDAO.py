@@ -273,7 +273,8 @@ class VThetaSolver(om.ExplicitComponent):
 
         rot_mat = np.array([[0, -1], [1, 0]])
         theta_hat_0 = rot_mat@r_hat_0
-        v_theta_0 = np.dot(vel, theta_hat_0)
+        #v_theta_0 = np.dot(vel, theta_hat_0)
+        v_theta_0 = -np.dot(vel, theta_hat_0)
 
 
 
@@ -321,15 +322,18 @@ class VThetaSolver(om.ExplicitComponent):
             return -v_theta_dot_loss
         
         t_span = [t0, T]
-        res1 = solve_ivp(v_theta_dot, t_span, [v_theta_0], atol=1e-9, rtol=1e-9)
-        res2 = solve_ivp(v_theta_dot_loss, t_span, [v_theta_0], atol=1e-9, rtol=1e-9)
-        outputs['v_theta_T'] = res1.y[0, -1]
+        try:
+            res1 = solve_ivp(v_theta_dot, t_span, [v_theta_0], atol=1e-9, rtol=1e-9)
+            #res2 = solve_ivp(v_theta_dot_loss, t_span, [v_theta_0], atol=1e-9, rtol=1e-9)
+            outputs['v_theta_T'] = res1.y[0, -1]
 
-        #outputs['v_theta_loss_T'] = res2.y[0, -1]
-        v_theta_T_calc = res1.y[0, -1]
-        T_go = T - t0
-        expected_v_theta_loss_T_calc = -v_e*math.log(1 - T_go/(tau-t0)) - (-(v_theta_T_calc - v_theta_0))
-        outputs['v_theta_loss_T'] = -expected_v_theta_loss_T_calc
+            #outputs['v_theta_loss_T'] = res2.y[0, -1]
+            v_theta_T_calc = res1.y[0, -1]
+            T_go = T - t0
+            expected_v_theta_loss_T_calc = -v_e*math.log(1 - T_go/(tau-t0)) - (-(v_theta_T_calc - v_theta_0))
+            outputs['v_theta_loss_T'] = -expected_v_theta_loss_T_calc
+        except:
+            print("whoops")
 
 
 class TimeToGo(om.ExplicitComponent):
@@ -368,7 +372,7 @@ class TimeToGo(om.ExplicitComponent):
         # Normally not negative but I have done unfortunate things with the
         # sign of v_theta
         #CHANGED V_THETA_LOSS TO TN
-        T_go_n_1 = tau0 * (1 - math.exp(-(-(target_v_theta_T - v_theta_0 + v_theta_loss_Tn)/v_e)))
+        T_go_n_1 = tau0 * (1 - math.exp(-(-(target_v_theta_T + v_theta_0 + v_theta_loss_Tn)/v_e)))
         #T_go_n_1 = tau0 * (1 - math.exp(-(-(target_v_theta_T - v_theta_0 - v_theta_loss_Tn)/v_e)))
         T_n_1 = T_go_n_1 + t0
         
@@ -382,8 +386,8 @@ class FixedThrustGuidanceFull(om.Group):
         self.add_subsystem('v_theta', VThetaSolver(), promotes=['*'])
         self.add_subsystem("time_to_go", TimeToGo(), promotes=['*'])
         self.nonlinear_solver = om.NonlinearBlockGS()
-        #self.nonlinear_solver.options['maxiter'] = 100
-        #self.nonlinear_solver.options['atol'] = 1e-3
+        self.nonlinear_solver.options['maxiter'] = 100
+        self.nonlinear_solver.options['atol'] = 1e-3
 
 
 if __name__ == "__main__":

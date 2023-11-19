@@ -113,12 +113,14 @@ def apollo_ascent(model = PerfectFixedThrust(), log_file = "log_apollo_ascent_pe
     prob['t'] = 0
     prob['sample_t'] = 0
     # Other inputs
-    prob['T'] = T_go_guess
+    #prob['T'] = T_go_guess
+    #prob.model.set_input_defaults('T', T_go_guess)
     # Boundary conditions
     #   (Loosely following Apollo 11 LM ascent profile:
     #   https://history.nasa.gov/alsj/nasa-tnd-6846pt.1.pdf)
     prob['r_dot_T'] = 9.544
     prob['r_T'] = r0 + 18.24e3 # m
+    prob['target_v_theta_T'] = -1685 # m/s
     # Physical constants 
     prob['mu'] = mu
     prob['v_e'] = v_e
