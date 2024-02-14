@@ -34,3 +34,31 @@ Then I make an integrator for a constant thrust rocket and test a short decelera
 10/08/23
 10/10/23
 	Once this gives good results I should clean it all up, before introducing the new Tgo block.
+	
+02/12/24
+	Revisiting this after reviewing CoV. Need to reorganize and give structure. These are my desired features:
+	- Integrator with modules for thrust, gravity, and atmospheric effects.
+	- An interface for the integrator, KSP, and Orbiter that only needs a guidance object or function to run.
+	- a single type of guidance object or function that works with all interfaces.
+		- inputs or scenario files should be equal for all interfaces.
+	- debugging outputs from OpenMDAO for logging
+	- have a set style of documentation
+		- add file header
+		- add intended flow of guidance loop
+	- be able to support multi-stage boost injection to the moon guidance
+	- be able to support landing guidance
+	- have an integrator that models rocket dynamics for control (for Orbiter PID implementation)
+	
+	For the interface, I would need as input from the guidance:
+	- Target attitude
+		- Likely make it yaw pitch roll angles in circumferential coordinates.
+		- If using global angles for attitude, convert to local circumferential coordinates.
+	- Thrust
+	- Staging signals 
+	Make sure to make input easier to do. Have "required" inputs throw errors if user does not provide them.
+	- Interface should not crash if guidance fails. There should be a failsafe behavior.
+
+02/13/24
+	-separate craft and guidance input files. craft file
+	 is an input to the guidance input.
+	
