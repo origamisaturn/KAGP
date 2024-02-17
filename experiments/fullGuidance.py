@@ -2,9 +2,12 @@ import openmdao.api as om
 import numpy as np
 import math
 import matplotlib.pyplot as plt
-from cherryIntMDAO import FixedThrustGuidanceFull, PitchQuery, VThetaSolver, TimeToGo, OuterLoopRadialControl
-from integrationSim import run_simulation, guidance_func_base, init_log
-from cherryInt import rocket_ode
+
+import sys, os
+sys.path.append(os.path.abspath(os.path.join(__file__, '..', '..', 'core')))
+from cherry_guidance import FixedThrustGuidanceFull, PitchQuery, VThetaSolver, TimeToGo, OuterLoopRadialControl
+from integration_sim import run_simulation, guidance_func_base, init_log
+from ode import rocket_ode
 
 class FixedThrustGuidanceBlocks(om.Group):
     def setup(self):

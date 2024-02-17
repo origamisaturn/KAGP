@@ -4,7 +4,9 @@ import math
 import numpy as np
 import sys
 import openmdao.api as om
-sys.path.insert(0, "C:\\Users\\cvar\\Documents\\github\\GCherry")
+
+import sys, os
+sys.path.append(os.path.abspath(os.path.join(__file__, '..', '..', 'experiments')))
 #import cherryIntMDAO
 from fullGuidance import FixedThrustGuidanceBlocks
 

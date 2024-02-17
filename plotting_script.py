@@ -3,7 +3,7 @@ sys.path.append(os.path.abspath('core'))
 
 from log_utils import *
 
-log_file = "log_lunar_traj_full_10s.pkl"
+log_file = "log_ksp_ascent_full.pkl"
 with open(log_file, 'rb') as fh:
     log = pkl.load(fh)
 plot_state(log)

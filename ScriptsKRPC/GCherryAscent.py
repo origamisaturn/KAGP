@@ -4,8 +4,10 @@ import math
 import numpy as np
 import sys
 import openmdao.api as om
-sys.path.insert(0, "C:\\Users\\cvar\\Documents\\github\\GCherry")
-import cherryIntMDAO
+
+import sys, os
+sys.path.append(os.path.abspath(os.path.join(__file__, '..', '..', 'core')))
+import cherry_guidance
 import pickle as pkl
 
 
@@ -38,7 +40,7 @@ def init_guidance(T_go, init_pos, init_vel):
     m0 = 3.967e3
     T_go = 335
 
-    model = cherryIntMDAO.FixedThrustGuidance()
+    model = cherry_guidance.FixedThrustGuidance()
 
     prob = om.Problem(model)
     prob.setup()
