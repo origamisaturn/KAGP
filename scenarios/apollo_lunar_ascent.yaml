@@ -1,0 +1,6 @@
+mission:
+  "periapsis": 200
+  "apoapsis": 200
+  "inclination": 30
+  "LAN": 50
+  "countdown": 10

@@ -1,0 +1,7 @@
+vehicle:
+  - name: "Apollo LEM"
+    massTotal: 9000
+    massFuel: 5000
+    engines: 
+    - isp: 300
+      thrust: 500

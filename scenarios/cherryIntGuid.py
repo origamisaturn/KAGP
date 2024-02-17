@@ -1,12 +1,16 @@
-import openmdao.api as om
-import numpy as np
 import math
-import matplotlib.pyplot as plt
-from cherryIntMDAO import FixedThrustGuidance, FixedThrustGuidanceFull
-from cherryInt import rocket_ode
-from scipy.integrate import solve_ivp
 import pickle as pkl
-from integrationSim import init_log, run_simulation, guidance_func_base
+
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.integrate import solve_ivp
+import openmdao.api as om
+
+import sys, os
+sys.path.append(os.path.abspath(os.path.join(__file__, '..', '..', 'core')))
+from cherry_guidance import FixedThrustGuidance, FixedThrustGuidanceFull
+from ode import rocket_ode
+from integration_sim import init_log, run_simulation, guidance_func_base
 
 def apollo_ascent():
     log_file = "log_apollo_ascent.pkl"
@@ -186,7 +190,7 @@ def lunar_trajectory():
 
 
 def lunar_trajectory_full():
-    log_filename = "log_lunar_traj_full.pkl"
+    log_filename = "log_lunar_traj_full_10s.pkl"
     r0 = 1737.4e3
     mu = 4.90e12
     x0 = np.array([r0, 0])
@@ -233,7 +237,7 @@ def lunar_trajectory_full():
     # temp value for log
     log = init_log(prob)
 
-    outer_loop_interval = 2
+    outer_loop_interval = 10
     eval_points = np.arange(0, -10+T_go_guess + 
                             outer_loop_interval/2, 
                             outer_loop_interval)
