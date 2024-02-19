@@ -1,6 +1,10 @@
 mission:
-  "periapsis": 200
-  "apoapsis": 200
-  "inclination": 30
-  "LAN": 50
-  "countdown": 10
+  "gravitational_parameter": 4.90e+12
+  "periapsis": 1789.0e+3
+  "apoapsis": 1800.0e+3
+  "true_anomaly": 0.0
+#  "inclination": 30
+#  "LAN": 50
+#  "countdown": 10
+
+simulator: "2d_integrator"
