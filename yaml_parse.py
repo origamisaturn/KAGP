@@ -43,5 +43,4 @@ T = 400
 
 test_guidance_interface = TestGuidance(input_data)
 
-test_guidance_interface._openmdao_problem['T'] = T
 test_guidance_interface.get_command(state, t, logging=False)

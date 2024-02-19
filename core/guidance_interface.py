@@ -9,11 +9,14 @@ from log_writing import init_log, log_problem
 
 
 class TestGuidance:
-    def __init__(self, input_dict):
+    def __init__(self, input_dict, terminal_time_guess = 400):
         model = FixedThrustGuidanceFull()
         self._openmdao_problem = om.Problem(model)
         self._openmdao_problem.setup()
         self._parse_input(input_dict)
+
+        # Workaround for needed nonzero terminal time guess
+        self._set_openmdao_problem_variable('T', terminal_time_guess)
 
         self.initialize_dict = {}
         self._init_log()
