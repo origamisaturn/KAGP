@@ -9,7 +9,7 @@ from log_writing import init_log, log_problem
 
 
 class TestGuidance:
-    def __init__(self, input_dict, terminal_time_guess = 400):
+    def __init__(self, input_dict, terminal_time_guess = 438):
         model = FixedThrustGuidanceFull()
         self._openmdao_problem = om.Problem(model)
         self._openmdao_problem.setup()
@@ -57,8 +57,9 @@ class TestGuidance:
         
         self._set_openmdao_problem_variable('r_T', target_r)
         self._set_openmdao_problem_variable('r_dot_T', target_r_dot)
+        # negating v_theta_T for nefarious reasons
         self._set_openmdao_problem_variable('target_v_theta_T',
-                                             target_v_theta)
+                                             -target_v_theta)
 
 
         specific_impulse = input_dict['spacecraft']['specific_impulse']
@@ -70,7 +71,9 @@ class TestGuidance:
         self._set_openmdao_problem_variable('mu', gravitational_parameter)
         self._set_openmdao_problem_variable('v_e', exhaust_velocity)
         self._set_openmdao_problem_variable('m_dot', mass_flow)
-        self._set_openmdao_problem_variable('m0', input_dict['spacecraft']['mass_total'])
+        # made m0 into list due to single element issue in run_simulation
+        # for initial_state assignemnt
+        self._set_openmdao_problem_variable('m0', [input_dict['spacecraft']['mass_total']])
                 
     def _orbit_to_velocity(self, periapsis, apoapsis, true_anomaly, 
                            gravitational_parameter):

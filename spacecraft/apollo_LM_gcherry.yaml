@@ -1,4 +1,4 @@
 spacecraft:
-  specific_impulse: 310
-  thrust: 15.87e+3
+  specific_impulse: 397
+  thrust: 1638
   mass_total: 500
