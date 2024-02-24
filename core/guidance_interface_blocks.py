@@ -3,15 +3,17 @@ import copy
 import openmdao.api as om
 import numpy as np
 
-# import sys, os
-# sys.path.append(os.path.abspath('core'))
-from cherry_guidance import FixedThrustGuidanceFull
+import sys, os
+print(os.path.abspath(os.path.join(__file__, '..', 'experiments')))
+sys.path.append(os.path.abspath(os.path.join(__file__, '..', '..', 'experiments')))
+
+from fullGuidance import FixedThrustGuidanceBlocks
 from log_writing import init_log, log_problem
 
 
-class TestGuidance:
+class TestGuidanceBlocks:
     def __init__(self, input_dict, terminal_time_guess = 438):
-        model = FixedThrustGuidanceFull()
+        model = FixedThrustGuidanceBlocks()
         self._openmdao_problem = om.Problem(model)
         self._openmdao_problem.setup()
         self._parse_input(input_dict)

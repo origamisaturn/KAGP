@@ -273,8 +273,10 @@ class VThetaSolver(om.ExplicitComponent):
 
         rot_mat = np.array([[0, -1], [1, 0]])
         theta_hat_0 = rot_mat@r_hat_0
-        #v_theta_0 = np.dot(vel, theta_hat_0)
-        v_theta_0 = -np.dot(vel, theta_hat_0)
+        # for integrator
+        v_theta_0 = np.dot(vel, theta_hat_0)
+        # for krpc
+        #v_theta_0 = -np.dot(vel, theta_hat_0)
 
 
 

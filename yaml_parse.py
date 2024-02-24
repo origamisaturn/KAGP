@@ -6,6 +6,7 @@ import sys, os
 sys.path.append(os.path.abspath('core'))
 
 from guidance_interface import TestGuidance
+from guidance_interface_blocks import TestGuidanceBlocks
 from integration_interface import Integrator2DInterface
 
 parser = argparse.ArgumentParser(
@@ -42,7 +43,7 @@ state = np.concatenate((x0, v0, [m0]))
 t = 0
 T = 400
 
-test_guidance_interface = TestGuidance(input_data)
+test_guidance_interface = TestGuidanceBlocks(input_data)
 test_guidance_interface.get_command(state, t, logging=False)
 
 test_integration_interface = Integrator2DInterface(input_data, test_guidance_interface)

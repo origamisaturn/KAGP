@@ -36,12 +36,14 @@ class Integrator2DInterface:
         mu = input_dict['mission']['gravitational_parameter']
         isp = input_dict['spacecraft']['specific_impulse']
         F_thrust_max = input_dict['spacecraft']['thrust']
+        
         guidance_func = lambda t, state: self.guidance_interface.get_command(state, t)
         self._ode_func = lambda t, state: rocket_ode(
             t, state, mu, isp, F_thrust_max, guidance_func)
         ...
     def _init_log(self):
-        self._log = init_log(self.guidance_interface._openmdao_problem)
+        #self._log = init_log(self.guidance_interface._openmdao_problem)
+        self._log = self.guidance_interface._log
         ...
     def _log_res(self):
         ...
