@@ -16,43 +16,52 @@ def angle_between_vectors(v1, v2):
     return np.acos(cos_theta)
 
 def almost_equal(val1, val2, tol=1e-8):
-    return val1-val2 > -tol and val1-val2 < tol
+    arr_type = type(np.ndarray([]))
+    if type(val1) == arr_type or type(val2) == arr_type:
+        return (val1-val2 > -tol).all() and (val1-val2 < tol).all()
+    else:
+        return val1-val2 > -tol and val1-val2 < tol
 
-def get_2D_circumferential_axes(x, v):
+
+def get_2D_local_axes(x, v):
     """ Calculates r_hat and theta_hat.
     
     Args:
-        x:
-        v:
+        x: [m] (len(x) == 2) 2D position in inertial frame. Origin is 
+            at gravitational body center.
+        v: [m/s] (len(v) == 2) 2D velocity in inertial frame.
     
     Returns:
-        (r_hat, theta_hat): 
+        (r_hat, theta_hat): Unit vectors representing the axes of the
+          local coordinate system, where r_hat is radial and theta_hat
+          is the local horizon in the direction of travel.
 
     Raises:
         BaseException
     """
     r = np.linalg.norm(x)
     r_hat = x/r
-    v_hat = v/np.linalg.norm(v)
 
     candidate_theta_hat_1 = rot_mat_2d(math.pi/2)@r_hat
     candidate_theta_hat_2 = rot_mat_2d(-math.pi/2)@r_hat
 
     # When v is aligned with x and theta_hat is impossible to
     # calculate, choose this default direction.
-    if (almost_equal(v, 0) or
+    if (almost_equal(v, [0,0]) or
         almost_equal(angle_between_vectors(x, v), 0) or 
         almost_equal(angle_between_vectors(x, v), math.pi)):
         return r_hat, candidate_theta_hat_1
-    if np.dot(v_hat, candidate_theta_hat_1) > 0:
-        return r_hat, candidate_theta_hat_1
-    if np.dot(v_hat, candidate_theta_hat_2) > 0:
-        return r_hat, candidate_theta_hat_2
     else:
-        raise BaseException("Something unexpected happened.")
+        v_hat = v/np.linalg.norm(v)
+        if np.dot(v_hat, candidate_theta_hat_1) > 0:
+            return r_hat, candidate_theta_hat_1
+        if np.dot(v_hat, candidate_theta_hat_2) > 0:
+            return r_hat, candidate_theta_hat_2
+        else:
+            raise BaseException("Something unexpected happened.")
 
-def calc_2D_circumferential_velocity(x, v):
-    r_hat, theta_hat = get_2D_circumferential_axes(x, v)
+def calc_2D_local_velocity(x, v):
+    r_hat, theta_hat = get_2D_local_axes(x, v)
     r_dot = np.dot(v, r_hat)
     v_theta = np.dot(v, theta_hat)
     if v_theta < 0:
@@ -64,24 +73,21 @@ class RadialControl(om.ExplicitComponent):
     Component containing radial rate control block.
 
     Inputs:
-        x:
-        v:
-        sample_t:
-        r_dot_T:
-        r_T:
-        mu:
-        v_e:
-        m_dot:
-        m0:
+        x: [m] (len(x) == 2) 2D position in inertial frame. Origin is 
+            at gravitational body center.
+        v: [m/s] (len(v) == 2) 2D velocity in inertial frame.
+        sample_t: [s] Time at which x and v were collected.
+        r_dot_T: [m/s] Target final radial velocity.
+        r_T: [m] Target final radial position.
+        mu: [m^3/s^2] Gravitational parameter.
+        v_e: [m/s] Effective exhaust velocity of thruster.
+        m_dot: [kg/s] Thruster mass flow.
+        m0: [kg] Total mass of spacecraft.
 
     Outputs:
-        a0:
-        a1:
-        a2:
-        c1:
-        c2:
-        tau:
-        g_eff:
+        a0, a1, a2, c1, c2: Coefficients used to describe radial
+            acceleration over time.
+        g_eff: [m/s^2] Effective gravity at time sample_t.
 
     """
 
@@ -94,7 +100,7 @@ class RadialControl(om.ExplicitComponent):
         for name in input_names:
             self.add_input(name, val=0.0)
 
-        output_names = ['a0', 'a1', 'a2', 'c1', 'c2', 'tau', 'g_eff']
+        output_names = ['a0', 'a1', 'a2', 'c1', 'c2', 'g_eff']
         for name in output_names:
             self.add_output(name, val=0.0)
 
@@ -117,15 +123,12 @@ class RadialControl(om.ExplicitComponent):
         r_T = inputs['r_T'][0]
         T_go = T-t
 
-        # Define initial boundary vectors
-        # We are assuming planet center is at 0
-        # theta_hat is 90 degrees clockwise of r_hat
-
-        r_dot_0, v_theta_0 = calc_2D_circumferential_velocity(x0, v0)
+        r_dot_0, v_theta_0 = calc_2D_local_velocity(x0, v0)
 
         # Calculate F matrix
         # Compute values of ai
         # a0 is equivalent to thrust at terminal time
+        # This might assume t=0.
         a0 = v_e/(tau - T)
         a1 = -a0**2/v_e
         a2 = a0**3/v_e**2
@@ -151,8 +154,8 @@ class RadialControl(om.ExplicitComponent):
         # but we will assume it is static for each iteration.
         g_eff = -mu/r0**2 + v_theta_0**2/r0
         
-        output_names = ['a0', 'a1', 'a2', 'c1', 'c2', 'tau', 'g_eff']
-        output_vals = [a0, a1, a2, c1, c2, tau, g_eff]
+        output_names = ['a0', 'a1', 'a2', 'c1', 'c2', 'g_eff']
+        output_vals = [a0, a1, a2, c1, c2, g_eff]
         for i, name in enumerate(output_names):
             val = output_vals[i]
             outputs[name] = val
