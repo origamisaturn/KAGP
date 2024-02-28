@@ -79,16 +79,18 @@ class RadialControl(om.ExplicitComponent):
         sample_t: [s] Time at which x and v were collected.
         r_dot_T: [m/s] Target final radial velocity.
         r_T: [m] Target final radial position.
+        T: [s] Terminal time; main engine cut-off.
         mu: [m^3/s^2] Gravitational parameter.
         v_e: [m/s] Effective exhaust velocity of thruster.
         m_dot: [kg/s] Thruster mass flow.
-        m0: [kg] Total mass of spacecraft.
+        m0: [kg] Total mass of spacecraft at launch.
 
     Outputs:
         a0, a1, a2, c1, c2: Coefficients used to describe radial
             acceleration over time.
         g_eff: [m/s^2] Effective gravity at time sample_t.
 
+    Note that t = 0 is assumed to be the start time of ascent.
     """
 
     def setup(self):
@@ -159,3 +161,90 @@ class RadialControl(om.ExplicitComponent):
         for i, name in enumerate(output_names):
             val = output_vals[i]
             outputs[name] = val
+
+
+class PitchQuery(om.ExplicitComponent):
+    """ Component containing the equation for pitch of the fixed-thrust control
+    law. Accepts equation terms from the radialControl block. This is
+    called at a much higher rate than radialControl, which is called whenver 
+    we want to update Tgo (at approximately 1hz).
+
+    Inputs:
+        t: [s] Note this is NOT equal to sample_t. This is the time
+            input to the equation described by the coefficients 
+            given from RadialControl(). The output is alpha based on
+            predicted state at time t.
+        T: [s] Terminal time; main engine cut-off.
+        a0, a1, a2, c1, c2: Coefficients used to describe radial
+            acceleration over time.
+        g_eff: [m/s^2] Effective gravity at time sample_t.
+        m0: [kg] Total mass of spacecraft at launch.
+        m_dot: [kg/s] Thruster mass flow.
+        v_e: [m/s] Effective exhaust velocity of thruster.
+    
+    Outputs:
+        alpha: [rad.] Commanded pitch angle above local horizon at time
+            t.
+        _debug: Dictionary of outputs unnecessary for guidance, but
+            helpful for debugging.
+            a_thrust: [m/s^2] Predicted thrust at time t.
+            r_dot_dot: [m/s^2] Predicted radial acceleration at time t.
+            [CONSIDER OWN COMPONENT] r_dot: [m/s] Predicted radial velocity at time t.
+            [CONSIDER OWN COMPONENT] r: [m] Predicted radial position at time t.
+            p1, p2: Polynomials, part of equation described by 
+                RadialControl().
+
+    Raises:
+        ValueError: Error when calculating alpha. Likely indication of
+            insufficient thrust or a terminal time T that is too early.
+
+    Note that t = 0 is assumed to be the start time of ascent.
+    """
+
+    def setup(self):
+        input_names = ['t', 'T', 'a0', 'a1', 'a2', 'c1', 'c2', 
+                       'g_eff', 'm0', 'm_dot', 'v_e']
+        for name in input_names:
+            self.add_input(name, val=0.0)
+        
+        output_names = ['alpha']
+        for name in output_names:
+            self.add_output(name, val=0.0)
+        
+        debug_names = ['a_thrust', 'r_dot_dot', 'p1', 'p2']
+        debug_dict = {}
+        for name in debug_names:
+            debug_dict[name] = 0.0
+
+        self.add_discrete_output('_debug', debug_dict)
+
+    def compute(self, inputs, outputs, discrete_inputs, discrete_outputs):
+        t = inputs['t'][0]
+        T = inputs['T'][0]
+        a0 = inputs['a0'][0]
+        a1 = inputs['a1'][0]
+        a2 = inputs['a2'][0]
+        c1 = inputs['c1'][0]
+        c2 = inputs['c2'][0]
+        g_eff = inputs['g_eff'][0]
+        m0 = inputs['m0'][0]
+        mdot = inputs['m_dot'][0]
+        v_e = inputs['v_e'][0]
+        tau = m0/mdot
+
+        # here g_eff is calculated once, so it is an approximation.
+
+        p1 = a0 + a1*(T-t) + a2*(T-t)**2
+        p2 = p1 * (T-t)
+        r_dot_dot = c1 * p1 + c2 * p2
+        a_thrust = v_e/(tau - t)
+        # Note: g_eff is based on time (state actually) but we will assume
+        # it is static for each iteration.
+        alpha = math.asin((r_dot_dot - g_eff)/(a_thrust))
+
+        outputs['alpha'] = alpha
+
+        discrete_outputs['_debug']['a_thrust'] = a_thrust
+        discrete_outputs['_debug']['r_dot_dot'] = r_dot_dot
+        discrete_outputs['_debug']['p1'] = p1
+        discrete_outputs['_debug']['p2'] = p2
