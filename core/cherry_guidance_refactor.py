@@ -73,19 +73,28 @@ class RadialControl(om.ExplicitComponent):
     Component containing radial rate control block.
 
     Inputs:
-        x: [m] (len(x) == 2) 2D position in inertial frame. Origin is 
+        --- User Input ---
+        sample_x: [m] (len(x) == 2) 2D position in inertial frame. Origin is 
             at gravitational body center.
-        v: [m/s] (len(v) == 2) 2D velocity in inertial frame.
-        sample_t: [s] Time at which x and v were collected.
-        r_dot_T: [m/s] Target final radial velocity.
-        r_T: [m] Target final radial position.
-        T: [s] Terminal time; main engine cut-off.
+        sample_v: [m/s] (len(v) == 2) 2D velocity in inertial frame.
+        sample_t: [s] Time at which sample_x and sample_v were collected.
+
+        --- Targeting ---
+        target_r_dot_T: [m/s] Target final radial velocity.
+        target_r_T: [m] Target final radial position.
+
+        --- Constants ---
         mu: [m^3/s^2] Gravitational parameter.
         v_e: [m/s] Effective exhaust velocity of thruster.
         m_dot: [kg/s] Thruster mass flow.
         m0: [kg] Total mass of spacecraft at launch.
 
+        --- Component Connections ---
+        T: [s] Terminal time; main engine cut-off.
+
+
     Outputs:
+        --- Component Connections ---
         a0, a1, a2, c1, c2: Coefficients used to describe radial
             acceleration over time.
         g_eff: [m/s^2] Effective gravity at time sample_t.
@@ -95,10 +104,10 @@ class RadialControl(om.ExplicitComponent):
 
     def setup(self):
         # 2D state.
-        self.add_input('x', val=np.zeros((2)))
-        self.add_input('v', val=np.zeros((2)))
-        input_names = ['sample_t', 'r_dot_T',
-                        'r_T', 'T', 'mu', 'v_e', 'm_dot', 'm0']
+        self.add_input('sample_x', val=np.zeros((2)))
+        self.add_input('sample_v', val=np.zeros((2)))
+        input_names = ['sample_t', 'target_r_dot_T',
+                        'target_r_T', 'T', 'mu', 'v_e', 'm_dot', 'm0']
         for name in input_names:
             self.add_input(name, val=0.0)
 
@@ -112,8 +121,8 @@ class RadialControl(om.ExplicitComponent):
     def compute(self, inputs, outputs):
         # This assumes thrust on since t = 0
         
-        x0 = np.array(inputs['x'])
-        v0 = np.array(inputs['v'])
+        x0 = np.array(inputs['sample_x'])
+        v0 = np.array(inputs['sample_v'])
         t = inputs['sample_t'][0]
         T = inputs['T'][0]
         mu = inputs['mu'][0]
@@ -121,8 +130,8 @@ class RadialControl(om.ExplicitComponent):
         m_dot = inputs['m_dot'][0]
         m0 = inputs['m0'][0]
         tau = m0/m_dot
-        r_dot_T = inputs['r_dot_T'][0]
-        r_T = inputs['r_T'][0]
+        r_dot_T = inputs['target_r_dot_T'][0]
+        r_T = inputs['target_r_T'][0]
         T_go = T-t
 
         r_dot_0, v_theta_0 = calc_2D_local_velocity(x0, v0)
@@ -170,21 +179,29 @@ class PitchQuery(om.ExplicitComponent):
     we want to update Tgo (at approximately 1hz).
 
     Inputs:
+        --- User Input ---
         t: [s] Note this is NOT equal to sample_t. This is the time
             input to the equation described by the coefficients 
             given from RadialControl(). The output is alpha based on
             predicted state at time t.
+
+        --- Constants ---
+        m0: [kg] Total mass of spacecraft at launch.
+        m_dot: [kg/s] Thruster mass flow.
+        v_e: [m/s] Effective exhaust velocity of thruster.
+
+        --- Component Connections ---
         T: [s] Terminal time; main engine cut-off.
         a0, a1, a2, c1, c2: Coefficients used to describe radial
             acceleration over time.
         g_eff: [m/s^2] Effective gravity at time sample_t.
-        m0: [kg] Total mass of spacecraft at launch.
-        m_dot: [kg/s] Thruster mass flow.
-        v_e: [m/s] Effective exhaust velocity of thruster.
     
     Outputs:
+        --- User Input ---
         alpha: [rad.] Commanded pitch angle above local horizon at time
             t.
+
+        --- DEBUG ---
         _debug: Dictionary of outputs unnecessary for guidance, but
             helpful for debugging.
             a_thrust: [m/s^2] Predicted thrust at time t.
@@ -248,3 +265,194 @@ class PitchQuery(om.ExplicitComponent):
         discrete_outputs['_debug']['r_dot_dot'] = r_dot_dot
         discrete_outputs['_debug']['p1'] = p1
         discrete_outputs['_debug']['p2'] = p2
+
+
+class VThetaSolver(om.ExplicitComponent):
+    """ Estimates final tangential velocity for given radial rate control path.
+
+    Inputs:
+        --- User Input ---
+        sample_x: [m] (len(sample_x) == 2) 2D position in inertial 
+            frame. Origin is at gravitational body center.
+        sample_v: [m/s] (len(sample_v) == 2) 2D velocity in inertial frame.
+        sample_t: [s] Time at which sample_x and sample_v were 
+            collected.
+
+        --- Targeting ---
+        target_r_dot_T: [m/s] Target final radial velocity.
+        target_r_T: [m] Target final radial position.
+
+        --- Component Connections ---
+        T: [s] Terminal time; main engine cut-off.
+        a0, a1, a2, c1, c2: Coefficients used to describe radial
+            acceleration over time.
+
+        --- Constants ---
+        mu: [m^3/s^2] Gravitational parameter.
+        v_e: [m/s] Effective exhaust velocity of thruster.
+        m_dot: [kg/s] Thruster mass flow.
+        m0: [kg] Total mass of spacecraft at launch.
+
+    Outputs:
+        --- Component Connections ---
+        v_theta_T: [m/s] Estimated tangential velocity at terminal time
+            T given radial rate control path.
+        v_theta_loss_T: [m/s] Estimated potential tangential velocity
+            lost to vertical thrusting by time T.
+
+
+    """
+    def setup(self):
+        self.add_input('sample_x', val=np.zeros((2)))
+        self.add_input('sample_v', val=np.zeros((2)))
+        input_names = ['sample_t', 'target_r_dot_T', 'target_r_T', 'T', 
+                       'a0', 'a1', 'a2', 'c1', 'c2',  
+                       'mu', 'v_e', 'm_dot', 'm0']
+        for name in input_names:
+            self.add_input(name, val=0.0)
+        
+        output_names = ['v_theta_T', 'v_theta_loss_T']
+        for name in output_names:
+            self.add_output(name, val=0.0)
+
+    def compute(self, inputs, outputs):
+        pos = inputs['sample_x']
+        vel = inputs['sample_v']
+
+        a0 = inputs['a0'][0]
+        a1 = inputs['a1'][0]
+        a2 = inputs['a2'][0]
+        c1 = inputs['c1'][0]
+        c2 = inputs['c2'][0]
+        t0 = inputs['sample_t'][0]
+        T = inputs['T'][0]
+        m0 = inputs['m0'][0]
+        mdot = inputs['m_dot'][0]
+        v_e = inputs['v_e'][0]
+        mu = inputs['mu'][0]
+        r_dot_T = inputs['target_r_dot_T'][0]
+        r_T = inputs['target_r_T'][0]
+        tau = m0 / mdot
+
+        r_dot_0, v_theta_0 = calc_2D_local_velocity(pos, vel)
+
+        # Consider moving these to be object functions or private
+        # module functions
+        def get_time_dependent_vars(t, v_theta):
+            T_go = T - t
+
+            f11 = a0*T_go + a1*T_go**2/2 + a2*T_go**3/3
+            f21 = a0*T_go**2/2 + a1*T_go**3/3 + a2*T_go**4/4
+            f22 = a0*T_go**3/3 + a1*T_go**4/4 + a2*T_go**5/5
+            f12 = f21
+
+            r_dot = r_dot_T - f11*c1 - f12*c2
+            r = r_T - (f21*c1 + f22*c2 + r_dot*T_go)
+
+            p1 = a0 + a1 * (T_go) + a2 * (T_go) ** 2
+            p2 = p1 * (T_go)
+            r_dot_dot = c1 * p1 + c2 * p2
+            a_thrust = v_e / (tau - t)
+            g_eff = -mu/r**2 + v_theta**2/r
+
+            alpha = math.asin((r_dot_dot - g_eff) / (a_thrust))
+
+            return a_thrust, alpha, r_dot, r
+
+        def v_theta_dot(t, v_theta):
+            v_theta = v_theta[0]
+            # butchering the sign
+            a_T, alpha, r_dot, r = get_time_dependent_vars(t, v_theta)
+            v_theta_dot = a_T * math.cos(alpha) - r_dot*v_theta/r
+            return v_theta_dot
+        
+        def v_theta_dot_loss(t, v_theta):
+            v_theta = v_theta[0]
+            a_T, alpha, r_dot, r = get_time_dependent_vars(t, v_theta)
+            v_theta_dot_loss = (1-math.cos(alpha))*a_T + r_dot*v_theta/r
+            return v_theta_dot_loss
+        
+        t_span = [t0, T]
+        try:
+            res1 = solve_ivp(v_theta_dot, t_span, [v_theta_0], atol=1e-9, rtol=1e-9)
+            #res2 = solve_ivp(v_theta_dot_loss, t_span, [v_theta_0], atol=1e-9, rtol=1e-9)
+            outputs['v_theta_T'] = res1.y[0, -1]
+
+            v_theta_T_calc = res1.y[0, -1]
+            #outputs['v_theta_loss_T'] = res2.y[0, -1]
+            T_go = T - t0
+            expected_v_theta_loss_T_calc = -v_e*math.log(1 - T_go/(tau-t0)) - (-(v_theta_T_calc - v_theta_0))
+            outputs['v_theta_loss_T'] = expected_v_theta_loss_T_calc
+        except:
+            print("V_theta block failed to calculate.")
+
+
+
+class TimeToGo(om.ExplicitComponent):
+    """ Generates new estimate of terminal time using fixed-point iteration.
+
+    Inputs:
+        --- User Input ---
+        sample_x: [m] (len(sample_x) == 2) 2D position in inertial 
+            frame. Origin is at gravitational body center.
+        sample_v: [m/s] (len(sample_v) == 2) 2D velocity in inertial frame.
+        sample_t: [s] Time at which sample_x and sample_v were 
+            collected.
+        
+        --- Targeting ---
+        target_v_theta_T: [m/s] Target final tangential velocity.
+
+        --- Constants ---
+        v_e: [m/s] Effective exhaust velocity of thruster.
+        m_dot: [kg/s] Thruster mass flow.
+        m0: [kg] Total mass of spacecraft at launch.
+
+        --- Component Connections ---
+        v_theta_T: [m/s] Estimated tangential velocity at terminal time
+            T given radial rate control path.
+        v_theta_loss_T: [m/s] Estimated potential tangential velocity
+            lost to vertical thrusting by time T.
+
+    Outputs:
+        --- Component Connections ---
+        T: [s] New predicted terminal time; main engine cut-off.
+
+    """
+    def setup(self):
+        self.add_input('sample_x', val=np.zeros((2)))
+        self.add_input('sample_v', val=np.zeros((2)))
+        input_names = ['sample_t', 'target_v_theta_T', 
+                       'v_theta_loss_T', 'v_theta_T', 
+                       'v_e', 'm0', 'm_dot']
+        for name in input_names:
+            self.add_input(name, val=0.0)
+        
+        output_names = ['T']
+        for name in output_names:
+            self.add_output(name, val=0.0)
+
+    def compute(self, inputs, outputs):
+        v_theta_loss_Tn = inputs['v_theta_loss_T']
+        v_theta_Tn = inputs['v_theta_T']
+        target_v_theta_T = inputs['target_v_theta_T']
+        t0 = inputs['sample_t']
+        v_e = inputs['v_e']
+        m0 = inputs['m0']
+        m_dot = inputs['m_dot']
+
+        pos = inputs['sample_x']
+        vel = inputs['sample_v']
+
+        r_dot_0, v_theta_0 = calc_2D_local_velocity(pos, vel)
+
+        tau = m0/m_dot
+        tau0 = tau - t0
+        v_theta_loss_Tn_1 = target_v_theta_T - v_theta_Tn + v_theta_loss_Tn
+        # Normally not negative but I have done unfortunate things with the
+        # sign of v_theta
+        #CHANGED V_THETA_LOSS TO TN
+        T_go_n_1 = tau0 * (1 - math.exp(-(-(target_v_theta_T + v_theta_0 + v_theta_loss_Tn)/v_e)))
+        #T_go_n_1 = tau0 * (1 - math.exp(-(-(target_v_theta_T - v_theta_0 - v_theta_loss_Tn)/v_e)))
+        T_n_1 = T_go_n_1 + t0
+        
+        outputs['T'] = T_n_1

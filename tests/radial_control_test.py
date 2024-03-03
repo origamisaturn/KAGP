@@ -33,8 +33,8 @@ def set_radial_control_default(prob):
     # Boundary conditions
     #   (Loosely following Apollo 11 LM ascent profile:
     #   https://history.nasa.gov/alsj/nasa-tnd-6846pt.1.pdf)
-    prob['r_dot_T'] = 0
-    prob['r_T'] = r0 + 18.52e3 # m
+    prob['target_r_dot_T'] = 0
+    prob['target_r_T'] = r0 + 18.52e3 # m
     # Physical constants 
     prob['mu'] = 4.90e12
     prob['v_e'] = 3900
@@ -105,8 +105,8 @@ class TestRadialControl(unittest.TestCase):
         r0 = 1737.4e3
         self.prob['x'] = np.array([r0, 0])
         self.prob['v'] = np.array([0, 0])
-        self.prob['r_T'] = r0 + 18.52e3
-        self.prob['r_dot_T'] = 0
+        self.prob['target_r_T'] = r0 + 18.52e3
+        self.prob['target_r_dot_T'] = 0
         self.prob['T'] = 438
         self.prob.run_model()
         a0, a1, a2, c1, c2 = get_radial_control_coefficients(self.prob)
@@ -119,8 +119,8 @@ class TestRadialControl(unittest.TestCase):
         r_T_calculated, r_dot_T_calculated = calculate_final_radial_state(
             a0, a1, a2, c1, c2, Tgo, r0, r_dot_0)
         
-        r_T_residual = r_T_calculated - self.prob['r_T']
-        r_dot_T_residual = r_dot_T_calculated - self.prob['r_dot_T']
+        r_T_residual = r_T_calculated - self.prob['target_r_T']
+        r_dot_T_residual = r_dot_T_calculated - self.prob['target_r_dot_T']
 
         tol = 1e-8
         self.assertTrue(almost_equal(r_T_residual, 0, tol))
@@ -140,8 +140,8 @@ class TestRadialControl(unittest.TestCase):
         r_t = r0 + start_altitude
         self.prob['x'] = np.array([r_t, 0])
         self.prob['v'] = np.array([0, 0])
-        self.prob['r_T'] = r0 + 18.52e3
-        self.prob['r_dot_T'] = 0
+        self.prob['target_r_T'] = r0 + 18.52e3
+        self.prob['target_r_dot_T'] = 0
         self.prob['sample_t'] = 200
         self.prob['T'] = 438
         self.prob.run_model()
@@ -155,8 +155,8 @@ class TestRadialControl(unittest.TestCase):
         r_T_calculated, r_dot_T_calculated = calculate_final_radial_state(
             a0, a1, a2, c1, c2, Tgo, r_t, r_dot_0)
         
-        r_T_residual = r_T_calculated - self.prob['r_T']
-        r_dot_T_residual = r_dot_T_calculated - self.prob['r_dot_T']
+        r_T_residual = r_T_calculated - self.prob['target_r_T']
+        r_dot_T_residual = r_dot_T_calculated - self.prob['target_r_dot_T']
 
         tol = 1e-8
         self.assertTrue(almost_equal(r_T_residual, 0, tol))
