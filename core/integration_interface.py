@@ -21,8 +21,8 @@ class Integrator2DInterface:
         init_vel = input_dict['simulator']['initial_velocity']
         init_m = input_dict['spacecraft']['mass_total']
         # self._state = np.concatenate((init_pos, init_vel, init_m))
-        self.guidance_interface._openmdao_problem['x'] = init_pos
-        self.guidance_interface._openmdao_problem['v'] = init_vel
+        self.guidance_interface._openmdao_problem['sample_x'] = init_pos
+        self.guidance_interface._openmdao_problem['sample_v'] = init_vel
 
         self._t = 0
         self._log_path = input_dict['simulator']['log_path']

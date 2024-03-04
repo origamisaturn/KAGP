@@ -84,8 +84,8 @@ class TestGuidance:
         target_r, target_r_dot, target_v_theta = _orbit_to_velocity(
             periapsis, apoapsis, true_anomaly, gravitational_parameter)
         
-        self._set_openmdao_problem_variable('r_T', target_r)
-        self._set_openmdao_problem_variable('r_dot_T', target_r_dot)
+        self._set_openmdao_problem_variable('target_r_T', target_r)
+        self._set_openmdao_problem_variable('target_r_dot_T', target_r_dot)
         # negating v_theta_T for nefarious reasons
         self._set_openmdao_problem_variable('target_v_theta_T',
                                              -target_v_theta)
@@ -149,17 +149,15 @@ class TestGuidance2:
         self.initialize_dict = {}
         self._init_log()
 
-    def get_command(self, state, t, outer_loop=False, logging=True):
+    def get_command(self, state, t, logging=True):
         x = state[0:2]
         v = state[2:4]
         m = state[4]
         
-        if outer_loop:
-            self._set_openmdao_problem_variable('sample_t', t)
+        self._set_openmdao_problem_variable('sample_t', t)
+        self._set_openmdao_problem_variable('sample_x', x)
+        self._set_openmdao_problem_variable('sample_v', v)
 
-        self._set_openmdao_problem_variable('x', x)
-        self._set_openmdao_problem_variable('v', v)
-        # is this correct?
         self._set_openmdao_problem_variable('t', t)
 
         self._run_openmdao_model()
@@ -182,11 +180,11 @@ class TestGuidance2:
         target_r, target_r_dot, target_v_theta = _orbit_to_velocity(
             periapsis, apoapsis, true_anomaly, gravitational_parameter)
         
-        self._set_openmdao_problem_variable('r_T', target_r)
-        self._set_openmdao_problem_variable('r_dot_T', target_r_dot)
+        self._set_openmdao_problem_variable('target_r_T', target_r)
+        self._set_openmdao_problem_variable('target_r_dot_T', target_r_dot)
         # negating v_theta_T for nefarious reasons
-        self._set_openmdao_problem_variable('target_v_theta_T',
-                                             -target_v_theta)
+        # self._set_openmdao_problem_variable('target_v_theta_T',
+                                            #  target_v_theta)
 
 
         specific_impulse = input_dict['spacecraft']['specific_impulse']

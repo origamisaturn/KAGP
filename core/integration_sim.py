@@ -58,8 +58,8 @@ def run_simulation(ode_func, eval_points, prob, log, log_file):
     # please encode arg information in ode_func when passec
     # somehow align eval_points and outer loop guidance rate.
     # extract initial state from problem
-    x0 = prob['x']
-    v0 = prob['v']
+    x0 = prob['sample_x']
+    v0 = prob['sample_v']
     m0 = prob['m0']
     initial_state = np.concatenate((x0, v0, m0))
 
@@ -94,8 +94,8 @@ def run_simulation(ode_func, eval_points, prob, log, log_file):
         x = res.y[:2, -1]
         v = res.y[2:4, -1]
         prob['sample_t'] = t_span[1]
-        prob['x'] = x
-        prob['v'] = v
+        prob['sample_x'] = x
+        prob['sample_v'] = v
 
         # Set up next problem loop.
         final_state = res.y[:, -1]

@@ -13,7 +13,7 @@ def rot_mat_2d(theta):
 
 def angle_between_vectors(v1, v2):
     cos_theta = np.dot(v1, v2)/(np.linalg.norm(v1) * np.linalg.norm(v2))
-    return np.acos(cos_theta)
+    return math.acos(cos_theta)
 
 def almost_equal(val1, val2, tol=1e-8):
     arr_type = type(np.ndarray([]))
@@ -250,7 +250,10 @@ class PitchQuery(om.ExplicitComponent):
         tau = m0/mdot
 
         # here g_eff is calculated once, so it is an approximation.
-
+        # stop out-of-bounds calculations silently
+        if t > T:
+            t = T
+        
         p1 = a0 + a1*(T-t) + a2*(T-t)**2
         p2 = p1 * (T-t)
         r_dot_dot = c1 * p1 + c2 * p2
@@ -339,6 +342,9 @@ class VThetaSolver(om.ExplicitComponent):
         # Consider moving these to be object functions or private
         # module functions
         def get_time_dependent_vars(t, v_theta):
+            # prevent out-of-bounds silently
+            if t > T:
+                t = T
             T_go = T - t
 
             f11 = a0*T_go + a1*T_go**2/2 + a2*T_go**3/3
@@ -374,13 +380,17 @@ class VThetaSolver(om.ExplicitComponent):
         
         t_span = [t0, T]
         try:
-            res1 = solve_ivp(v_theta_dot, t_span, [v_theta_0], atol=1e-9, rtol=1e-9)
+            T_go = T - t0
+            # res1 = solve_ivp(v_theta_dot, t_span, [v_theta_0], max_step=1, atol=1, rtol=1)
+            if T_go < 10:
+                res1 = solve_ivp(v_theta_dot, t_span, [v_theta_0], max_step=1, atol=1, rtol=1)
+            else: 
+                res1 = solve_ivp(v_theta_dot, t_span, [v_theta_0], atol=1e-9, rtol=1e-9)
             #res2 = solve_ivp(v_theta_dot_loss, t_span, [v_theta_0], atol=1e-9, rtol=1e-9)
             outputs['v_theta_T'] = res1.y[0, -1]
 
             v_theta_T_calc = res1.y[0, -1]
             #outputs['v_theta_loss_T'] = res2.y[0, -1]
-            T_go = T - t0
             expected_v_theta_loss_T_calc = -v_e*math.log(1 - T_go/(tau-t0)) - (-(v_theta_T_calc - v_theta_0))
             outputs['v_theta_loss_T'] = expected_v_theta_loss_T_calc
         except:

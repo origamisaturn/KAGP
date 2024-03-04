@@ -3,7 +3,7 @@ sys.path.append(os.path.abspath('core'))
 
 from log_utils import *
 
-log_file = "script_krpc_integrator_blocks.pkl"
+log_file = "script_sim_test.pkl"
 with open(log_file, 'rb') as fh:
     log = pkl.load(fh)
 plot_state(log)

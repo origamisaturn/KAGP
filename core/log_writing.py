@@ -11,7 +11,13 @@ def init_log(prob):
     for var in outputs:
         var_name = var[0]
         var_val = var[1]['val']
-        log['outputs'][var_name] = list()
+        # For _debug output
+        if type(var_val) == type(dict()):
+            log['outputs'][var_name] = {}
+            for key in var_val:
+                log['outputs'][var_name][key] = []
+        else:
+            log['outputs'][var_name] = list()
     for var_name in state_names:
         log['state'][var_name] = list()
     return log
@@ -24,8 +30,12 @@ def log_problem(prob, log):
         var_val = prob[var_name][0]
         log['inputs'][var_name].append(var_val)
     for var_name in outputs:
-        var_val = prob[var_name][0]
-        log['outputs'][var_name].append(var_val)
+        if type(prob[var_name]) == type(dict()):
+            for key in prob[var_name]:
+                log['outputs'][var_name][key].append(var_val)
+        else:
+            var_val = prob[var_name][0]
+            log['outputs'][var_name].append(var_val)
 
 def log_res(res, log, omit_final=False):
     """

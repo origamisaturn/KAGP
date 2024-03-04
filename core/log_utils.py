@@ -121,7 +121,9 @@ def plot_vars(vars, t, columns, keys=None):
                 var_name = var_names[plot_index]
                 var_val = vars[var_name]
                 print("var_name: {}".format(var_name))
-
+                # ignore _debug dictionary
+                if type(var_val) == type(dict()):
+                    continue
                 axs[i, j].plot(t, var_val)
                 axs[i, j].set_title(var_name)
     return fig, axs
