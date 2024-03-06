@@ -1,6 +1,7 @@
 import pickle as pkl
 import numpy as np
 import matplotlib.pyplot as plt
+import pandas as pd
 
 def col_mult(mat1, mat2):
     samples = mat1.shape[1]
@@ -124,6 +125,7 @@ def plot_vars(vars, t, columns, keys=None):
                 # ignore _debug dictionary
                 if type(var_val) == type(dict()):
                     continue
+
                 axs[i, j].plot(t, var_val)
                 axs[i, j].set_title(var_name)
     return fig, axs
@@ -149,3 +151,7 @@ def plot_derived_state(log):
             "acc_y":acc_y}
     fig, axs = plot_vars(vars, t, 3)
     return fig, axs
+
+def outputs_dataframe(log):
+    df_log = pd.DataFrame(log['inputs'])
+    return df_log
