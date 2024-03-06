@@ -1,3 +1,5 @@
+from copy import deepcopy
+
 def init_log(prob):
     """ Initializes a log dictionary. 
     
@@ -45,14 +47,15 @@ def log_problem(prob, log):
     inputs = log['inputs'].keys()
     outputs = log['outputs'].keys()
     for var_name in inputs:
-        var_val = prob[var_name][0]
+        var_val = deepcopy(prob[var_name])
         log['inputs'][var_name].append(var_val)
+
     for var_name in outputs:
         if type(prob[var_name]) == type(dict()):
-            for key in prob[var_name]:
-                log['outputs'][var_name][key].append(var_val)
+            for key, value in prob[var_name].items():
+                log['outputs'][var_name][key].append(deepcopy(value))
         else:
-            var_val = prob[var_name][0]
+            var_val = deepcopy(prob[var_name])
             log['outputs'][var_name].append(var_val)
 
 def log_res(res, log, omit_final=False):

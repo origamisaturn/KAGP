@@ -2,6 +2,7 @@ import pickle as pkl
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
+from copy import deepcopy
 
 def col_mult(mat1, mat2):
     samples = mat1.shape[1]
@@ -154,4 +155,79 @@ def plot_derived_state(log):
 
 def outputs_dataframe(log):
     df_log = pd.DataFrame(log['inputs'])
+    
     return df_log
+
+def log_to_dataframes(log):
+    dataframes = {}
+    formatted_log = format_log(log)
+    interpolate_times = formatted_log['inputs']['pitch_query.t']
+    interp_state = interpolate_state(formatted_log, interpolate_times)
+
+    dataframes['outputs'] = pd.DataFrame(formatted_log['outputs'])
+    dataframes['inputs'] = pd.DataFrame(formatted_log['inputs'])
+    dataframes['state'] = pd.DataFrame(interp_state)
+
+    return dataframes
+
+
+def format_log(log):
+    """ Convert to format for dataframe 
+    
+    Makes everything into a 1-D list. """
+    new_log = {}
+
+    inputs = log['inputs']
+    outputs = log['outputs']
+    state = log['state']
+
+    new_log['inputs'] = format_prob_log(inputs)
+    new_log['outputs'] = format_prob_log(outputs)
+    new_log['state'] = deepcopy(state)
+
+    return new_log
+
+def format_prob_log(prob_log):
+    new_prob_log = {}
+    for var_name, var_val in prob_log:
+        var_len = np.shape(var_val)[1]
+        if type(var_val) == type(dict()):
+            for dict_key, dict_val in var_val:
+                new_key = var_name + '.' + dict_key
+                new_val = dict_val
+                new_prob_log[new_key] = new_val
+        elif var_len != 1:
+            for i in range(var_len):
+                new_key = "{}[{}]".format(var_name, i)
+                new_val = list(var_val[:, i])
+                new_prob_log[new_key] = new_val
+        else:
+            new_val = list(var_val[:, 0])
+            new_prob_log[var_name] = new_val
+    return new_prob_log
+            
+def interpolate_state(log, interpolation_times):
+    new_state = {}
+    state = log['state']
+    # Hope that state t is monotonically increasing
+    t_orig = state['t']
+
+    for var_name, var_val in state:
+        if var_name == 't':
+            new_val = deepcopy(interpolation_times)
+        else:
+            new_val = np.interp(interpolation_times, t_orig, var_val)
+        new_state[var_name] = new_val
+
+    return new_state
+
+
+# def flatten_outputs(log):
+#     # dicts are converted to a single name
+#     # multiple dimensions are split
+#     # 2d is converted to 1d array
+#     outputs = log['outputs']
+#     for var_name, var_data in outputs:
+#         np_var_data = np.array(var_data)
+#         if np.shape[1] 
+#     return flat_outputs
