@@ -8,6 +8,6 @@ log_file = "script_sim_test_logchange.pkl"
 with open(log_file, 'rb') as fh:
     log = pkl.load(fh)
 
-df_outputs = outputs_dataframe(log)
+df_dict = log_to_dataframes(log)
 
 print("done")

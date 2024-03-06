@@ -160,9 +160,11 @@ def outputs_dataframe(log):
 
 def log_to_dataframes(log):
     dataframes = {}
+
     formatted_log = format_log(log)
     interpolate_times = formatted_log['inputs']['pitch_query.t']
     interp_state = interpolate_state(formatted_log, interpolate_times)
+    formatted_log['state'] = interp_state
 
     dataframes['outputs'] = pd.DataFrame(formatted_log['outputs'])
     dataframes['inputs'] = pd.DataFrame(formatted_log['inputs'])
@@ -189,21 +191,23 @@ def format_log(log):
 
 def format_prob_log(prob_log):
     new_prob_log = {}
-    for var_name, var_val in prob_log:
-        var_len = np.shape(var_val)[1]
+    for var_name, var_val in prob_log.items():
         if type(var_val) == type(dict()):
-            for dict_key, dict_val in var_val:
+            for dict_key, dict_val in var_val.items():
                 new_key = var_name + '.' + dict_key
                 new_val = dict_val
                 new_prob_log[new_key] = new_val
-        elif var_len != 1:
-            for i in range(var_len):
-                new_key = "{}[{}]".format(var_name, i)
-                new_val = list(var_val[:, i])
-                new_prob_log[new_key] = new_val
         else:
-            new_val = list(var_val[:, 0])
-            new_prob_log[var_name] = new_val
+            var_len = np.shape(var_val)[1]
+            np_var_val = np.array(var_val)
+            if var_len != 1:
+                for i in range(var_len):
+                    new_key = "{}[{}]".format(var_name, i)
+                    new_val = list(np_var_val[:, i])
+                    new_prob_log[new_key] = new_val
+            else:
+                new_val = list(np_var_val[:, 0])
+                new_prob_log[var_name] = new_val
     return new_prob_log
             
 def interpolate_state(log, interpolation_times):
@@ -212,7 +216,7 @@ def interpolate_state(log, interpolation_times):
     # Hope that state t is monotonically increasing
     t_orig = state['t']
 
-    for var_name, var_val in state:
+    for var_name, var_val in state.items():
         if var_name == 't':
             new_val = deepcopy(interpolation_times)
         else:
