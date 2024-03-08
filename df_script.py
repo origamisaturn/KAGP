@@ -9,5 +9,10 @@ with open(log_file, 'rb') as fh:
     log = pkl.load(fh)
 
 df_dict = log_to_dataframes(log)
+df_err = dataframe_errors(df_dict)
+df_err.plot()
+plot_dataframe_errors(df_dict)
+
+plt.show()
 
 print("done")
