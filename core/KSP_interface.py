@@ -1,0 +1,92 @@
+import krpc
+import numpy as np
+
+
+class KSP2DInterface:
+    def __init__(self, input_dict, guidance_interface):
+        self.guidance_interface = guidance_interface
+        self._init_log()
+        self._connect()
+        self._init_streams()
+        self._parse_input(input_dict)
+        ...
+    def run(self):
+        init_time = self._conn.space_center.ut
+        guidance_time = self._streams['time']() - init_time
+
+        self._vessel.auto_pilot.target_pitch_and_heading(90, 90)
+        self._vessel.auto_pilot.engage()
+        self._vessel.control.throttle = 1
+
+        estimated_T = ...
+        default_heading = 90 #deg
+        while guidance_time < estimated_T:
+            state = self._get_state()
+            self._log_state(state, guidance_time)
+            
+            # Likely incorrect
+            alpha = self.guidance_interface.get_command(state, guidance_time, logging=True)
+            self._vessel.auto_pilot.target_pitch_and_heading(alpha, default_heading)
+
+            with self._streams['time'].condition:
+                self._streams['time'].wait()
+
+            # Implement this
+            # estimated_T = self.guidance_interface.get_predicted_final_time()
+        
+        self._vessel.control.throttle = 0
+        self._vessel.auto_pilot.disengage()
+        # Implement this
+        self._save_log()
+
+    def _get_state(self):
+        pos = self._streams['position']()
+        vel = self._streams['velocity']()
+
+        rhs_pos_2d = ksp_to_rhs_2d(pos)
+        rhs_vel_2d = ksp_to_rhs_2d(vel)
+
+        t = self._streams['time']()
+        x = rhs_pos_2d[0]
+        y = rhs_pos_2d[1]
+        vx = rhs_vel_2d[0]
+        vy = rhs_vel_2d[1]
+        m = self._streams['mass']()
+
+        state = [x, y, vx, vy, m]
+
+    def _log_state(self, state, t):
+        # TODO implement this
+        self.log_interface.log_state(state, t)
+
+    def _connect(self):
+        self._conn = krpc.connect(name='Sub-orbital Flight')
+        self._vessel = self._conn.space_center.active_vessel
+        
+    def _init_streams(self):
+        conn = self._conn
+        vessel = self._vessel
+
+        self._streams = {}
+
+        ref_frame = vessel.orbit.body.non_rotating_reference_frame
+        self._streams['mass'] = conn.add_stream(getattr, vessel, 'mass')
+        self._streams['position'] = conn.add_stream(vessel.position, ref_frame)
+        self._streams['velocity'] = conn.add_stream(vessel.velocity, ref_frame)
+        self._streams['time'] = conn.add_stream(getattr, conn.space_center, 'ut')   
+
+    def _parse_input(self):
+        ...
+    def _init_log(self):
+        ...
+    def _log_res(self):
+        ...
+
+def ksp_to_rhs_2d(coord):
+    # This assumes flight path along equator
+    rot_mat = np.array([[1, 0, 0],
+                        [0, 0, 1],
+                        [0, 1, 0]])
+    coord_rhs = rot_mat@coord
+    coord_rhs_2d = coord_rhs[:2]
+    return coord_rhs_2d
