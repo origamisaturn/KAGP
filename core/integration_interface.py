@@ -2,6 +2,7 @@ from ode import rocket_ode
 import numpy as np
 from integration_sim import init_log, run_simulation, guidance_func_base
 
+
 class Integrator2DInterface:
     def __init__(self, input_dict, guidance_interface):
         self.guidance_interface = guidance_interface

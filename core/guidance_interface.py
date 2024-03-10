@@ -137,7 +137,8 @@ class TestRadialControlGuidance(om.Group):
         self.add_subsystem('v_theta', VThetaSolver(), promotes=['*'])
 
 class TestGuidance2:
-    def __init__(self, input_dict, terminal_time_guess = 438):
+    def __init__(self, input_dict, log_interface, terminal_time_guess = 438):
+        self.log_interface = log_interface
         model = TestRadialControlGuidance()
         self._openmdao_problem = om.Problem(model)
         self._openmdao_problem.setup()
@@ -215,7 +216,8 @@ class TestGuidance2:
         self._log = init_log(self._openmdao_problem)
 
     def _log_problem(self):
-        log_problem(self._openmdao_problem, self._log)
+        # log_problem(self._openmdao_problem, self._log)
+        self.log_interface.log_problem(self._openmdao_problem)
 
     def _get_log(self):
         return copy.deepcopy(self._log)

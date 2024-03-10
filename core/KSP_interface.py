@@ -3,7 +3,8 @@ import numpy as np
 
 
 class KSP2DInterface:
-    def __init__(self, input_dict, guidance_interface):
+    def __init__(self, input_dict, guidance_interface, log_interface):
+        self.log_interface = log_interface
         self.guidance_interface = guidance_interface
         self._init_log()
         self._connect()
@@ -18,6 +19,7 @@ class KSP2DInterface:
         self._vessel.auto_pilot.engage()
         self._vessel.control.throttle = 1
 
+        # Implement this
         estimated_T = ...
         default_heading = 90 #deg
         while guidance_time < estimated_T:
@@ -78,7 +80,8 @@ class KSP2DInterface:
     def _parse_input(self):
         ...
     def _init_log(self):
-        ...
+        self.log_interface.init_sim_log()
+
     def _log_res(self):
         ...
 
