@@ -27,6 +27,7 @@ def get_r_hat(log):
     return r_hat
 
 def get_theta_hat(log):
+    # not exactly the correct direction every time, but fine.
     r_hat = get_r_hat(log)
     rot_mat = np.array([[0, -1], [1, 0]])
     theta_hat = rot_mat@r_hat
@@ -71,12 +72,51 @@ def get_acc(log):
     acc = np.gradient(v, t, axis=1)
     return acc
 
+def get_gravity(log, mu):
+    r_hat = get_r_hat(log)
+    r = get_radius(log)
+    a_g = -mu/r**2 * r_hat
+    return a_g
+
+def global_to_orbital_rot(log, coordinates):
+    # coordinates are 2 by N
+    r_hat = get_r_hat(log)
+    theta_hat = get_theta_hat(log)
+    # (2, 2, N) matrix where its each theta_hat, r_hat concatenated
+    # along second axes.
+    rotation_matrices = np.stack((r_hat, theta_hat), axis=0)
+
+    N = np.shape(coordinates)[1]
+    new_coordinates = np.zeros((2, N))
+    for i in range(N):
+        rot_mat = rotation_matrices[:, :, i]
+        new_coordinates[:, i] = rot_mat@coordinates[:, i]
+    return new_coordinates
+
+def get_thrust_acc(log, mu):
+    # in the future this should be included in logged state. This assumes
+    # only thrust and gravity act on the spacecraft
+    # This is along circumferential coordinates
+    a_g = get_gravity(log, mu)
+    acc = get_acc(log)
+    thrust = acc - a_g
+    thrust_local = global_to_orbital_rot(log, thrust)
+    return thrust_local
+
+def get_thrust_acc_mag(log, mu):
+    thrust = get_thrust_acc(log, mu)
+    thrust_acc_mag = np.linalg.norm(thrust, axis=0)
+    return thrust_acc_mag
+
 def get_orbital_elements(log):
     ...
 
-def get_alpha(log):
+def get_alpha(log, mu):
     # the input and output already have alpha
-    ...
+    # but this can be used to compare
+    thrust_acc = get_thrust_acc(log, mu)
+    alpha = np.arctan2(thrust_acc[1, :], thrust_acc[0, :])
+    return alpha
 
 def plot_state(log):
     # based on the amount of variables in the log, choose
@@ -89,18 +129,21 @@ def plot_state(log):
     vars = log['state']
     # -1 to ignore the 't' key
     fig, axs = plot_vars(vars, t, 3, keys=y_var_names)
+    fig.suptitle('State')
     return fig, axs
 
 def plot_problem_outputs(log):
     outputs = log['outputs']
     t = log['inputs']['pitch_query.t']
     fig, ax = plot_vars(outputs, t, 3)
+    fig.suptitle('Problem Outputs')
     return fig, ax
 
 def plot_problem_inputs(log):
     inputs = log['inputs']
     t = log['inputs']['pitch_query.t']
     fig, ax = plot_vars(inputs, t, 3)
+    fig.suptitle('Problem Inputs')
     return fig, ax
 
 def plot_vars(vars, t, columns, keys=None):
@@ -111,7 +154,7 @@ def plot_vars(vars, t, columns, keys=None):
     columns = 3
     plot_total = len(var_names)
     rows = int(np.ceil(plot_total/columns))
-    fig, axs = plt.subplots(rows, columns)
+    fig, axs = plt.subplots(rows, columns, sharex=True)
     for i in range(rows):
         for j in range(columns):
             plot_index = i*columns + j
@@ -128,7 +171,7 @@ def plot_vars(vars, t, columns, keys=None):
                 axs[i, j].set_title(var_name)
     return fig, axs
 
-def plot_derived_state(log):
+def plot_derived_state(log, mu):
     # also n by 4, based on my custom functions.
     t = log['state']['t']
 
@@ -142,10 +185,13 @@ def plot_derived_state(log):
     r_dot_dot = get_r_dot_dot(log)
     a_theta = get_a_theta(log)
     acc = get_acc(log)
+    thrust_acc_mag = get_thrust_acc_mag(log, mu)
+    alpha = get_alpha(log, mu)
     acc_x = acc[0]
     acc_y = acc[1]
-    vars = {"radius": r, "ground_distance": t, "r_dot": r_dot, "v_theta":v_theta,
+    vars = {"alpha": alpha, "thrust_acc": thrust_acc_mag, "radius": r, "ground_distance": t, "r_dot": r_dot, "v_theta":v_theta,
             "r_dot_dot":r_dot_dot, "a_theta":a_theta, "acc_x":acc_x,
             "acc_y":acc_y}
     fig, axs = plot_vars(vars, t, 3)
+    fig.suptitle('Derived State')
     return fig, axs

@@ -3,11 +3,14 @@ sys.path.append(os.path.abspath('core'))
 
 from log_utils import *
 
-log_file = "script_sim_test.pkl"
+mu = 4.9028e+12 # Moon
+
+log_file = "ksp2d.pkl"
 with open(log_file, 'rb') as fh:
     log = pkl.load(fh)
+
 plot_state(log)
-plot_derived_state(log)
+plot_derived_state(log, mu)
 plot_problem_inputs(log)
 plot_problem_outputs(log)
 r0 = 1737.4e3

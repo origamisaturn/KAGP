@@ -12,8 +12,8 @@ from log_interface import LogInterface
 def relative_path(filepath):
     return os.path.abspath(os.path.join(__file__, '..', filepath))
 
-input_filenames = [relative_path("simulation_test_input/ScriptKRPC.yaml"),
-    relative_path("simulation_test_input/ScriptKRPCIntegrator.yaml")]
+input_filenames = [relative_path("spacecraft/ScriptKRPC.yaml"),
+    relative_path("scenarios/ScriptKRPCIntegrator.yaml")]
 
 def load_input(filenames):
     input_data = {}

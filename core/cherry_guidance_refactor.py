@@ -197,7 +197,7 @@ class PitchQuery(om.ExplicitComponent):
         g_eff: [m/s^2] Effective gravity at time sample_t.
     
     Outputs:
-        --- User Input ---
+        --- User Output ---
         alpha: [rad.] Commanded pitch angle above local horizon at time
             t.
 

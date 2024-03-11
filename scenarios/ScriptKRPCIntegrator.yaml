@@ -1,18 +1,19 @@
 mission:
   "gravitational_parameter": 4.9028e+12
-  "periapsis": 1751.58e+3
-  "apoapsis": 1809.52e+3
+  "periapsis": 1785.00e+3
+  "apoapsis": 1785.00e+3
   "true_anomaly": 18.0
 #  "inclination": 30
 #  "LAN": 50
 #  "countdown": 10
 
 simulator: 
-  "simulator": "Integrator2D"
+  "simulator": "KSP2D"
+  "name": "KSP 2D Test"
   "guidance": "FixedThrustGuidanceFull"
   "outer_loop_period": 10
-  "simulation_end_time": 450
-  "log_path": "script_krpc_integrator_blocks.pkl"
+  "simulation_end_time": 448
+  "log_path": "ksp2d.pkl"
 
   "initial_position": [1737.4E+3, 0.0]
   "initial_velocity": [0.0, 0.0]

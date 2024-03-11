@@ -167,7 +167,7 @@ class TestGuidance2:
             self._log_problem()
 
         thrust_magnitude = 1 # Constant thrust
-        thrust_angle = self._get_openmdao_problem_variable('alpha')
+        thrust_angle = self._get_openmdao_problem_variable('alpha')[0]
 
         return [thrust_magnitude, thrust_angle]
     
@@ -213,14 +213,15 @@ class TestGuidance2:
         self._openmdao_problem.run_model()
 
     def _init_log(self):
-        self._log = init_log(self._openmdao_problem)
+        # self._log = init_log(self._openmdao_problem)
+        self.log_interface.init_guidance_log(self._openmdao_problem)
 
     def _log_problem(self):
         # log_problem(self._openmdao_problem, self._log)
         self.log_interface.log_problem(self._openmdao_problem)
 
     def _get_log(self):
-        return copy.deepcopy(self._log)
+        return copy.deepcopy(self.log_interface)
         ...
     def _log_openmdao_problem(self):
         ...

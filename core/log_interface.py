@@ -1,8 +1,13 @@
-
+import pickle as pkl
 
 class LogInterface:
-    def __init__(self):
+    def __init__(self, input_data):
         self.log = {}
+        self.log_save_path = input_data['simulator']['log_path']
+
+    def save(self):
+        with open(self.log_save_path, 'wb') as fh:
+            pkl.dump(self.log, fh) 
 
     def init_guidance_log(self, openmdao_problem):
         self.log['inputs'] = {}
