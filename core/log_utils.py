@@ -1,6 +1,8 @@
 import pickle as pkl
 import numpy as np
 import matplotlib.pyplot as plt
+import pandas as pd
+from copy import deepcopy
 
 def col_mult(mat1, mat2):
     samples = mat1.shape[1]
@@ -114,9 +116,19 @@ def get_orbital_elements(log):
 def get_alpha(log, mu):
     # the input and output already have alpha
     # but this can be used to compare
+    # x is r_hat, y is v_theta
     thrust_acc = get_thrust_acc(log, mu)
-    alpha = np.arctan2(thrust_acc[1, :], thrust_acc[0, :])
+    alpha = np.arctan2(thrust_acc[0, :], thrust_acc[1, :])
     return alpha
+    
+def get_time_steps(t):
+    time_steps = np.zeros(len(t))
+    for i, t_val in enumerate(t):
+        if i == 0:
+            time_steps[i] = 0
+        else:
+            time_steps[i] = t_val - t[i-1]
+    return time_steps
 
 def plot_state(log):
     # based on the amount of variables in the log, choose
@@ -146,12 +158,11 @@ def plot_problem_inputs(log):
     fig.suptitle('Problem Inputs')
     return fig, ax
 
-def plot_vars(vars, t, columns, keys=None):
+def plot_vars(vars, t, columns=3, keys=None):
     if keys:
         var_names = keys
     else:
         var_names = list(vars.keys())
-    columns = 3
     plot_total = len(var_names)
     rows = int(np.ceil(plot_total/columns))
     fig, axs = plt.subplots(rows, columns, sharex=True)
@@ -167,6 +178,7 @@ def plot_vars(vars, t, columns, keys=None):
                 # ignore _debug dictionary
                 if type(var_val) == type(dict()):
                     continue
+
                 axs[i, j].plot(t, var_val)
                 axs[i, j].set_title(var_name)
     return fig, axs
@@ -175,11 +187,15 @@ def plot_derived_state(log, mu):
     # also n by 4, based on my custom functions.
     t = log['state']['t']
 
-    ref_pos = [log['state']['x'][0], log['state']['y'][0]]
+    derived_state = get_derived_state(log, mu)
+    fig, axs = plot_vars(derived_state, t, 3)
+    fig.suptitle('Derived State')
+    return fig, axs
+
+def get_derived_state(log, mu):
+    t = log['state']['t']
     r = get_radius(log)
     #s = get_ground_distance(log, ref_pos)
-    r_hat = get_r_hat(log)
-    theta_hat = get_theta_hat(log)
     r_dot = get_r_dot(log)
     v_theta = get_v_theta(log)
     r_dot_dot = get_r_dot_dot(log)
@@ -189,9 +205,117 @@ def plot_derived_state(log, mu):
     alpha = get_alpha(log, mu)
     acc_x = acc[0]
     acc_y = acc[1]
-    vars = {"alpha": alpha, "thrust_acc": thrust_acc_mag, "radius": r, "ground_distance": t, "r_dot": r_dot, "v_theta":v_theta,
+    vars = {"alpha": alpha, "thrust_acc": thrust_acc_mag, "radius": r, "r_dot": r_dot, "v_theta":v_theta,
             "r_dot_dot":r_dot_dot, "a_theta":a_theta, "acc_x":acc_x,
-            "acc_y":acc_y}
-    fig, axs = plot_vars(vars, t, 3)
-    fig.suptitle('Derived State')
-    return fig, axs
+            "acc_y":acc_y, "t": t}
+    
+    return vars
+
+
+
+### LOG TO DATAFRAME ###
+
+def log_to_dataframes(log, mu):
+    dataframes = {}
+
+    formatted_log = format_log(log)
+    interpolate_times = formatted_log['inputs']['pitch_query.t']
+    interp_state = interpolate_state(formatted_log, interpolate_times)
+    formatted_log['state'] = interp_state
+    derived_state = get_derived_state(formatted_log, mu)
+
+    dataframes['outputs'] = pd.DataFrame(formatted_log['outputs'])
+    dataframes['inputs'] = pd.DataFrame(formatted_log['inputs'])
+    dataframes['state'] = pd.DataFrame(formatted_log['state'])
+    dataframes['derived'] = pd.DataFrame(derived_state)
+
+    return dataframes
+
+# Consider moving interpolation here, also adding error calc
+def format_log(log):
+    """ Convert to format for dataframe 
+    
+    Makes everything into a 1-D list. """
+    new_log = {}
+
+    inputs = log['inputs']
+    outputs = log['outputs']
+    state = log['state']
+
+    new_log['inputs'] = format_prob_log(inputs)
+    new_log['outputs'] = format_prob_log(outputs)
+    new_log['state'] = deepcopy(state)
+
+    return new_log
+
+def dataframe_errors(df_dict):
+    inp = df_dict['inputs']
+    out = df_dict['outputs']
+    der = df_dict['derived']
+    t = df_dict['derived']['t']
+    t_step = get_time_steps(df_dict['derived']['t'])
+    r_dot_dot_error = (df_dict['derived']['r_dot_dot'] - 
+                       df_dict['outputs']['pitch_query._debug.r_dot_dot'])
+    thrust_acc_error = (df_dict['derived']['thrust_acc'] -
+                        df_dict['outputs']['pitch_query._debug.a_thrust'])
+    thrust_alpha_error = (df_dict['derived']['alpha'] - 
+                          df_dict['outputs']['pitch_query.alpha'])
+    return pd.DataFrame(
+        {'t': t,
+         't_step': t_step,
+         'r_dot_dot_err': r_dot_dot_error,
+         'thrust_acc_err': thrust_acc_error,
+         'thrust_alpha_error': thrust_alpha_error}
+    )
+
+def plot_dataframe_errors(df_dict):
+    df_err = dataframe_errors(df_dict)
+    plot_vars(df_err, df_err['t'], 2, keys=list(df_err.columns))
+
+
+def format_prob_log(prob_log):
+    new_prob_log = {}
+    for var_name, var_val in prob_log.items():
+        if type(var_val) == type(dict()):
+            for dict_key, dict_val in var_val.items():
+                new_key = var_name + '.' + dict_key
+                new_val = dict_val
+                new_prob_log[new_key] = new_val
+        else:
+            var_len = np.shape(var_val)[1]
+            np_var_val = np.array(var_val)
+            if var_len != 1:
+                for i in range(var_len):
+                    new_key = "{}[{}]".format(var_name, i)
+                    new_val = list(np_var_val[:, i])
+                    new_prob_log[new_key] = new_val
+            else:
+                new_val = list(np_var_val[:, 0])
+                new_prob_log[var_name] = new_val
+    return new_prob_log
+            
+def interpolate_state(log, interpolation_times):
+    new_state = {}
+    state = log['state']
+    # Hope that state t is monotonically increasing
+    t_orig = state['t']
+
+    for var_name, var_val in state.items():
+        if var_name == 't':
+            new_val = deepcopy(interpolation_times)
+        else:
+            new_val = np.interp(interpolation_times, t_orig, var_val)
+        new_state[var_name] = new_val
+
+    return new_state
+
+
+# def flatten_outputs(log):
+#     # dicts are converted to a single name
+#     # multiple dimensions are split
+#     # 2d is converted to 1d array
+#     outputs = log['outputs']
+#     for var_name, var_data in outputs:
+#         np_var_data = np.array(var_data)
+#         if np.shape[1] 
+#     return flat_outputs
