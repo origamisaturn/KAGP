@@ -68,6 +68,17 @@ def calc_2D_local_velocity(x, v):
         raise ValueError("Calculated v_theta is negative.")
     return r_dot, v_theta
 
+class EnginePropertyEstimator(om.ExplicitComponent):
+    """ Estimates values of engine properties in-flight. 
+    
+    Inputs:
+        estimator_sample_
+    
+    Outputs:
+    
+    """
+    ...
+
 class RadialControl(om.ExplicitComponent):
     """
     Component containing radial rate control block.
@@ -195,6 +206,10 @@ class PitchQuery(om.ExplicitComponent):
         a0, a1, a2, c1, c2: Coefficients used to describe radial
             acceleration over time.
         g_eff: [m/s^2] Effective gravity at time sample_t.
+
+        --- DEBUG --- [CONSIDER OWN COMPONENT]
+        target_r_dot_T:
+        target_r_T:
     
     Outputs:
         --- User Output ---
@@ -220,7 +235,8 @@ class PitchQuery(om.ExplicitComponent):
 
     def setup(self):
         input_names = ['t', 'T', 'a0', 'a1', 'a2', 'c1', 'c2', 
-                       'g_eff', 'm0', 'm_dot', 'v_e']
+                       'g_eff', 'm0', 'm_dot', 'v_e',
+                       'target_r_T', 'target_r_dot_T']
         for name in input_names:
             self.add_input(name, val=0.0)
         
@@ -228,7 +244,7 @@ class PitchQuery(om.ExplicitComponent):
         for name in output_names:
             self.add_output(name, val=0.0)
         
-        debug_names = ['a_thrust', 'r_dot_dot', 'p1', 'p2']
+        debug_names = ['a_thrust', 'r_dot_dot', 'p1', 'p2', 'r_dot', 'r']
         debug_dict = {}
         for name in debug_names:
             debug_dict[name] = 0.0
@@ -269,6 +285,36 @@ class PitchQuery(om.ExplicitComponent):
         discrete_outputs['_debug']['p1'] = p1
         discrete_outputs['_debug']['p2'] = p2
 
+        # Copied from VThetaSolver
+        r_dot_T = inputs['target_r_dot_T'][0]
+        r_T = inputs['target_r_T'][0]
+
+        F_mat = calculate_F_mat(t, T, v_e, mdot, m0)
+        f11 = F_mat[0, 0]
+        f12 = F_mat[0, 1]
+        f21 = F_mat[1, 0]
+        f22 = F_mat[1, 1]
+        T_go = T - t
+        r_dot = r_dot_T - f11*c1 - f12*c2
+        r = r_T - (f21*c1 + f22*c2 + r_dot*T_go)
+
+        discrete_outputs['_debug']['r_dot'] = r_dot
+        discrete_outputs['_debug']['r'] = r
+
+def calculate_F_mat(t, T, v_e, m_dot, m0):
+    T_go = T - t
+    tau = m0 / m_dot
+    a0 = v_e/(tau - T)
+    a1 = -a0**2/v_e
+    a2 = a0**3/v_e**2
+
+    f11 = a0*T_go + a1*T_go**2/2 + a2*T_go**3/3
+    f21 = a0*T_go**2/2 + a1*T_go**3/3 + a2*T_go**4/4
+    f22 = a0*T_go**3/3 + a1*T_go**4/4 + a2*T_go**5/5
+    f12 = f21
+
+    F_mat = np.array([[f11, f12], [f21, f22]])
+    return F_mat
 
 class VThetaSolver(om.ExplicitComponent):
     """ Estimates final tangential velocity for given radial rate control path.

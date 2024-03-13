@@ -256,14 +256,21 @@ def dataframe_errors(df_dict):
     t_step = get_time_steps(df_dict['derived']['t'])
     r_dot_dot_error = (df_dict['derived']['r_dot_dot'] - 
                        df_dict['outputs']['pitch_query._debug.r_dot_dot'])
+    r_dot_error = (df_dict['derived']['r_dot'] - 
+                       df_dict['outputs']['pitch_query._debug.r_dot'])
+    r_error = (df_dict['derived']['radius'] - 
+                       df_dict['outputs']['pitch_query._debug.r'])
     thrust_acc_error = (df_dict['derived']['thrust_acc'] -
                         df_dict['outputs']['pitch_query._debug.a_thrust'])
     thrust_alpha_error = (df_dict['derived']['alpha'] - 
                           df_dict['outputs']['pitch_query.alpha'])
+    
     return pd.DataFrame(
         {'t': t,
          't_step': t_step,
          'r_dot_dot_err': r_dot_dot_error,
+         'r_dot_err': r_dot_error,
+         'r_err': r_error,
          'thrust_acc_err': thrust_acc_error,
          'thrust_alpha_error': thrust_alpha_error}
     )

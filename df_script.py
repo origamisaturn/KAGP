@@ -7,7 +7,7 @@ from log_utils import *
 
 mu = 4.9028e+12 # Moon
 
-log_file = "ksp2d_2.pkl"
+log_file = "ksp2d_3.pkl"
 with open(log_file, 'rb') as fh:
     log = pkl.load(fh)
 
@@ -30,7 +30,7 @@ def test_alpha(index):
     print(alpha[index])
     print(cmd_alpha[index])
 
-t_20_3 = 5000
+t_20_3 = 100 #5000
 test_alpha(t_20_3)
 df_err.plot()
 plot_dataframe_errors(df_dict)
