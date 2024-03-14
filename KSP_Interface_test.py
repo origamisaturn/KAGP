@@ -5,7 +5,7 @@ import unittest
 import sys, os
 sys.path.append(os.path.abspath('core'))
 
-from guidance_interface import TestGuidance2
+from guidance_interface import TestGuidance3
 from KSP_interface import KSP2DInterface
 from log_interface import LogInterface
 
@@ -30,7 +30,7 @@ def load_input(filenames):
 
 input_data = load_input(input_filenames)
 log_interface = LogInterface(input_data)
-test_guidance_interface = TestGuidance2(input_data, log_interface)
+test_guidance_interface = TestGuidance3(input_data, log_interface)
 
 test_integration_interface = KSP2DInterface(
     input_data, 

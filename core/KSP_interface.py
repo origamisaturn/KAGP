@@ -28,7 +28,8 @@ class KSP2DInterface:
             self._log_state(state, guidance_time)
             
             # Likely incorrect
-            command = self.guidance_interface.get_command(state, guidance_time, logging=True)
+            thrust_acc = self._get_thrust_acc()
+            command = self.guidance_interface.get_command(state, guidance_time, logging=True, thrust_acc=thrust_acc)
             thrust, alpha = tuple(command)
             print("{:.2f}%\t{:.2f} deg\t{:.1f}s".format(thrust*100,
                                                         np.rad2deg(alpha),
@@ -47,6 +48,9 @@ class KSP2DInterface:
         self._vessel.auto_pilot.disengage()
 
         self.save_log()
+
+    def _get_thrust_acc(self):
+        return self._streams['thrust']()/self._streams['mass']()
 
     def _get_state(self):
         pos = self._streams['position']()
@@ -84,6 +88,7 @@ class KSP2DInterface:
         self._streams['position'] = conn.add_stream(vessel.position, ref_frame)
         self._streams['velocity'] = conn.add_stream(vessel.velocity, ref_frame)
         self._streams['time'] = conn.add_stream(getattr, conn.space_center, 'ut')   
+        self._streams['thrust'] = conn.add_stream(getattr, vessel, 'thrust')
 
     def _parse_input(self, input_dict):
         self.client_name = input_dict['simulator']['name']

@@ -3,6 +3,7 @@ import numpy as np
 import math
 import matplotlib.pyplot as plt
 from scipy.integrate import solve_ivp
+from scipy.optimize import least_squares
 
 def rot_mat_2d(theta):
     cos = math.cos
@@ -72,12 +73,75 @@ class EnginePropertyEstimator(om.ExplicitComponent):
     """ Estimates values of engine properties in-flight. 
     
     Inputs:
-        estimator_sample_
-    
+        sample_thrust_acceleration: [m/s^2]
+        sample_t: [s] 
+        estimator_ignore_time: [s] Time until which to ignore 
+            sample_thrust_acceleration measurements.
+        estimator_output_time: [s] Time when block will start output.
+        m0: [kg]
     Outputs:
+        v_e: [m/s] Estimated effective exhaust velocity of thruster.
+        m_dot: [kg/s] Estimated thruster mass flow.
     
     """
-    ...
+    # def __init__(self, *args, **kwargs):
+    #     super().__init__(*args, **kwargs)
+
+    #     ...
+    def minimize_function(self, x):
+        v_e = x[0]
+        tau = x[1]
+        t = np.array(self.time_history)
+        a_thrust = self.thrust_acc_history
+
+        calc_a_thrust = v_e/(tau - t)
+        res_a_thrust = calc_a_thrust - a_thrust
+        
+        return res_a_thrust
+
+    def setup(self):
+        self.thrust_acc_history = []
+        self.time_history = []
+
+        input_names = ['sample_thrust_acceleration', 'sample_t', 'm0']
+        for name in input_names:
+            self.add_input(name, val=0.0)
+        self.add_input('estimator_ignore_time', val=5.0)
+        self.add_input('estimator_output_time', val=8.0)
+
+        output_names = ['v_e', 'm_dot']
+        for name in output_names:
+            self.add_output(name, val=0.0)
+
+    def compute(self, inputs, outputs):
+        estimator_ignore_time = inputs['estimator_ignore_time']
+        estimator_output_time = inputs['estimator_output_time']
+        sample_t = inputs['sample_t']
+
+        if sample_t < estimator_ignore_time:
+            return
+        else:
+            sample_t = inputs['sample_t'][0]
+            sample_thrust_acc = inputs['sample_thrust_acceleration'][0]
+            m0 = inputs['m0'][0]
+
+            self.thrust_acc_history.append(sample_thrust_acc)
+            self.time_history.append(sample_t)
+
+            if sample_t > estimator_output_time:
+                v_e_guess = outputs['v_e'][0]
+                m_dot_guess = outputs['m_dot'][0]
+                tau_guess = m0/m_dot_guess
+
+                x0 = [v_e_guess, tau_guess]
+                res = least_squares(self.minimize_function, x0, method='lm')
+                estimated_v_e = res.x[0]
+                estimated_tau = res.x[1]
+                estimated_m_dot = m0/estimated_tau
+
+                outputs['v_e'] = estimated_v_e
+                outputs['m_dot'] = estimated_m_dot 
+
 
 class RadialControl(om.ExplicitComponent):
     """
