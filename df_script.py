@@ -1,6 +1,7 @@
 import sys, os
 import pickle as pkl
 import numpy as np
+import pandas as pd
 sys.path.append(os.path.abspath('core'))
 
 from log_utils import *
@@ -11,8 +12,13 @@ log_file = "ksp2d_3.pkl"
 with open(log_file, 'rb') as fh:
     log = pkl.load(fh)
 
+engine_data_file = "engine_est_out_031424"
+with open(engine_data_file, 'rb') as fh:
+    eng_dict = pkl.load(fh)
+
 df_dict = log_to_dataframes(log, mu)
 df_err = dataframe_errors(df_dict)
+df_eng = pd.DataFrame(eng_dict)
 
 def test_alpha(index):
     # a_x = df_dict['derived']['acc_x']
@@ -34,6 +40,8 @@ t_20_3 = 100 #5000
 test_alpha(t_20_3)
 df_err.plot()
 plot_dataframe_errors(df_dict)
+df_dict['derived'].plot(x='t', y='thrust_acc')
+df_eng.plot(x='t')
 
 plt.show()
 

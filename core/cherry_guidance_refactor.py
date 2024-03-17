@@ -128,19 +128,23 @@ class EnginePropertyEstimator(om.ExplicitComponent):
             self.thrust_acc_history.append(sample_thrust_acc)
             self.time_history.append(sample_t)
 
-            if sample_t > estimator_output_time:
-                v_e_guess = outputs['v_e'][0]
-                m_dot_guess = outputs['m_dot'][0]
-                tau_guess = m0/m_dot_guess
+            if sample_t > 400:
+                print("here")
+            # if sample_t > estimator_output_time:
+            #     v_e_guess = outputs['v_e'][0]
+            #     m_dot_guess = outputs['m_dot'][0]
+            #     tau_guess = m0/m_dot_guess
 
-                x0 = [v_e_guess, tau_guess]
-                res = least_squares(self.minimize_function, x0, method='lm')
-                estimated_v_e = res.x[0]
-                estimated_tau = res.x[1]
-                estimated_m_dot = m0/estimated_tau
+            #     x0 = [v_e_guess, tau_guess]
+            #     # Hardcoded bounds
+            #     bounds = ([10, 1/2], [10000, m0/0.1])
+            #     res = least_squares(self.minimize_function, x0, method='trf', bounds=bounds)
+            #     estimated_v_e = res.x[0]
+            #     estimated_tau = res.x[1]
+            #     estimated_m_dot = m0/estimated_tau
 
-                outputs['v_e'] = estimated_v_e
-                outputs['m_dot'] = estimated_m_dot 
+            #     outputs['v_e'] = estimated_v_e
+            #     outputs['m_dot'] = estimated_m_dot 
 
 
 class RadialControl(om.ExplicitComponent):
