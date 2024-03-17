@@ -107,7 +107,7 @@ class EnginePropertyEstimator(om.ExplicitComponent):
         for name in input_names:
             self.add_input(name, val=0.0)
         self.add_input('estimator_ignore_time', val=5.0)
-        self.add_input('estimator_output_time', val=8)
+        self.add_input('estimator_output_time', val=100)
 
         output_names = ['v_e', 'm_dot']
         for name in output_names:

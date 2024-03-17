@@ -8,7 +8,7 @@ from log_utils import *
 
 mu = 4.9028e+12 # Moon
 
-log_file = "ksp2d_3.pkl"
+log_file = "ksp2d_031724_eng_prop_trf.pkl"
 with open(log_file, 'rb') as fh:
     log = pkl.load(fh)
 
