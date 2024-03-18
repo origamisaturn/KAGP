@@ -505,7 +505,7 @@ class VThetaSolver(om.ExplicitComponent):
 
             v_theta_T_calc = res1.y[0, -1]
             #outputs['v_theta_loss_T'] = res2.y[0, -1]
-            expected_v_theta_loss_T_calc = -v_e*math.log(1 - T_go/(tau-t0)) - (-(v_theta_T_calc - v_theta_0))
+            expected_v_theta_loss_T_calc = -v_e*math.log(1 - T_go/(tau-t0)) - (v_theta_T_calc - v_theta_0)
             outputs['v_theta_loss_T'] = expected_v_theta_loss_T_calc
         except:
             print("V_theta block failed to calculate.")
@@ -551,7 +551,7 @@ class TimeToGo(om.ExplicitComponent):
         for name in input_names:
             self.add_input(name, val=0.0)
         
-        output_names = ['T']
+        output_names = ['T', 'T_est']
         for name in output_names:
             self.add_output(name, val=0.0)
 
@@ -575,8 +575,10 @@ class TimeToGo(om.ExplicitComponent):
         # Normally not negative but I have done unfortunate things with the
         # sign of v_theta
         #CHANGED V_THETA_LOSS TO TN
-        T_go_n_1 = tau0 * (1 - math.exp(-(-(target_v_theta_T + v_theta_0 + v_theta_loss_Tn)/v_e)))
+        # T_go_n_1 = tau0 * (1 - math.exp(-(target_v_theta_T - v_theta_0 + v_theta_loss_Tn_1)/v_e))
         #T_go_n_1 = tau0 * (1 - math.exp(-(-(target_v_theta_T - v_theta_0 - v_theta_loss_Tn)/v_e)))
-        T_n_1 = T_go_n_1 + t0
-        
-        outputs['T'] = T_n_1
+        # T_n_1 = T_go_n_1 + t0
+        T_go_est = tau0 * (1 - math.exp(-(v_theta_Tn - v_theta_0 + v_theta_loss_Tn)/v_e))
+        T_est = T_go_est + t0
+        # outputs['T'] = T_n_1
+        outputs['T_est'] = T_est
