@@ -575,10 +575,9 @@ class TimeToGo(om.ExplicitComponent):
         # Normally not negative but I have done unfortunate things with the
         # sign of v_theta
         #CHANGED V_THETA_LOSS TO TN
-        # T_go_n_1 = tau0 * (1 - math.exp(-(target_v_theta_T - v_theta_0 + v_theta_loss_Tn_1)/v_e))
-        #T_go_n_1 = tau0 * (1 - math.exp(-(-(target_v_theta_T - v_theta_0 - v_theta_loss_Tn)/v_e)))
-        # T_n_1 = T_go_n_1 + t0
+        T_go_n_1 = tau0 * (1 - math.exp(-(target_v_theta_T - v_theta_0 + v_theta_loss_Tn)/v_e))
+        T_n_1 = T_go_n_1 + t0
         T_go_est = tau0 * (1 - math.exp(-(v_theta_Tn - v_theta_0 + v_theta_loss_Tn)/v_e))
         T_est = T_go_est + t0
-        # outputs['T'] = T_n_1
+        outputs['T'] = T_n_1
         outputs['T_est'] = T_est
