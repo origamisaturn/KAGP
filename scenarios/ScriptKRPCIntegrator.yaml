@@ -13,7 +13,7 @@ simulator:
   "guidance": "FixedThrustGuidanceFull"
   "outer_loop_period": 10
   "simulation_end_time": 370
-  "log_path": "ksp2d_031924_outer_loop.pkl"
+  "log_path": "ksp2d_031924_outer_loop_low_att.pkl"
 
   "initial_position": [1737.4E+3, 0.0]
   "initial_velocity": [0.0, 0.0]

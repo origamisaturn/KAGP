@@ -19,6 +19,8 @@ class KSP2DInterface:
         self._vessel.auto_pilot.target_pitch_and_heading(90, default_heading)
         self._vessel.auto_pilot.target_roll = 0
         self._vessel.auto_pilot.engage()
+        print("att: {}".format(self._vessel.auto_pilot.attenuation_angle))
+        self._vessel.auto_pilot.attenuation_angle = (0.01, 0.01, 0.01)
         self._vessel.control.throttle = 1
 
         estimated_T = 10
