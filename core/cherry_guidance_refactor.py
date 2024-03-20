@@ -69,6 +69,8 @@ def calc_2D_local_velocity(x, v):
         raise ValueError("Calculated v_theta is negative.")
     return r_dot, v_theta
 
+# WARNING This is called during time-to-go optimization, this should
+# only be called in real time.
 class EnginePropertyEstimator(om.ExplicitComponent):
     """ Estimates values of engine properties in-flight. 
     
@@ -302,11 +304,14 @@ class PitchQuery(om.ExplicitComponent):
     """
 
     def setup(self):
+        # iron out differences in t and sample_x, this is a hack.
         input_names = ['t', 'T', 'a0', 'a1', 'a2', 'c1', 'c2', 
-                       'g_eff', 'm0', 'm_dot', 'v_e',
+                       'g_eff', 'm0', 'm_dot', 'v_e', 'mu',
                        'target_r_T', 'target_r_dot_T']
         for name in input_names:
             self.add_input(name, val=0.0)
+        self.add_input('sample_x', val=np.zeros((2)))
+        self.add_input('sample_v', val=np.zeros((2)))
         
         output_names = ['alpha']
         for name in output_names:
@@ -327,9 +332,10 @@ class PitchQuery(om.ExplicitComponent):
         a2 = inputs['a2'][0]
         c1 = inputs['c1'][0]
         c2 = inputs['c2'][0]
-        g_eff = inputs['g_eff'][0]
+        # g_eff = inputs['g_eff'][0]
         m0 = inputs['m0'][0]
         mdot = inputs['m_dot'][0]
+        mu = inputs['mu'][0]
         v_e = inputs['v_e'][0]
         tau = m0/mdot
 
@@ -342,6 +348,12 @@ class PitchQuery(om.ExplicitComponent):
         p2 = p1 * (T-t)
         r_dot_dot = c1 * p1 + c2 * p2
         a_thrust = v_e/(tau - t)
+
+        x0 = np.array(inputs['sample_x'])
+        v0 = np.array(inputs['sample_v'])
+        r_dot_0, v_theta_0 = calc_2D_local_velocity(x0, v0)
+        r0 = np.linalg.norm(x0)
+        g_eff = -mu/r0**2 + v_theta_0**2/r0
         # Note: g_eff is based on time (state actually) but we will assume
         # it is static for each iteration.
         alpha = math.asin((r_dot_dot - g_eff)/(a_thrust))
@@ -581,3 +593,133 @@ class TimeToGo(om.ExplicitComponent):
         T_est = T_go_est + t0
         outputs['T'] = T_n_1
         outputs['T_est'] = T_est
+
+
+class TimeToGo2(om.ExplicitComponent):
+    """
+
+    Inputs:
+
+
+    Outputs:
+
+    """
+    def setup(self):
+        self.add_input('sample_x', val=np.zeros((2)))
+        self.add_input('sample_v', val=np.zeros((2)))
+        input_names = ['sample_t', 'target_v_theta_T', 
+                       'v_theta_T', 
+                       'v_e', 'm0', 'm_dot']
+        for name in input_names:
+            self.add_input(name, val=0.0)
+        # self.add_input('Q_n', val=1.0)
+        
+        output_names = ['T']
+        for name in output_names:
+            self.add_output(name, val=0.0)
+        self.add_output('Q_n', val=1.0)
+
+        self.Q_n = 1
+        self.is_first_entry = True
+
+    def compute(self, inputs, outputs):
+        Q_n = self.Q_n
+        target_v_theta_T = inputs['target_v_theta_T'][0]
+        v_theta_Fn = inputs['v_theta_T'][0]
+        t0 = inputs['sample_t'][0]
+        v_e = inputs['v_e'][0]
+        m0 = inputs['m0'][0]
+        m_dot = inputs['m_dot'][0]
+
+        pos = inputs['sample_x']
+        vel = inputs['sample_v']
+        r_dot_0, v_theta_0 = calc_2D_local_velocity(pos, vel)
+
+        tau = m0/m_dot
+        tau0 = tau - t0
+        P = math.exp(-(target_v_theta_T - v_theta_0)/v_e)
+
+        if not self.is_first_entry:
+            H_fn = math.exp(-(v_theta_Fn - v_theta_0)/v_e)
+            Q_n_1 = P * Q_n / H_fn
+        else:
+            Q_n_1 = Q_n
+            self.is_first_entry = False
+
+        T_go_n_1 = tau0*(1 - P*Q_n_1)
+        T_n_1 = T_go_n_1 + t0
+
+        self.Q_n = Q_n_1
+        outputs['Q_n'] = Q_n_1
+        outputs['T'] = T_n_1
+
+class OuterLoopGroup(om.Group):
+    def setup(self):
+        self.add_subsystem('time_to_go', TimeToGo2(), promotes=['*'])
+        self.add_subsystem('radial_control', RadialControl(),
+                            promotes=['*'])
+        self.add_subsystem('v_theta', VThetaSolver(), promotes=['*'])
+        self.nonlinear_solver = om.NonlinearBlockGS()
+        self.nonlinear_solver.options['maxiter'] = 100
+        self.nonlinear_solver.options['atol'] = 1e-3
+
+class OuterLoopComponent(om.ExplicitComponent):
+    def setup(self):
+        model = OuterLoopGroup()
+        self.prob = om.Problem(model)
+        self.prob.setup()
+
+        self.add_input('sample_x', val=np.zeros((2)))
+        self.add_input('sample_v', val=np.zeros((2)))
+        input_names = ['sample_t', 
+                       'target_r_dot_T', 'target_r_T', 'target_v_theta_T',
+                       'mu', 'v_e', 'm_dot', 'm0']
+                       #'T'
+        for name in input_names:
+            self.add_input(name, val=0.0)
+
+        self.add_input('outer_loop_period', val=50.0)
+        self.add_input('outer_loop_cutoff', val=10.0)
+        # consider making this a class attribute
+        output_names = ['a0', 'a1', 'a2', 'c1', 'c2',
+                        'g_eff',
+                        'v_theta_T',
+                        'T']
+        for name in output_names:
+            self.add_output(name, val=0.0)
+        
+        self.last_sample_t = None
+
+    def compute(self, inputs, outputs):
+        sample_t = inputs['sample_t'][0]
+        outer_loop_period = inputs['outer_loop_period'][0]
+        outer_loop_cutoff = inputs['outer_loop_cutoff'][0]
+        T = outputs['T']
+        if (not sample_t or
+            ((sample_t - self.last_sample_t) >= outer_loop_period and
+            T - sample_t > outer_loop_cutoff)):
+
+            self.pass_prob_inputs(inputs)
+            self.prob.run_model()
+            self.pass_prob_outputs(outputs)
+
+            self.last_sample_t = sample_t
+
+    def pass_prob_inputs(self, inputs):
+        self.prob['sample_x'] = inputs['sample_x']
+        self.prob['sample_v'] = inputs['sample_v']
+        input_names = ['sample_t', 
+                       'target_r_dot_T', 'target_r_T', 'target_v_theta_T',
+                       'mu', 'v_e', 'm_dot', 'm0']
+        for name in input_names:
+            self.prob[name] = inputs[name][0]
+
+    def pass_prob_outputs(self, outputs):
+        output_names = ['a0', 'a1', 'a2', 'c1', 'c2',
+                        'g_eff',
+                        'v_theta_T',
+                        'T']
+        for name in output_names:
+            outputs[name] = self.prob[name]
+
+

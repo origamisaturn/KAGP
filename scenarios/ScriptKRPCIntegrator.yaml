@@ -12,8 +12,8 @@ simulator:
   "name": "KSP 2D Test"
   "guidance": "FixedThrustGuidanceFull"
   "outer_loop_period": 10
-  "simulation_end_time": 448
-  "log_path": "ksp2d_031724_eng_prop_trf.pkl"
+  "simulation_end_time": 370
+  "log_path": "ksp2d_031924_outer_loop.pkl"
 
   "initial_position": [1737.4E+3, 0.0]
   "initial_velocity": [0.0, 0.0]
