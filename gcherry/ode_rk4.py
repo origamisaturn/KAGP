@@ -2,11 +2,12 @@ from scipy.integrate import solve_ivp
 import numpy as np
 import math
 
-def rocket_ode_2(t, state):
+def generate_rocket_ode_2(t, state, mu, Isp, F_thrust_max, guidance_interface):
     """ used for integrating into rk4. state is:
         [x, y, xdot, ydot, m]
         angle of elevation is from guidance function inner loop, no
         outer loop calculation."""
+    
 
 # 
 def rocket_ode(t, state, mu, Isp, F_thrust_max, guidance_func):

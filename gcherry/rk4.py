@@ -1,8 +1,14 @@
 import numpy as np
 
-def rk4(fun, tspan, y0, max_step):
+# callback added to give program opportunity to calculate outer loop every step.
+def rk4(fun, tspan, y0, max_step, callback=None):
     # Make sure y0 is np
     y0 = np.array(y0)
+
+    # hopefully calling a useless function is more performant than checking
+    # if callback is None every integration step
+    if callback==None:
+        callback = lambda t, y: None
 
     t_res = rk4_get_t_steps(tspan, max_step)
     y_res = np.zeros((len(t_res), len(y0)))
@@ -14,6 +20,13 @@ def rk4(fun, tspan, y0, max_step):
             y = y_res[i-1, :]
             h = t_res[i] - t
             y_res[i, :] = rk4_step(fun, t, y, h)
+
+            t_new = t_res[i]
+            y_new = y_res[i, :]
+            # add a test for the callback method
+            callback(t_new, y_new)
+
+        
             
     return t_res, y_res
 
