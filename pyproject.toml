@@ -1,0 +1,11 @@
+[project]
+name = "gcherry"
+version = "0.0.1"
+dependencies = [
+    "numpy",
+    "scipy"
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["gcherry"]
