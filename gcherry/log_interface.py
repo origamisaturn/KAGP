@@ -2,7 +2,7 @@ import pickle as pkl
 from copy import deepcopy
 import pandas as pd
 import numpy as np
-from log_utils import get_time_steps, interpolate_state, get_derived_state
+from gcherry.log_utils import get_time_steps, interpolate_state, get_derived_state
 
 class LogInterface:
     def __init__(self, input_data=None):

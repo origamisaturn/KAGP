@@ -5,9 +5,9 @@ import unittest
 import sys, os
 sys.path.append(os.path.abspath('core'))
 
-from guidance_interface import TestGuidance6
-from KSP_interface import KSP2DInterface
-from log_interface import LogInterface
+from gcherry.guidance_interface import TestGuidance6
+from gcherry.KSP_interface import KSP2DInterface
+from gcherry.log_interface import LogInterface
 
 def relative_path(filepath):
     return os.path.abspath(os.path.join(__file__, '..', filepath))

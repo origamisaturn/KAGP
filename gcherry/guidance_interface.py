@@ -5,10 +5,9 @@ import numpy as np
 
 # import sys, os
 # sys.path.append(os.path.abspath('core'))
-from cherry_guidance import FixedThrustGuidanceFull
-from log_writing import init_log, log_problem
+from gcherry.log_writing import init_log, log_problem
 
-from cherry_guidance_refactor import (RadialControl, 
+from gcherry.cherry_guidance_refactor import (RadialControl, 
     PitchQuery, 
     VThetaSolver,
     EnginePropertyEstimator,
