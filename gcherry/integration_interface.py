@@ -5,7 +5,12 @@ def IntegrationInterface():
         ...
 
     def run(self):
+        ode_func = lambda t, state: rocket_ode(t, state, ..., self._guidance_func)
         ...
+
+    def _guidance_func(self):
+        ...
+
 
 def Rx(angle: float):
     c1 = np.cos(angle)
@@ -58,7 +63,8 @@ def topo2global_rot(lat, lon):
     axes_switch_rot = np.array([[0, 0, -1],
                                 [0, 1, 0],
                                 [1, 0, 0]])
-    return Rz(lon)@Ry(lat)@axes_switch_rot
+    # latitude negated as positive y rot is downwards
+    return Rz(lon)@Ry(-lat)@axes_switch_rot
 
 def global2topo_rot(lat, lon):
     """ Rotation from global to topocentric frame. """

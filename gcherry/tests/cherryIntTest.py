@@ -1,6 +1,6 @@
 import unittest
 from gcherry.rk4 import rk4
-from gcherry.integration_interface import rocket_ode, body2global_rot
+from gcherry.integration_interface import rocket_ode, body2global_rot, global2body_rot
 from scipy.integrate import solve_ivp
 import math
 import numpy as np
@@ -185,7 +185,29 @@ class TestRocketOde(unittest.TestCase):
 
 class TestRot(unittest.TestCase):
     def test_funct__body2global_rot__(self):
-        pos = 
+        pos_global = [0.5, 0.5, np.sin(np.deg2rad(45))]
+        roll = np.deg2rad(90)
+        pitch = np.deg2rad(45)
+        yaw = np.deg2rad(180)
+
+        expected_global_axes = np.array([[1/2*np.sqrt(2), 0, -1/2*np.sqrt(2)],
+                                         [1/2*np.sqrt(2), 0, 1/2*np.sqrt(2)],
+                                         [0, -1, 0]])
+        
+        calculated_global_axes = body2global_rot(roll, pitch, yaw, pos_global)
+
+        assert within_tol(expected_global_axes, calculated_global_axes, tol=1e-8) == True
+
+        expected_body_axes = np.identity(3)
+        calculated_body_axes = global2body_rot(roll, pitch, yaw, pos_global) @ calculated_global_axes
+
+        assert within_tol(expected_body_axes, calculated_body_axes, tol=1e-8)
+
+def within_tol(val1, val2, tol=1e-8):
+    if np.all(abs(val1-val2) < tol):
+        return True
+    else:
+        return False
 
 if __name__ == '__main__':
     unittest.main()
