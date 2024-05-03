@@ -23,8 +23,8 @@ def test_rk4_1():
     t_res, y_res = rk4(sample_ode, xspan, y0, h)
     
     assert t_res[0] == xspan[0] and t_res[-1] == xspan[-1]
-    assert y_res[0] == y0
-    assert within_tol(y_res[-1], 1.2242081, tol=1e-7)
+    assert y_res[0, 0] == y0
+    assert within_tol(y_res[0, -1], 1.2242081, tol=1e-7)
 
 # Tests t_res behavior with unequal step size
 def test_rk4_2():
@@ -39,8 +39,8 @@ def test_rk4_2():
     assert within_tol(t_res[1], h)
     assert within_tol(t_res[2], 2*h)
 
-    assert y_res[0] == y0
-    assert within_tol(y_res[-1], 1.2242081, tol=1e-7)
+    assert y_res[0, 0] == y0
+    assert within_tol(y_res[0, -1], 1.2242081, tol=1e-7)
 
 # Tests single step
 def test_rk4_3():
@@ -53,9 +53,9 @@ def test_rk4_3():
     
     assert len(t_res) == 2
     assert t_res[0] == xspan[0] and t_res[-1] == xspan[-1]
-    assert y_res[0] == y0
+    assert y_res[0, 0] == y0
 
-    assert within_tol(y_res[-1], 1.2242067, tol=1e-7)
+    assert within_tol(y_res[0, -1], 1.2242067, tol=1e-7)
 
 # Following tests based on simple frictionless 2-dimensional ballistics.
 
@@ -104,10 +104,10 @@ def test_rk4_4():
 
     # Comparing results
     tol = 1e-8
-    assert within_tol(x_expected_apex, y_res_apex[-1, 2], tol=tol)
-    assert within_tol(y_expected_apex, y_res_apex[-1, 3], tol=tol)
-    assert within_tol(x_expected_final, y_res_final[-1, 2], tol=tol)
-    assert within_tol(y_expected_final, y_res_final[-1, 3], tol=tol)
+    assert within_tol(x_expected_apex, y_res_apex[2, -1], tol=tol)
+    assert within_tol(y_expected_apex, y_res_apex[3, -1], tol=tol)
+    assert within_tol(x_expected_final, y_res_final[2, -1], tol=tol)
+    assert within_tol(y_expected_final, y_res_final[3, -1], tol=tol)
 
 
 
