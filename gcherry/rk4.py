@@ -2,6 +2,30 @@ import numpy as np
 
 # callback added to give program opportunity to calculate outer loop every step.
 def rk4(fun, tspan, y0, max_step, callback=None):
+    """ Runge-kutta fourth-order integrator.
+    
+    Args:
+        fun: Derivative function, with arguments t (float) and state (1-D 
+            array of state at time t). Returns derivative of state in 1-D
+            array, with length equal to that of state.
+        tspan: 2-element list consisting of start t and end t, in that 
+            order.
+        y0: Initial state, 1-D array.
+        max_step: Maximum change in t for each step.
+        callback: Function called at the end of every rk4 step. Arguments
+            t (float) and state (1-D array of state at time t), 
+            representing the t and state just calculated.
+        
+    Returns:
+        (t_res, y_res): t_res is a 1-D numpy array consisting of 
+        the time after each step of rk4. y_res is a 2-D numpy
+        array where the rows are the elements of the state, and
+        the columns are the state at different times, 
+        corresponding to t_res. 
+        
+        The final result is given by y_res[:, -1]. 
+        
+    """
     # Make sure y0 is np
     y0 = np.array(y0)
 
@@ -10,7 +34,7 @@ def rk4(fun, tspan, y0, max_step, callback=None):
     if callback==None:
         callback = lambda t, y: None
 
-    t_res = rk4_get_t_steps(tspan, max_step)
+    t_res = _rk4_get_t_steps(tspan, max_step)
     y_res = np.zeros((len(y0), len(t_res)))
     for i in range(len(t_res)):
         if i == 0:
@@ -19,7 +43,7 @@ def rk4(fun, tspan, y0, max_step, callback=None):
             t = t_res[i-1]
             y = y_res[:, i-1]
             h = t_res[i] - t
-            y_res[:, i] = rk4_step(fun, t, y, h)
+            y_res[:, i] = _rk4_step(fun, t, y, h)
 
             t_new = t_res[i]
             y_new = y_res[:, i]
@@ -28,7 +52,7 @@ def rk4(fun, tspan, y0, max_step, callback=None):
 
     return t_res, y_res
 
-def rk4_step(fun, t, y, h):
+def _rk4_step(fun, t, y, h):
     w1 = h*fun(t, y)
     w2 = h*fun(t + 1/2*h, y + 1/2*w1)
     w3 = h*fun(t + 1/2*h, y + 1/2*w2)
@@ -36,7 +60,7 @@ def rk4_step(fun, t, y, h):
     y_next = y + 1/6 * (w1 + 2*w2 + 2*w3 + w4)
     return y_next
 
-def rk4_get_t_steps(tspan, max_step):
+def _rk4_get_t_steps(tspan, max_step):
     d_tspan = tspan[1] - tspan[0]
     n_steps = int(np.floor(d_tspan/max_step))
     trunc_fin_t = tspan[0] + n_steps*max_step

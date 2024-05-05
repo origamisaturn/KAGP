@@ -13,6 +13,7 @@ class KSP2DInterface:
         ...
     def run(self):
         init_time = self._conn.space_center.ut
+        # guidance must start at time 0
         guidance_time = self._streams['time']() - init_time
 
         default_heading = 90 #deg

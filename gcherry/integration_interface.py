@@ -1,15 +1,72 @@
 import numpy as np
+from gcherry.rk4 import rk4
 
 def IntegrationInterface():
+    # These are updated by every callback call.
+    thrust_cmd_store: float
+    pitch_cmd_store: float
+    heading_cmd_store: float
+    # will not be exact, will be shifted forward
+    # by the integration timestep
+    outer_loop_interval: float
+    outer_loop_cutoff: float
+    # make an abstract class to represent this
+    guidance_interface: GuidanceInterface
+    log_interface: LogInterface
+    last_outer_loop_time: float
+
+    # have to make a Config class
+    _settings: Config
+
+
+
     def __init__(self):
+        self.thrust_cmd_store = 0.0
+        self.pitch_cmd_store = np.deg2rad(90)
+        self.heading_cmd_store = np.deg2rad(0)
         ...
 
     def run(self):
-        ode_func = lambda t, state: rocket_ode(t, state, ..., self._guidance_func)
+        # relies on the Config file structure
+        ode_func = lambda t, state: rocket_ode(t, state, mu, Isp, F_thrust_max, self._guidance_continuous)
+        t_res, y_res = rk4(ode_func, tspan, initial_state, max_step, callback=self._integration_callback)
         ...
 
-    def _guidance_func(self):
-        ...
+    """ How can I keep the guidance function constant between every timestep, 
+    but continuous as an option?
+    The callback function is my method for determining the completion of 
+    time steps and for setting outer loop calculation. 
+    Have two guidance funcs, one that reads from IntegrationInterface variables
+    that are updated every callback, and another that reads directly from
+    the GuidanceInterface.get_command(). """
+    def _integration_callback(self, t, state):
+        if (not self._is_outer_loop_cutoff(t) and 
+            self._is_outer_loop_scheduled(t)):
+            thrust_cmd, pitch_cmd, heading_cmd = self.guidance_interface.get_command(t, state, outer_loop=True)
+        else:
+            thrust_cmd, pitch_cmd, heading_cmd = self.guidance_interface.get_command(t, state, outer_loop=False)
+
+        self.thrust_command_store = thrust_cmd
+        self.pitch_command_store = pitch_cmd
+        self.heading_command_store = heading_cmd
+
+    # Is it less than outer_loop_cutoff seconds from guidance termination?
+    def _is_outer_loop_cutoff(self, t):
+        T = self.guidance_interface.estimated_final_time()
+        return (T - t) < self.outer_loop_cutoff
+    
+    # is it time to run outer loop
+    def _is_outer_loop_scheduled(self, t):
+        return (t - self.last_outer_loop_time) >= self.outer_loop_interval
+
+    def _guidance_func_continuous(self, t, state):
+        thrust_cmd, pitch_cmd, heading_cmd = self.guidance_interface.get_command(t, state, outer_loop=False)
+        return thrust_cmd, pitch_cmd, heading_cmd
+
+    # this relies on the *_store variables being updated by the 
+    # _integration_callback function.
+    def _guidance_func_discrete(self, t, state):
+        return self.thrust_cmd_store, self.pitch_cmd_store, self.heading_cmd_store
 
 
 def Rx(angle: float):
