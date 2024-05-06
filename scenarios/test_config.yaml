@@ -1,0 +1,19 @@
+mission:
+  "gravitational_parameter": 4.9028e+12
+  "periapsis": 1785.00e+3
+  "apoapsis": 1785.00e+3
+  "true_anomaly": 18.0
+#  "inclination": 30
+#  "LAN": 50
+#  "countdown": 10
+
+ksp_interface: 
+  "simulator": "KSP2D"
+  "name": "KSP 2D Test"
+  "guidance": "default"
+  "outer_loop_interval": 10
+  "simulation_end_time": 370
+  "log_path": "ksp2d_031924_outer_loop_low_att.pkl"
+
+  "initial_position": [1737.4E+3, 0.0, 0.0]
+  "initial_velocity": [0.0, 0.0, 0.0]
