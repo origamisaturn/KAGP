@@ -18,10 +18,10 @@ class Mission(BaseModel):
     # Consider making this input in degrees and just
     # modulus it.
     true_anomaly: PositiveFloat
+    outer_loop_interval: PositiveFloat
+    outer_loop_cutoff: PositiveFloat
 
 class Integrator(BaseModel):
-    guidance: GuidanceName
-    outer_loop_interval: PositiveFloat
     simulation_end_time: PositiveFloat
     # add check that directory exists
     log_path: str
@@ -29,19 +29,15 @@ class Integrator(BaseModel):
     initial_velocity: list
 
 class KSP_Interface(BaseModel):
-    guidance: GuidanceName
-    outer_loop_interval: PositiveFloat
     simulation_end_time: PositiveFloat
     # add check that directory exists
     log_path: str
-    initial_position: list[float] = Field(min_length=3, max_length=3)
-    initial_velocity: list[float] = Field(min_length=3, max_length=3)
 
 class Config(BaseModel):
     spacecraft: Spacecraft
     mission: Mission
-    # integrator: Integrator | None
-    ksp_interface: KSP_Interface
+    integrator: Integrator | None
+    # ksp_interface: KSP_Interface
 
 def load_input(filenames):
     input_data = {}

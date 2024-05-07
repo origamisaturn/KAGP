@@ -7,7 +7,7 @@ mission:
 #  "LAN": 50
 #  "countdown": 10
 
-ksp_interface: 
+integrator: 
   "simulator": "KSP2D"
   "name": "KSP 2D Test"
   "guidance": "default"

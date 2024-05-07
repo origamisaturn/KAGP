@@ -1,36 +1,78 @@
 import numpy as np
 from gcherry.rk4 import rk4
+import config as cfg
 
-def IntegrationInterface():
+
+# class SpacecraftState():
+#     _position: 
+#     _velocity:
+#     _mass:
+
+#     def __init__():
+
+
+class IntegrationInterface():
     # These are updated by every callback call.
-    thrust_cmd_store: float
-    pitch_cmd_store: float
-    heading_cmd_store: float
+    _thrust_cmd_store: float
+    _pitch_cmd_store: float
+    _heading_cmd_store: float
+    _max_time_step: float
     # will not be exact, will be shifted forward
     # by the integration timestep
-    outer_loop_interval: float
-    outer_loop_cutoff: float
+    _outer_loop_interval: float
+    _outer_loop_cutoff: float
+    _sim_end_time: float
+    _mu: float
+
+    _initial_position: list[float]
+    _initial_velocity: list[float]
+    _wet_mass: float
     # make an abstract class to represent this
-    guidance_interface: GuidanceInterface
-    log_interface: LogInterface
-    last_outer_loop_time: float
+    guidance_interface: GuidanceInterfaceBase
+    # log_interface: LogInterface
+    _last_outer_loop_time: float
 
     # have to make a Config class
-    _settings: Config
+    _config: config
 
 
-
-    def __init__(self):
-        self.thrust_cmd_store = 0.0
-        self.pitch_cmd_store = np.deg2rad(90)
-        self.heading_cmd_store = np.deg2rad(0)
+    def __init__(self, config: cfg.Config, 
+                       guidance_interface: GuidanceInterfaceBase):
+        self._thrust_cmd_store = 0.0
+        self._pitch_cmd_store = np.deg2rad(90)
+        self._heading_cmd_store = np.deg2rad(0)
+        self._max_time_step = 1.0
+        self.guidance_interface = guidance_interface
+        self._parse_input()
         ...
+
+    def _parse_input(self):
+        self._outer_loop_interval = self._config.mission.outer_loop_interval
+        self._outer_loop_cutoff = self._config.mission.outer_loop_cutoff
+        self._sim_end_time = self._config.integrator.simulation_end_time
+        self._mu = self._config.mission.gravitational_parameter
+
+        self._initial_position = self._config.integrator.initial_position
+        self._initial_velocity = self._config.integrator.initial_velocity
+        self._isp = self._config.spacecraft.specific_impulse
+        self._thrust_force_max = self._config.spacecraft.thrust
+        self._wet_mass = self._config.spacecraft.wet_mass
+
+
 
     def run(self):
-        # relies on the Config file structure
-        ode_func = lambda t, state: rocket_ode(t, state, mu, Isp, F_thrust_max, self._guidance_continuous)
-        t_res, y_res = rk4(ode_func, tspan, initial_state, max_step, callback=self._integration_callback)
-        ...
+        sim_start_time = 0
+        tspan = [sim_start_time, self._sim_end_time]
+
+        initial_state = self._initial_position + self._initial_velocity + [self._wet_mass]
+
+        ode_func = lambda t, state: rocket_ode(t, state, 
+                                               self._mu, 
+                                               self._isp, 
+                                               self._thrust_force_max, 
+                                               self._guidance_continuous)
+        t_res, y_res = rk4(ode_func, tspan, initial_state, self._max_time_step, callback=self._integration_callback)
+
 
     """ How can I keep the guidance function constant between every timestep, 
     but continuous as an option?
@@ -42,9 +84,12 @@ def IntegrationInterface():
     def _integration_callback(self, t, state):
         if (not self._is_outer_loop_cutoff(t) and 
             self._is_outer_loop_scheduled(t)):
-            thrust_cmd, pitch_cmd, heading_cmd = self.guidance_interface.get_command(t, state, outer_loop=True)
+            thrust_cmd, pitch_cmd, heading_cmd = (
+                self.guidance_interface.get_command(t, state, outer_loop=True))
+            self._mark_outer_loop_calc(t)
         else:
-            thrust_cmd, pitch_cmd, heading_cmd = self.guidance_interface.get_command(t, state, outer_loop=False)
+            thrust_cmd, pitch_cmd, heading_cmd = (
+                self.guidance_interface.get_command(t, state, outer_loop=False))
 
         self.thrust_command_store = thrust_cmd
         self.pitch_command_store = pitch_cmd
@@ -58,6 +103,10 @@ def IntegrationInterface():
     # is it time to run outer loop
     def _is_outer_loop_scheduled(self, t):
         return (t - self.last_outer_loop_time) >= self.outer_loop_interval
+    
+    # mark outer loop for _is_outer_loop* functions
+    def _mark_outer_loop_calc(self, t):
+        self.last_outer_loop_time = t
 
     def _guidance_func_continuous(self, t, state):
         thrust_cmd, pitch_cmd, heading_cmd = self.guidance_interface.get_command(t, state, outer_loop=False)
