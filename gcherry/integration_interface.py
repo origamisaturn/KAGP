@@ -3,12 +3,29 @@ from gcherry.rk4 import rk4
 import config as cfg
 
 
-# class SpacecraftState():
-#     _position: 
-#     _velocity:
-#     _mass:
 
-#     def __init__():
+# need from_state_vector and from_components
+class SpacecraftState():
+    _position: list[float]
+    _velocity: list[float]
+    _mass: float
+
+    def __init__(self, state_vector):
+        self._position = list(state_vector[0:3])
+        self._velocity = list(state_vector[3:6])
+        self._mass = state_vector[6]
+
+    def position(self):
+        return self._position
+    
+    def velocity(self):
+        return self._velocity
+    
+    def mass(self):
+        return self._mass
+    
+    def state_vector(self):
+        return self._position + self._velocity + [self._mass]
 
 
 class IntegrationInterface():
@@ -33,7 +50,7 @@ class IntegrationInterface():
     _last_outer_loop_time: float
 
     # have to make a Config class
-    _config: config
+    # _config: config
 
 
     def __init__(self, config: cfg.Config, 
@@ -43,10 +60,10 @@ class IntegrationInterface():
         self._heading_cmd_store = np.deg2rad(0)
         self._max_time_step = 1.0
         self.guidance_interface = guidance_interface
-        self._parse_input()
+        self._parse_input(config)
         ...
 
-    def _parse_input(self):
+    def _parse_input(self, config: cfg.Config):
         self._outer_loop_interval = self._config.mission.outer_loop_interval
         self._outer_loop_cutoff = self._config.mission.outer_loop_cutoff
         self._sim_end_time = self._config.integrator.simulation_end_time

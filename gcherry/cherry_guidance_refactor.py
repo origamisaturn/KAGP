@@ -302,7 +302,7 @@ class PitchQuery(om.ExplicitComponent):
 
     Note that t = 0 is assumed to be the start time of ascent.
     """
-
+    # TODO: add more descriptive value error.
     def setup(self):
         # iron out differences in t and sample_x, this is a hack.
         input_names = ['t', 'T', 'a0', 'a1', 'a2', 'c1', 'c2', 
@@ -663,6 +663,7 @@ class OuterLoopGroup(om.Group):
         self.nonlinear_solver.options['maxiter'] = 100
         self.nonlinear_solver.options['atol'] = 1e-3
 
+
 class OuterLoopComponent(om.ExplicitComponent):
     def setup(self):
         model = OuterLoopGroup()
@@ -678,8 +679,6 @@ class OuterLoopComponent(om.ExplicitComponent):
         for name in input_names:
             self.add_input(name, val=0.0)
 
-        self.add_input('outer_loop_period', val=50.0)
-        self.add_input('outer_loop_cutoff', val=10.0)
         # consider making this a class attribute
         output_names = ['a0', 'a1', 'a2', 'c1', 'c2',
                         'g_eff',
@@ -687,23 +686,14 @@ class OuterLoopComponent(om.ExplicitComponent):
                         'T']
         for name in output_names:
             self.add_output(name, val=0.0)
+
+        self.add_discrete_input("run_outer_loop", val=True)
         
-        self.last_sample_t = None
-
-    def compute(self, inputs, outputs):
-        sample_t = inputs['sample_t'][0]
-        outer_loop_period = inputs['outer_loop_period'][0]
-        outer_loop_cutoff = inputs['outer_loop_cutoff'][0]
-        T = outputs['T']
-        if (not sample_t or
-            ((sample_t - self.last_sample_t) >= outer_loop_period and
-            T - sample_t > outer_loop_cutoff)):
-
-            self.pass_prob_inputs(inputs)
+    def compute(self, inputs, outputs, discrete_inputs, discrete_outputs):
+        self.pass_prob_inputs(inputs)
+        if discrete_inputs["run_outer_loop"]:
             self.prob.run_model()
-            self.pass_prob_outputs(outputs)
-
-            self.last_sample_t = sample_t
+        self.pass_prob_outputs(outputs)
 
     def pass_prob_inputs(self, inputs):
         self.prob['sample_x'] = inputs['sample_x']
@@ -721,5 +711,3 @@ class OuterLoopComponent(om.ExplicitComponent):
                         'T']
         for name in output_names:
             outputs[name] = self.prob[name]
-
-
