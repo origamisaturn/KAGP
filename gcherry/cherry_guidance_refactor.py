@@ -253,6 +253,163 @@ class RadialControl(om.ExplicitComponent):
             outputs[name] = val
 
 
+def get_p_coefficents(T, m0, mdot, v_e):
+    """ Coefficients of p polynomial.
+
+    Based on the Taylor series of thrust acceleration about terminal 
+    time T. Derived in Appendix A.
+    
+    Args:
+        T: [s] Terminal time; main engine cut-off.
+        m0: [kg] Total mass of spacecraft at t=0.
+        mdot: [kg/s] Thruster mass flow.
+        v_e: [m/s] Effective exhaust velocity of thruster.
+
+    Returns:
+        a0, a1, a2 coefficients. Forms following equation:
+
+            p1(t) = a0 + a1*(T-t) + a2(T-t)**2
+
+    """
+    tau = m0/mdot
+    a0 = v_e/(tau - T)
+    a1 = -a0**2/v_e
+    a2 = a0**3/v_e**2
+    return a0, a1, a2
+
+def get_F_mat(t, T, a0, a1, a2):
+    """ Matrix of integrals of p1 and p2 polynomials.
+    
+    Column 0 and 1 are p1 and p2 polynomials, while row 0 and 1 are 
+    first and second integral with respect to time. Bounds are t to T.
+    Described by equations (71) to (73).
+    
+    Args:
+        t: [s]
+        T: [s]
+        a0, a1, a2: Coefficients from get_p_coefficients().
+
+    Returns:
+        2x2 matrix.
+
+    """
+    T_go = T - t
+
+    f11 = a0*T_go + a1*T_go**2/2 + a2*T_go**3/3
+    f21 = a0*T_go**2/2 + a1*T_go**3/3 + a2*T_go**4/4
+    f22 = a0*T_go**3/3 + a1*T_go**4/4 + a2*T_go**5/5
+    f12 = f21
+
+    F_mat = np.array([[f11, f12], [f21, f22]])
+    return F_mat
+
+def get_guidance_coefficients(t, T, F_mat, q0, q_dot_0, q_T, q_dot_T):
+    """ Get coefficients for guidance equation.
+
+    Described by equation (74). An approximation of calculus of 
+    variations solution, derived in Appendix A.
+
+    q is generalized distance coordinate. For radial guidance it is
+    radius, for yaw guidance it is normal distance from desired 
+    orbital plane.
+    
+    Args:
+        t: [s] Time at which q0 and q_dot_0 were measured.
+        T: [s] Terminal time; main engine cut-off.
+        F_mat: 2x2 matrix from get_F_mat().
+        q0: [m] Initial boundary condition, distance.
+        q_dot_0: [m/s] Initial boundary condition, velocity.
+        q_T: [m] Final boundary condition, distance.
+        q_dot_T: [m/s] Final boundary condition, velocity.
+
+    Returns:
+        c1 and c2 coefficients. Forms following equation:
+
+            q_dot_dot(t) = c1*p1(t) + c2*p2(t)
+    """
+    Tgo = T - t
+    f11 = F_mat[0][0]
+    f12 = F_mat[0][1]
+    f21 = F_mat[1][0]
+    f22 = F_mat[1][1]
+    A = np.array([[f11, f12], [f21, f22]])
+    b = np.array([[q_dot_T - q_dot_0], 
+                [q_T - (q0 + q_dot_0*Tgo)]])
+    c = np.linalg.solve(A, b).reshape(2)
+
+    return c[0], c[1]
+
+
+class YawControl(om.ExplicitComponent):
+    """ Solves equation for yaw scheduling. 
+    
+    Inputs:
+        --- User Input ---
+        --- Constants ---
+        --- Component Connections ---
+
+    Outputs:
+        --- User Output ---
+        --- DEBUG ---
+    
+    Raises: 
+
+    """
+
+    """ TODO: This block will receive:
+        1) Desired LAN and inclination at terminal time T.
+        
+        This block will compute:
+        1) The normal unit vector of the desired orbital plane.
+        2) The out-of-plane acceleration schedule using same method as
+           radial control. Output does not need transformation.
+
+        This block will return:
+        1) Components to out-of-plane acceleration schedule equation.
+
+    """
+    ...
+
+class PitchHeadingQuery(om.ExplicitComponent):
+    """ Solves for pitch and heading based on radial and out-of-plane 
+    acceleration schedule. 
+    
+    Inputs:
+        --- User Input ---
+        --- Constants ---
+        --- Component Connections ---
+
+    Outputs:
+        --- User Output ---
+        --- DEBUG ---
+    
+    Raises: 
+
+    """
+
+    """ TODO: This block will receive:
+        1) Components to out-of-plane acceleration schedule equation.
+        2) Components to radial acceleration schedule equation.
+        3) Desired LAN and inclination at terminal time T.
+        4) Query time t.
+        5) Query position x (for gravitational calculation only).
+
+        This block will compute:
+        1) Components of a_T in plane control frame (PCF)
+            a. radial control component
+            b. calculate k component of a_T
+            c. calculate j component based on acceleration left.
+            ERROR: insufficient thrust for j component/ imaginary
+        2) Translate from PCF to global, then global to RCN.
+        3) Calculate pitch and heading.
+    """
+    def setup(self):
+        ...
+
+    def compute(self, inputs, outputs, discrete_inputs, discrete_outputs):
+        ...
+
+
 class PitchQuery(om.ExplicitComponent):
     """ Component containing the equation for pitch of the fixed-thrust control
     law. Accepts equation terms from the radialControl block. This is
