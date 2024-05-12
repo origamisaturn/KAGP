@@ -489,19 +489,55 @@ class PitchHeadingQuery(om.ExplicitComponent):
         circumferential_unit = rcn2global(x0, v0) @ np.array([0, 1, 0])
         v_theta_0 = np.dot(v0, circumferential_unit)
         r0 = np.linalg.norm(x0)
+        g = -mu/r0**2
         g_eff = -mu/r0**2 + v_theta_0**2/r0
-        a_thrust = v_e/(tau - t)
+        a_thrust_mag = v_e/(tau - t)
         p1 = a0 + a1*(T-t) + a2*(T-t)**2
         p2 = p1 * (T-t)
 
         r_dot_dot = c1_radial*p1 + c2_radial*p2
-        pitch = math.asin((r_dot_dot - g_eff)/(a_thrust))
+        a_thrust_r = r_dot_dot - g_eff
+        cmd_pitch = math.asin(a_thrust_r/a_thrust_mag)
 
-        # acceleration along normal of target orbital plane
+        # _y is component along normal of target orbital plane
+        target_normal_vec = (perifocal2global_rot(target_lan, target_inc, 0) @ 
+                            np.array([0, 0, 1]))
         y_dot_dot = c1_yaw*p1 + c2_yaw*p2
+        a_thrust_y = y_dot_dot - g * target_normal_vec
+        a_thrust_global = guidance_to_global(a_thrust_r, a_thrust_y, a_thrust_mag, pos_global, lan, inc)
+        a_thrust_rcn = global2rcn_rot()@a_thrust_global
+        # TODO: heading can be undefined.
+        cmd_heading = np.arctan2(a_thrust_rcn[1], a_thrust_rcn[0])
+        # TODO: consider calculating pitch here instead
 
+        outputs["cmd_pitch"] = cmd_pitch
+        outputs["cmd_heading"] = cmd_heading
+        
+def guidance_to_global(a_thrust_r, a_thrust_y, a_thrust_mag, pos_global, lan, inc):
+        """ Converts guidance commands to global thrust vector. 
+        """
+        target_normal_vec = (perifocal2global_rot(target_lan, target_inc, 0) @ 
+                            np.array([0, 0, 1]))
+        # _i, _j, _k are components along plane control axes.
+        pcf_axes = pcf2global_rot(pos_global, lan, inc)
+        # i_unit = pcf_axes @ np.array([1, 0, 0])
+        # k_unit = pcf_axes @ np.array([0, 0, 1])
+        a_thrust_i = a_thrust_r
+        # Find k component based on _i and _y component of thrust
+        # NOTE: should only have i and k component
+        target_normal_vec_pcf = pcf_axes.T@target_normal_vec
 
-
+        a_thrust_k = (a_thrust_y*target_normal_vec_pcf)[2]
+        # a_thrust_k = ((a_thrust_y - 
+        #               a_thrust_i*(target_normal_vec*i_unit)) /
+        #               (target_normal_vec*k_unit))
+        # j component based on remaining available thrust
+        # TODO: a_thrust_j can be imaginary
+        a_thrust_j = (np.linalg.norm(a_thrust_mag)**2 - a_thrust_i**2 - 
+                      a_thrust_k**2)**0.5
+        # convert a_thrust to RCN axes
+        a_thrust_pcf = np.array([a_thrust_i, a_thrust_j, a_thrust_k])
+        a_thrust_global = pcf2global_rot(pos_global, lan, inc)@a_thrust_pcf
 
 
 class PitchQuery(om.ExplicitComponent):
