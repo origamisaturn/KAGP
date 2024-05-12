@@ -165,7 +165,9 @@ def unit_vector(vec):
         on global location. X is North, Y is East, Z is toward the global origin.
     Global: Frame origin at center of celestial body. Is inertial.
         X is RA 0 decl 0, Y is RA 90 decl 0, Z is decl 90.
-    Perifocal: Frame origin at center of celestial body. 
+    Perifocal: Frame origin at center of celestial body. X points to 
+        periapsis, Y is true anomaly 90 degrees in orbital plane, Z is
+        normal to orbital plane.
     Radial-Circumferential-Normal: Frame origin at vehicle CoM, X is 
         radial, Y points to the local horizon toward the direction
         of vehicle travel, Z is normal, collinear with angular

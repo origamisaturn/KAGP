@@ -266,9 +266,10 @@ def get_p_coefficents(T, m0, mdot, v_e):
         v_e: [m/s] Effective exhaust velocity of thruster.
 
     Returns:
-        a0, a1, a2 coefficients. Forms following equation:
+        a0, a1, a2 coefficients. Forms following equations:
 
             p1(t) = a0 + a1*(T-t) + a2(T-t)**2
+            p2(t) = p1(t)*(T-t)
 
     """
     tau = m0/mdot
@@ -341,17 +342,36 @@ def get_guidance_coefficients(t, T, F_mat, q0, q_dot_0, q_T, q_dot_T):
     return c[0], c[1]
 
 
-class YawControl(om.ExplicitComponent):
-    """ Solves equation for yaw scheduling. 
+class RadialYawControl(om.ExplicitComponent):
+    """ Solves equation for pitch and yaw scheduling. 
     
     Inputs:
         --- User Input ---
+        sample_x:
+        sample_v:
+        sample_t:
+
+        --- Targeting ---
+        target_r_T;
+        target_r_dot_T:
+        # implicit y1 = 0 and y_dot_1 = 0
+        target_lan:
+        target_inc:
+
         --- Constants ---
+        mu: [m^3/s^2] Gravitational parameter.
+        v_e: [m/s] Effective exhaust velocity of thruster.
+        m_dot: [kg/s] Thruster mass flow.
+        m0: [kg] Total mass of spacecraft at launch.
+
         --- Component Connections ---
+        T: [s]
 
     Outputs:
-        --- User Output ---
-        --- DEBUG ---
+        --- Component Connections ---
+        a0, a1, a2:
+        c1_radial, c2_radial:
+        c1_yaw, c2_yaw:
     
     Raises: 
 
@@ -369,7 +389,45 @@ class YawControl(om.ExplicitComponent):
         1) Components to out-of-plane acceleration schedule equation.
 
     """
-    ...
+
+    def setup(self):
+        ...
+
+    def compute(self, inputs, outputs):
+        x0 = inputs['sample_x']
+        v0 = inputs['sample_v']
+        t0 = inputs['sample_t']
+        target_lan = inputs['target_lan'][0]
+        target_inc = inputs['target_inc'][0]
+
+        a0, a1, a2 = get_p_coefficients(T, m0, mdot, v_e)
+
+
+        target_normal_vec = (perifocal2global_rot(target_lan, target_inc, 0) @ 
+                            np.array([0, 0, 1]))
+        # normal distance from target orbital plane
+        y0 = np.dot(x0, target_normal_vec)
+        y_dot_0 = np.dot(v0, target_normal_vec)
+        y_T = 0
+        y_dot_T = 0
+        F_mat_radial = get_F_mat(t, T, a0, a1, a2)
+        c1_radial, c2_radial = get_guidance_coefficients(t, T, F_mat_radial, y0, y_dot_0, y_T, y_dot_T)
+
+        r0 = np.linalg.norm(x0)
+        r_dot_0 = np.dot(v0, x0)
+        r_T = inputs['target_r_T']
+        r_dot_T = inputs['target_r_dot_T']
+        F_mat_yaw = get_F_mat(t, T, a0, a1, a2)
+        c1_yaw, c2_yaw = get_guidance_coefficients(t, T, F_mat_radial, r0, r_dot_0, r_T, r_dot_T)
+
+        outputs['c1_radial'] = c1_radial
+        outputs['c2_radial'] = c2_radial
+        outputs['c1_yaw'] = c1_yaw
+        outputs['c2_yaw'] = c2_yaw
+
+
+
+
 
 class PitchHeadingQuery(om.ExplicitComponent):
     """ Solves for pitch and heading based on radial and out-of-plane 
@@ -377,11 +435,19 @@ class PitchHeadingQuery(om.ExplicitComponent):
     
     Inputs:
         --- User Input ---
+        query_x: [m] 
+        query_t: [s]
         --- Constants ---
         --- Component Connections ---
+        a0, a1, a2:
+        c1_radial, c2_radial:
+        c1_yaw, c2_yaw:
 
     Outputs:
         --- User Output ---
+        cmd_pitch: 
+        cmd_heading: 
+
         --- DEBUG ---
     
     Raises: 
@@ -408,7 +474,34 @@ class PitchHeadingQuery(om.ExplicitComponent):
         ...
 
     def compute(self, inputs, outputs, discrete_inputs, discrete_outputs):
-        ...
+        x0 = inputs['query_x']
+        v0 = inputs['query_v']
+        t = inputs['query_t']
+        T = inputs['T']
+        a0 =
+        a1 =
+        a2 = 
+        c1_radial = inputs['c1_radial'][0]
+        c2_radial = inputs['c2_radial'][0]
+        c1_yaw = inputs['c1_yaw'][0]
+        c2_yaw = inputs['c2_yaw'][0]
+        
+        circumferential_unit = rcn2global(x0, v0) @ np.array([0, 1, 0])
+        v_theta_0 = np.dot(v0, circumferential_unit)
+        r0 = np.linalg.norm(x0)
+        g_eff = -mu/r0**2 + v_theta_0**2/r0
+        a_thrust = v_e/(tau - t)
+        p1 = a0 + a1*(T-t) + a2*(T-t)**2
+        p2 = p1 * (T-t)
+
+        r_dot_dot = c1_radial*p1 + c2_radial*p2
+        pitch = math.asin((r_dot_dot - g_eff)/(a_thrust))
+
+        # acceleration along normal of target orbital plane
+        y_dot_dot = c1_yaw*p1 + c2_yaw*p2
+
+
+
 
 
 class PitchQuery(om.ExplicitComponent):
