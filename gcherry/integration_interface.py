@@ -1,7 +1,7 @@
 import numpy as np
 from gcherry.rk4 import rk4
-import config as cfg
-
+import gcherry.config as cfg
+from gcherry.guidance_interface_refactor import GuidanceInterfaceBase
 
 
 # need from_state_vector and from_components
@@ -156,46 +156,76 @@ def Rz(angle: float):
                      [s1, c1, 0],
                      [0, 0, 1]])
 
+def unit_vector(vec):
+    return vec/np.linalg.norm(vec)
 
-
-""" Body: Frame fixed to vehicle, rotates with the vehicle. X is 
+""" Body: Frame fixed to vehicle CoM, rotates with the vehicle. X is 
         forward, Y to the right, Z down.
-    Topocentric: Frame origin at vehicle, axes direction dependent 
+    Topocentric: Frame origin at vehicle CoM, axes direction dependent 
         on global location. X is North, Y is East, Z is toward the global origin.
-    Global: Frame origin at center of celestial body. Can be inertial 
-        or rotating with celestial body. X is lon 0 lat 0, Y is longitude 90 lat 0,
-        Z is lat 90.
+    Global: Frame origin at center of celestial body. Is inertial.
+        X is RA 0 decl 0, Y is RA 90 decl 0, Z is decl 90.
+    Perifocal: Frame origin at center of celestial body. 
+    Radial-Circumferential-Normal: Frame origin at vehicle CoM, X is 
+        radial, Y points to the local horizon toward the direction
+        of vehicle travel, Z is normal, collinear with angular
+        momentum vector.
+    Plane Control Frame: Frame origin at vehicle CoM, X is radial, Y is
+        perpendicular to normal vector of desired orbital plane and X,
+        Z points to the local horizon toward the direction of the normal
+        vector of the desired orbital plane.
+
     """
-def get_lat_lon(pos_global):
-    """ Gets latitude and longitude of given position. """
+
+def perifocal2global_rot(lan, inc, argp):
+    """ Rotation from perifocal to global axes. """
+    return Rz(lan)@Rx(inc)@Rz(argp)
+
+def global2perifocal_rot(lan, inc, argp):
+    return perifocal2global_rot(lan, inc, argp).T
+
+def pcf2global_rot(pos_global, lan, inc):
+    """ Rotation from plane control frame to global axes. """
+    argp = 0 # argp does not affect orbit normal vector.
+    orbit_normal_global = perifocal2global_rot(lan, inc, argp)@np.array([0, 0, 1])
+    x = unit_vector(pos_global)
+    y = unit_vector(np.cross(orbit_normal_global, x))
+    z = unit_vector(np.cross(x, y))
+    return np.stack((x, y, z), axis=-1)
+
+def global2pcf_rot(pos_global, lan, inc):
+    return pcf2global_rot(pos_global, lan, inc).T
+
+def get_ra_decl(pos_global):
+    """ Gets right ascension and declination of given position. """
     x, y, z = tuple(pos_global)
-    lon = np.arctan2(y, x)
-    lat = np.arctan2(z, np.linalg.norm([x, y]))
-    return lat, lon
+    ra = np.arctan2(y, x)
+    decl = np.arctan2(z, np.linalg.norm([x, y]))
+    return ra, decl
 
 def body2topo_rot(roll, pitch, yaw):
-    """ Rotation from body to topocentric frame. """
+    """ Rotation from body to topocentric axes. """
     return Rz(yaw)@Ry(pitch)@Rx(roll)
 
 def topo2body_rot(roll, pitch, yaw):
-    """ Rotation from topocentric to body frame. """
+    """ Rotation from topocentric to body axes. """
     return body2topo_rot(roll, pitch, yaw).T
 
-def topo2global_rot(lat, lon):
-    """ Rotation from topocentric to global frame. """
+def topo2global_rot(ra, decl):
+    """ Rotation from topocentric to global axes. """
     axes_switch_rot = np.array([[0, 0, -1],
                                 [0, 1, 0],
                                 [1, 0, 0]])
     # latitude negated as positive y rot is downwards
-    return Rz(lon)@Ry(-lat)@axes_switch_rot
+    return Rz(ra)@Ry(-decl)@axes_switch_rot
 
-def global2topo_rot(lat, lon):
-    """ Rotation from global to topocentric frame. """
-    return topo2global_rot(lat, lon).T
+def global2topo_rot(ra, decl):
+    """ Rotation from global to topocentric axes. """
+    return topo2global_rot(ra, decl).T
 
 def body2global_rot(roll, pitch, yaw, pos_global):
-    lat, lon = get_lat_lon(pos_global)
-    return topo2global_rot(lat, lon) @ body2topo_rot(roll, pitch, yaw)
+    ra, decl = get_ra_decl(pos_global)
+    return topo2global_rot(ra, decl) @ body2topo_rot(roll, pitch, yaw)
 
 def global2body_rot(roll, pitch, yaw, pos_global):
     return body2global_rot(roll, pitch, yaw, pos_global).T

@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 import openmdao.api as om
-import config as cfg
-from cherry_guidance_refactor import OuterLoopComponent, PitchQuery
+import gcherry.config as cfg
+from gcherry.cherry_guidance_refactor import OuterLoopComponent, PitchQuery
 
 class GuidanceInterfaceBase(ABC):
     @abstractmethod

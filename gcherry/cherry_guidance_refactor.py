@@ -306,7 +306,7 @@ def get_F_mat(t, T, a0, a1, a2):
 def get_guidance_coefficients(t, T, F_mat, q0, q_dot_0, q_T, q_dot_T):
     """ Get coefficients for guidance equation.
 
-    Described by equation (74). An approximation of calculus of 
+    Described by equation (74). An approximation of a calculus of 
     variations solution, derived in Appendix A.
 
     q is generalized distance coordinate. For radial guidance it is
@@ -326,6 +326,7 @@ def get_guidance_coefficients(t, T, F_mat, q0, q_dot_0, q_T, q_dot_T):
         c1 and c2 coefficients. Forms following equation:
 
             q_dot_dot(t) = c1*p1(t) + c2*p2(t)
+
     """
     Tgo = T - t
     f11 = F_mat[0][0]
