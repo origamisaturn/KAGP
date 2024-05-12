@@ -4,6 +4,13 @@ import math
 import matplotlib.pyplot as plt
 from scipy.integrate import solve_ivp
 from scipy.optimize import least_squares
+from gcherry.transform import (
+    unit_vector,
+    perifocal2global_rot,
+    global2topo_rot,
+    pcf2global_rot,
+    get_ra_decl
+)
 
 def rot_mat_2d(theta):
     cos = math.cos
@@ -253,7 +260,7 @@ class RadialControl(om.ExplicitComponent):
             outputs[name] = val
 
 
-def get_p_coefficents(T, m0, mdot, v_e):
+def get_p_coefficients(T, m0, mdot, v_e):
     """ Coefficients of p polynomial.
 
     Based on the Taylor series of thrust acceleration about terminal 
@@ -347,31 +354,31 @@ class RadialYawControl(om.ExplicitComponent):
     
     Inputs:
         --- User Input ---
-        sample_x:
-        sample_v:
-        sample_t:
+        sample_x: [m] (len(x) == 3) 3D position in global inertial 
+            frame. Origin is at gravitational body center.
+        sample_v: [m/s] (len(v) == 3) 3D velocity in global inertial 
+            frame.
+        sample_t: [s] Time at which sample_x and sample_v were collected.
 
         --- Targeting ---
-        target_r_T;
-        target_r_dot_T:
-        # implicit y1 = 0 and y_dot_1 = 0
-        target_lan:
-        target_inc:
+        target_r_T: [m] Target final radial position.
+        target_r_dot_T: [m/s] Target final radial velocity.
+        target_lan: [rad.] Target longitude of ascending node.
+        target_inc: [rad.] Target inclination.
 
         --- Constants ---
-        mu: [m^3/s^2] Gravitational parameter.
         v_e: [m/s] Effective exhaust velocity of thruster.
         m_dot: [kg/s] Thruster mass flow.
         m0: [kg] Total mass of spacecraft at launch.
 
         --- Component Connections ---
-        T: [s]
+        T: [s] Terminal time; main engine cut-off
 
     Outputs:
         --- Component Connections ---
-        a0, a1, a2:
-        c1_radial, c2_radial:
-        c1_yaw, c2_yaw:
+        a0, a1, a2: Coefficients of p equation.
+        c1_radial, c2_radial: Coefficients for radial guidance equation.
+        c1_yaw, c2_yaw: Coefficients for yaw guidance equation.
     
     Raises: 
 
@@ -391,17 +398,45 @@ class RadialYawControl(om.ExplicitComponent):
     """
 
     def setup(self):
-        ...
+        self.add_input('sample_x', val=np.zeros((3)))
+        self.add_input('sample_v', val=np.zeros((3)))
+        input_names = ['sample_t', 
+                       'target_r_T', 'target_r_dot_T',
+                       'target_lan', 'target_inc',
+                       'v_e', 'm_dot', 'm0',
+                       'T']
+        for name in input_names:
+            self.add_input(name, val=0.0)
+
+        output_names = ['a0', 'a1', 'a2',
+                        'c1_radial', 'c2_radial',
+                        'c1_yaw', 'c2_yaw']
+        for name in output_names:
+            self.add_output(name, val=0.0)
+
+    def setup_partials(self):
+        self.declare_partials('*', '*', method='fd')
 
     def compute(self, inputs, outputs):
         x0 = inputs['sample_x']
         v0 = inputs['sample_v']
-        t0 = inputs['sample_t']
+        t = inputs['sample_t']
         target_lan = inputs['target_lan'][0]
         target_inc = inputs['target_inc'][0]
+        # mu = inputs['mu'][0]
+        v_e = inputs['v_e'][0]
+        m_dot = inputs['m_dot'][0]
+        m0 = inputs['m0'][0]
+        T = inputs['T'][0]
 
-        a0, a1, a2 = get_p_coefficients(T, m0, mdot, v_e)
+        a0, a1, a2 = get_p_coefficients(T, m0, m_dot, v_e)
+        F_mat = get_F_mat(t, T, a0, a1, a2)
 
+        r0 = np.linalg.norm(x0)
+        r_dot_0 = np.dot(v0, x0)
+        r_T = inputs['target_r_T']
+        r_dot_T = inputs['target_r_dot_T']
+        c1_radial, c2_radial = get_guidance_coefficients(t, T, F_mat, r0, r_dot_0, r_T, r_dot_T)
 
         target_normal_vec = (perifocal2global_rot(target_lan, target_inc, 0) @ 
                             np.array([0, 0, 1]))
@@ -410,23 +445,15 @@ class RadialYawControl(om.ExplicitComponent):
         y_dot_0 = np.dot(v0, target_normal_vec)
         y_T = 0
         y_dot_T = 0
-        F_mat_radial = get_F_mat(t, T, a0, a1, a2)
-        c1_radial, c2_radial = get_guidance_coefficients(t, T, F_mat_radial, y0, y_dot_0, y_T, y_dot_T)
+        c1_yaw, c2_yaw = get_guidance_coefficients(t, T, F_mat, y0, y_dot_0, y_T, y_dot_T)
 
-        r0 = np.linalg.norm(x0)
-        r_dot_0 = np.dot(v0, x0)
-        r_T = inputs['target_r_T']
-        r_dot_T = inputs['target_r_dot_T']
-        F_mat_yaw = get_F_mat(t, T, a0, a1, a2)
-        c1_yaw, c2_yaw = get_guidance_coefficients(t, T, F_mat_radial, r0, r_dot_0, r_T, r_dot_T)
-
+        outputs['a0'] = a0
+        outputs['a1'] = a1
+        outputs['a2'] = a2
         outputs['c1_radial'] = c1_radial
         outputs['c2_radial'] = c2_radial
         outputs['c1_yaw'] = c1_yaw
         outputs['c2_yaw'] = c2_yaw
-
-
-
 
 
 class PitchHeadingQuery(om.ExplicitComponent):
@@ -435,18 +462,33 @@ class PitchHeadingQuery(om.ExplicitComponent):
     
     Inputs:
         --- User Input ---
-        query_x: [m] 
-        query_t: [s]
+        query_x: [m] (len(x) == 3) 3D position in global inertial 
+            frame. Origin is at gravitational body center. Used for
+            g_eff and frame transformations.
+        query_v: [m/s] [m/s] (len(v) == 3) 3D velocity in global inertial 
+            frame. Used only for g_eff.
+        query_t: [s] Time at which query_x and query_v occurred.
+
+        --- Targeting ---
+        target_lan: [rad.] Target longitude of ascending node.
+        target_inc: [rad.] Target inclination.
+
         --- Constants ---
+        mu: [m^3/s^2] Gravitational parameter.
+        v_e: [m/s] Effective exhaust velocity of thruster.
+        m_dot: [kg/s] Thruster mass flow.
+        m0: [kg] Total mass of spacecraft at launch.
+
         --- Component Connections ---
-        a0, a1, a2:
-        c1_radial, c2_radial:
-        c1_yaw, c2_yaw:
+        T: [s] Terminal time; main engine cut-off.
+        a0, a1, a2: Coefficients of p equation.
+        c1_radial, c2_radial: Coefficients for radial guidance equation.
+        c1_yaw, c2_yaw: Coefficients for yaw guidance equation.
 
     Outputs:
         --- User Output ---
-        cmd_pitch: 
-        cmd_heading: 
+        cmd_pitch: [rad.] Commanded pitch.
+        cmd_heading: [rad.] Commanded heading.
 
         --- DEBUG ---
     
@@ -471,23 +513,47 @@ class PitchHeadingQuery(om.ExplicitComponent):
         3) Calculate pitch and heading.
     """
     def setup(self):
+        self.add_input('query_x', val=np.zeros((3)))
+        self.add_input('query_v', val=np.zeros((3)))
+        input_names = ['query_t',
+                       'a0', 'a1', 'a2',
+                       'c1_radial', 'c2_radial',
+                       'c1_yaw', 'c2_yaw',
+                       'mu', 'v_e', 'm_dot', 'm0',
+                       'T']
+        for name in input_names:
+            self.add_input(name, val=0.0)
+
+        output_names = ['cmd_pitch', 'cmd_heading']
+        for name in output_names:
+            self.add_output(name, val=0.0)
         ...
 
     def compute(self, inputs, outputs, discrete_inputs, discrete_outputs):
         x0 = inputs['query_x']
         v0 = inputs['query_v']
-        t = inputs['query_t']
-        T = inputs['T']
-        a0 =
-        a1 =
-        a2 = 
+        t = inputs['query_t'][0]
+        target_lan = inputs['target_lan'][0]
+        target_inc = inputs['target_inc'][0]
+        mu = inputs['mu'][0]
+        v_e = inputs['v_e'][0]
+        m_dot = inputs['m_dot'][0]
+        m0 = inputs['m0'][0]
+        T = inputs['T'][0]
+        a0 = inputs['a0'][0]
+        a1 = inputs['a1'][0]
+        a2 = inputs['a2'][0]
         c1_radial = inputs['c1_radial'][0]
         c2_radial = inputs['c2_radial'][0]
         c1_yaw = inputs['c1_yaw'][0]
         c2_yaw = inputs['c2_yaw'][0]
         
-        circumferential_unit = rcn2global(x0, v0) @ np.array([0, 1, 0])
-        v_theta_0 = np.dot(v0, circumferential_unit)
+        tau = m0/m_dot
+        # circumferential_unit = rcn2global(x0, v0) @ np.array([0, 1, 0])
+        # v_theta_0 = np.dot(v0, circumferential_unit)
+        r_hat = unit_vector(x0)
+        # TODO: Check this
+        v_theta_0 = (np.linalg.norm(v0)**2 - np.dot(v0, r_hat)**2)**0.5
         r0 = np.linalg.norm(x0)
         g = -mu/r0**2
         g_eff = -mu/r0**2 + v_theta_0**2/r0
@@ -504,22 +570,22 @@ class PitchHeadingQuery(om.ExplicitComponent):
                             np.array([0, 0, 1]))
         y_dot_dot = c1_yaw*p1 + c2_yaw*p2
         a_thrust_y = y_dot_dot - g * target_normal_vec
-        a_thrust_global = guidance_to_global(a_thrust_r, a_thrust_y, a_thrust_mag, pos_global, lan, inc)
-        a_thrust_rcn = global2rcn_rot()@a_thrust_global
+        a_thrust_global = guidance_to_global(a_thrust_r, a_thrust_y, a_thrust_mag, x0, target_lan, target_inc)
+        a_thrust_topo = global2topo_rot(*(get_ra_decl(x0)))@a_thrust_global
         # TODO: heading can be undefined.
-        cmd_heading = np.arctan2(a_thrust_rcn[1], a_thrust_rcn[0])
+        cmd_heading = np.arctan2(a_thrust_topo[1], a_thrust_topo[0])
         # TODO: consider calculating pitch here instead
 
         outputs["cmd_pitch"] = cmd_pitch
         outputs["cmd_heading"] = cmd_heading
         
-def guidance_to_global(a_thrust_r, a_thrust_y, a_thrust_mag, pos_global, lan, inc):
+def guidance_to_global(a_thrust_r, a_thrust_y, a_thrust_mag, pos_global, target_lan, target_inc):
         """ Converts guidance commands to global thrust vector. 
         """
         target_normal_vec = (perifocal2global_rot(target_lan, target_inc, 0) @ 
                             np.array([0, 0, 1]))
         # _i, _j, _k are components along plane control axes.
-        pcf_axes = pcf2global_rot(pos_global, lan, inc)
+        pcf_axes = pcf2global_rot(pos_global, target_lan, target_inc)
         # i_unit = pcf_axes @ np.array([1, 0, 0])
         # k_unit = pcf_axes @ np.array([0, 0, 1])
         a_thrust_i = a_thrust_r
@@ -537,7 +603,7 @@ def guidance_to_global(a_thrust_r, a_thrust_y, a_thrust_mag, pos_global, lan, in
                       a_thrust_k**2)**0.5
         # convert a_thrust to RCN axes
         a_thrust_pcf = np.array([a_thrust_i, a_thrust_j, a_thrust_k])
-        a_thrust_global = pcf2global_rot(pos_global, lan, inc)@a_thrust_pcf
+        a_thrust_global = pcf2global_rot(pos_global, target_lan, target_inc)@a_thrust_pcf
 
 
 class PitchQuery(om.ExplicitComponent):
