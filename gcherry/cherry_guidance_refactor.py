@@ -349,7 +349,7 @@ def get_guidance_coefficients(t, T, F_mat, q0, q_dot_0, q_T, q_dot_T):
     return c[0], c[1]
 
 
-class RadialYawControl(om.ExplicitComponent):
+class RadialYawGuidance(om.ExplicitComponent):
     """ Solves equation for pitch and yaw scheduling. 
     
     Inputs:
@@ -420,7 +420,7 @@ class RadialYawControl(om.ExplicitComponent):
     def compute(self, inputs, outputs):
         x0 = inputs['sample_x']
         v0 = inputs['sample_v']
-        t = inputs['sample_t']
+        t = inputs['sample_t'][0]
         target_lan = inputs['target_lan'][0]
         target_inc = inputs['target_inc'][0]
         # mu = inputs['mu'][0]
@@ -434,8 +434,8 @@ class RadialYawControl(om.ExplicitComponent):
 
         r0 = np.linalg.norm(x0)
         r_dot_0 = np.dot(v0, x0)
-        r_T = inputs['target_r_T']
-        r_dot_T = inputs['target_r_dot_T']
+        r_T = inputs['target_r_T'][0]
+        r_dot_T = inputs['target_r_dot_T'][0]
         c1_radial, c2_radial = get_guidance_coefficients(t, T, F_mat, r0, r_dot_0, r_T, r_dot_T)
 
         target_normal_vec = (perifocal2global_rot(target_lan, target_inc, 0) @ 
@@ -516,10 +516,11 @@ class PitchHeadingQuery(om.ExplicitComponent):
         self.add_input('query_x', val=np.zeros((3)))
         self.add_input('query_v', val=np.zeros((3)))
         input_names = ['query_t',
+                       'target_lan', 'target_inc',
+                       'mu', 'v_e', 'm_dot', 'm0',
                        'a0', 'a1', 'a2',
                        'c1_radial', 'c2_radial',
                        'c1_yaw', 'c2_yaw',
-                       'mu', 'v_e', 'm_dot', 'm0',
                        'T']
         for name in input_names:
             self.add_input(name, val=0.0)
@@ -529,7 +530,7 @@ class PitchHeadingQuery(om.ExplicitComponent):
             self.add_output(name, val=0.0)
         ...
 
-    def compute(self, inputs, outputs, discrete_inputs, discrete_outputs):
+    def compute(self, inputs, outputs):
         x0 = inputs['query_x']
         v0 = inputs['query_v']
         t = inputs['query_t'][0]
@@ -604,6 +605,7 @@ def guidance_to_global(a_thrust_r, a_thrust_y, a_thrust_mag, pos_global, target_
         # convert a_thrust to RCN axes
         a_thrust_pcf = np.array([a_thrust_i, a_thrust_j, a_thrust_k])
         a_thrust_global = pcf2global_rot(pos_global, target_lan, target_inc)@a_thrust_pcf
+        return a_thrust_global
 
 
 class PitchQuery(om.ExplicitComponent):

@@ -1,0 +1,17 @@
+spacecraft:
+  specific_impulse: 397
+  thrust: 1638
+  wet_mass: 500
+
+body:
+  gravitational_parameter: 4.9028e+12
+  # for calculating orbital radius from ap and pe
+
+mission:
+  apoapsis: 1785.00e+3
+  periapsis: 1785.00e+3
+  longitude_of_ascending_node: 0.0
+  inclination: 1.5
+  argument_of_periapsis: 0.0
+  outer_loop_interval: 10
+  outer_loop_cutoff: 10

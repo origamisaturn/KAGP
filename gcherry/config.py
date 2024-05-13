@@ -1,6 +1,6 @@
 import yaml
 from enum import Enum
-from pydantic import BaseModel, Field, PositiveFloat
+from pydantic import BaseModel, Field, PositiveFloat, NonNegativeFloat
 import os
 
 class GuidanceName(Enum):
@@ -11,13 +11,15 @@ class Spacecraft(BaseModel):
     thrust: PositiveFloat
     wet_mass: PositiveFloat
 
-class Mission(BaseModel):
+class CelestialBody(BaseModel):
     gravitational_parameter: PositiveFloat
+
+class Mission(BaseModel):
     apoapsis: PositiveFloat
     periapsis: PositiveFloat
-    # Consider making this input in degrees and just
-    # modulus it.
-    true_anomaly: PositiveFloat
+    longitude_of_ascending_node: NonNegativeFloat
+    inclination: NonNegativeFloat
+    argument_of_periapsis: NonNegativeFloat
     outer_loop_interval: PositiveFloat
     outer_loop_cutoff: PositiveFloat
 
@@ -35,11 +37,12 @@ class KSP_Interface(BaseModel):
 
 class Config(BaseModel):
     spacecraft: Spacecraft
+    body: CelestialBody
     mission: Mission
-    integrator: Integrator | None
+    # integrator: Integrator | None
     # ksp_interface: KSP_Interface
 
-def load_input(filenames):
+def load_config(filenames):
     input_data = {}
     # Add functions for checking yaml input and if filename exists
     for filename in filenames:
@@ -47,7 +50,8 @@ def load_input(filenames):
             yaml_input = yaml.safe_load(fh)
         input_data.update(yaml_input)
 
-    return input_data
+    config = Config(**input_data)
+    return config
 
 def relative_path(filepath):
     return os.path.abspath(os.path.join(__file__, '..', filepath))
@@ -55,7 +59,6 @@ def relative_path(filepath):
 if __name__ == '__main__':
     input_filenames = [relative_path("../spacecraft/test_spacecraft.yaml"),
     relative_path("../scenarios/test_config.yaml")]
-    input_data = load_input(input_filenames)
-    config = Config(**input_data)
+    config = load_config(input_filenames)
     print(config.spacecraft.thrust)
     
