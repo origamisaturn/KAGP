@@ -2,6 +2,7 @@ import numpy as np
 from gcherry.rk4 import rk4
 import gcherry.config as cfg
 from gcherry.guidance_interface_refactor import GuidanceInterfaceBase
+from gcherry.transform import body2global_rot
 
 
 # need from_state_vector and from_components

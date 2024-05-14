@@ -11,7 +11,7 @@ mission:
   apoapsis: 1785.00e+3
   periapsis: 1785.00e+3
   longitude_of_ascending_node: 0.0
-  inclination: 1.5
+  inclination: 0.0
   argument_of_periapsis: 0.0
   outer_loop_interval: 10
   outer_loop_cutoff: 10

@@ -431,9 +431,10 @@ class RadialYawGuidance(om.ExplicitComponent):
 
         a0, a1, a2 = get_p_coefficients(T, m0, m_dot, v_e)
         F_mat = get_F_mat(t, T, a0, a1, a2)
+        r_hat = unit_vector(x0)
 
         r0 = np.linalg.norm(x0)
-        r_dot_0 = np.dot(v0, x0)
+        r_dot_0 = np.dot(v0, r_hat)
         r_T = inputs['target_r_T'][0]
         r_dot_T = inputs['target_r_dot_T'][0]
         c1_radial, c2_radial = get_guidance_coefficients(t, T, F_mat, r0, r_dot_0, r_T, r_dot_T)
@@ -556,7 +557,7 @@ class PitchHeadingQuery(om.ExplicitComponent):
         # TODO: Check this
         v_theta_0 = (np.linalg.norm(v0)**2 - np.dot(v0, r_hat)**2)**0.5
         r0 = np.linalg.norm(x0)
-        g = -mu/r0**2
+        g = -mu/r0**2 * r_hat
         g_eff = -mu/r0**2 + v_theta_0**2/r0
         a_thrust_mag = v_e/(tau - t)
         p1 = a0 + a1*(T-t) + a2*(T-t)**2
@@ -570,11 +571,12 @@ class PitchHeadingQuery(om.ExplicitComponent):
         target_normal_vec = (perifocal2global_rot(target_lan, target_inc, 0) @ 
                             np.array([0, 0, 1]))
         y_dot_dot = c1_yaw*p1 + c2_yaw*p2
-        a_thrust_y = y_dot_dot - g * target_normal_vec
+        a_thrust_y = y_dot_dot - g @ target_normal_vec
         a_thrust_global = guidance_to_global(a_thrust_r, a_thrust_y, a_thrust_mag, x0, target_lan, target_inc)
         a_thrust_topo = global2topo_rot(*(get_ra_decl(x0)))@a_thrust_global
         # TODO: heading can be undefined.
-        cmd_heading = np.arctan2(a_thrust_topo[1], a_thrust_topo[0])
+        # heading from 0 deg to 360 deg.
+        cmd_heading = np.arctan2(a_thrust_topo[1], a_thrust_topo[0])%(2*np.pi)
         # TODO: consider calculating pitch here instead
 
         outputs["cmd_pitch"] = cmd_pitch
@@ -600,8 +602,11 @@ def guidance_to_global(a_thrust_r, a_thrust_y, a_thrust_mag, pos_global, target_
         #               (target_normal_vec*k_unit))
         # j component based on remaining available thrust
         # TODO: a_thrust_j can be imaginary
-        a_thrust_j = (np.linalg.norm(a_thrust_mag)**2 - a_thrust_i**2 - 
-                      a_thrust_k**2)**0.5
+        radicand = a_thrust_mag**2 - a_thrust_i**2 - a_thrust_k**2
+        if radicand < 0:
+            raise ValueError("Cannot take square root of {}: a_thrust_j will be imaginary.".format(radicand))
+        
+        a_thrust_j = np.sqrt(a_thrust_mag**2 - a_thrust_i**2 - a_thrust_k**2)
         # convert a_thrust to RCN axes
         a_thrust_pcf = np.array([a_thrust_i, a_thrust_j, a_thrust_k])
         a_thrust_global = pcf2global_rot(pos_global, target_lan, target_inc)@a_thrust_pcf
