@@ -1023,27 +1023,31 @@ class OuterLoopGroup(om.Group):
         self.nonlinear_solver.options['maxiter'] = 100
         self.nonlinear_solver.options['atol'] = 1e-3
 
+class OuterLoopGroupRefactor(om.Group):
+    def setup(self):
+        self.add_subsystem('radial_yaw_guidance', RadialYawGuidance(),
+                            promotes=['*'])
 
 class OuterLoopComponent(om.ExplicitComponent):
     def setup(self):
-        model = OuterLoopGroup()
+        model = OuterLoopGroupRefactor()
         self.prob = om.Problem(model)
         self.prob.setup()
 
-        self.add_input('sample_x', val=np.zeros((2)))
-        self.add_input('sample_v', val=np.zeros((2)))
+        self.add_input('sample_x', val=np.zeros((3)))
+        self.add_input('sample_v', val=np.zeros((3)))
         input_names = ['sample_t', 
-                       'target_r_dot_T', 'target_r_T', 'target_v_theta_T',
-                       'mu', 'v_e', 'm_dot', 'm0']
-                       #'T'
+                       'target_r_T', 'target_r_dot_T',
+                       'target_lan', 'target_inc',
+                       'v_e', 'm_dot', 'm0',
+                       'T']
         for name in input_names:
             self.add_input(name, val=0.0)
 
         # consider making this a class attribute
-        output_names = ['a0', 'a1', 'a2', 'c1', 'c2',
-                        'g_eff',
-                        'v_theta_T',
-                        'T']
+        output_names = ['a0', 'a1', 'a2',
+                        'c1_radial', 'c2_radial',
+                        'c1_yaw', 'c2_yaw']
         for name in output_names:
             self.add_output(name, val=0.0)
 
@@ -1059,15 +1063,16 @@ class OuterLoopComponent(om.ExplicitComponent):
         self.prob['sample_x'] = inputs['sample_x']
         self.prob['sample_v'] = inputs['sample_v']
         input_names = ['sample_t', 
-                       'target_r_dot_T', 'target_r_T', 'target_v_theta_T',
-                       'mu', 'v_e', 'm_dot', 'm0']
+                       'target_r_T', 'target_r_dot_T',
+                       'target_lan', 'target_inc',
+                       'v_e', 'm_dot', 'm0',
+                       'T']
         for name in input_names:
             self.prob[name] = inputs[name][0]
 
     def pass_prob_outputs(self, outputs):
-        output_names = ['a0', 'a1', 'a2', 'c1', 'c2',
-                        'g_eff',
-                        'v_theta_T',
-                        'T']
+        output_names = ['a0', 'a1', 'a2',
+                        'c1_radial', 'c2_radial',
+                        'c1_yaw', 'c2_yaw']
         for name in output_names:
             outputs[name] = self.prob[name]

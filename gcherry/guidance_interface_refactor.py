@@ -12,7 +12,7 @@ class GuidanceInterfaceBase(ABC):
 
 class Test3DGuidance(om.Group):
     def setup(self):
-        self.add_subsystem('radial_yaw_guidance', RadialYawGuidance(), promotes=['*'])
+        self.add_subsystem('outer_loop', OuterLoopComponent(), promotes=['*'])
         self.add_subsystem('pitch_heading_query', PitchHeadingQuery(), promotes=['*'])
 
 class GCherryGuidanceInterface(GuidanceInterfaceBase):
@@ -33,9 +33,13 @@ class GCherryGuidanceInterface(GuidanceInterfaceBase):
 
         # TODO: outer loop stuff??
         
-        self._openmdao_problem['sample_t'] = t
-        self._openmdao_problem['sample_x'] = position
-        self._openmdao_problem['sample_v'] = velocity
+        if outer_loop == True:
+            self._openmdao_problem['run_outer_loop'] = True
+            self._openmdao_problem['sample_t'] = t
+            self._openmdao_problem['sample_x'] = position
+            self._openmdao_problem['sample_v'] = velocity
+        else:
+            self._openmdao_problem['run_outer_loop'] = False
 
         self._openmdao_problem['query_t'] = t
         self._openmdao_problem['query_x'] = position

@@ -36,15 +36,19 @@ if __name__ == '__main__':
     x0 = np.array([1737.4E+3, 0.0, 0.0E+3])
     v0 = np.array([0.0, 0.0, 0.0])
     m0 = config.spacecraft.wet_mass
+    initial_state = np.concatenate((x0, v0, [m0]))
 
     guidance_interface = GCherryGuidanceInterface(config)
+    guidance_interface.get_command(0, initial_state, outer_loop=True)
 
     tspan = [0, 438]
 
-    initial_state = np.concatenate((x0, v0, [m0]))
+    guidance_func = lambda t, state: guidance_interface.get_command(t, state, outer_loop=False)
     ode_func = lambda t, state: rocket_ode(t, state,
                                            config.body.gravitational_parameter,
                                            config.spacecraft.specific_impulse,
                                            config.spacecraft.thrust,
-                                           guidance_interface.get_command)
+                                           guidance_func)
     t_res, y_res = rk4(ode_func, tspan, initial_state, 1.0)
+    print(t_res[-1])
+    print(y_res[:, -1])
