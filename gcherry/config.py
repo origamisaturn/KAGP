@@ -26,7 +26,7 @@ class Mission(BaseModel):
 class Integrator(BaseModel):
     simulation_end_time: PositiveFloat
     # add check that directory exists
-    log_path: str
+    # log_path: str
     initial_position: list
     initial_velocity: list
 
@@ -39,7 +39,7 @@ class Config(BaseModel):
     spacecraft: Spacecraft
     body: CelestialBody
     mission: Mission
-    # integrator: Integrator | None
+    integrator: Integrator | None
     # ksp_interface: KSP_Interface
 
 def load_config(filenames):

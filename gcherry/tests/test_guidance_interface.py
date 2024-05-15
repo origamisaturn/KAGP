@@ -52,3 +52,4 @@ if __name__ == '__main__':
     t_res, y_res = rk4(ode_func, tspan, initial_state, 1.0)
     print(t_res[-1])
     print(y_res[:, -1])
+    print(np.linalg.norm(y_res[:3, -1]))

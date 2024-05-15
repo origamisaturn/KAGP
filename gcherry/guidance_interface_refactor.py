@@ -10,6 +10,9 @@ class GuidanceInterfaceBase(ABC):
     @abstractmethod
     def get_command(self, t, state): pass
 
+    @abstractmethod
+    def estimated_final_time(self): pass
+
 class Test3DGuidance(om.Group):
     def setup(self):
         self.add_subsystem('outer_loop', OuterLoopComponent(), promotes=['*'])
@@ -52,6 +55,9 @@ class GCherryGuidanceInterface(GuidanceInterfaceBase):
         thrust_heading = self._openmdao_problem['cmd_heading'][0]
 
         return thrust_magnitude, thrust_pitch, thrust_heading
+    
+    def estimated_final_time(self):
+        return self._openmdao_problem['T']
 
     def _parse_input(self, config):
         v_e, m_dot = _convert_engine_data(config.spacecraft.specific_impulse,

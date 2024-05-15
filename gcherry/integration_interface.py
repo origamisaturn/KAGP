@@ -60,36 +60,42 @@ class IntegrationInterface():
         self._pitch_cmd_store = np.deg2rad(90)
         self._heading_cmd_store = np.deg2rad(0)
         self._max_time_step = 1.0
+        self._last_outer_loop_time = 0.0
         self.guidance_interface = guidance_interface
         self._parse_input(config)
         ...
 
     def _parse_input(self, config: cfg.Config):
-        self._outer_loop_interval = self._config.mission.outer_loop_interval
-        self._outer_loop_cutoff = self._config.mission.outer_loop_cutoff
-        self._sim_end_time = self._config.integrator.simulation_end_time
-        self._mu = self._config.mission.gravitational_parameter
+        self._isp = config.spacecraft.specific_impulse
+        self._thrust_force_max = config.spacecraft.thrust
+        self._wet_mass = config.spacecraft.wet_mass
 
-        self._initial_position = self._config.integrator.initial_position
-        self._initial_velocity = self._config.integrator.initial_velocity
-        self._isp = self._config.spacecraft.specific_impulse
-        self._thrust_force_max = self._config.spacecraft.thrust
-        self._wet_mass = self._config.spacecraft.wet_mass
+        self._outer_loop_interval = config.mission.outer_loop_interval
+        self._outer_loop_cutoff = config.mission.outer_loop_cutoff
 
+        self._mu = config.body.gravitational_parameter
 
+        self._initial_position = config.integrator.initial_position
+        self._initial_velocity = config.integrator.initial_velocity
+        self._sim_end_time = config.integrator.simulation_end_time
 
     def run(self):
+        # guidance func start time should not be anything other than 0.
         sim_start_time = 0
         tspan = [sim_start_time, self._sim_end_time]
 
         initial_state = self._initial_position + self._initial_velocity + [self._wet_mass]
 
+        # Initialize outer loop solution
+        self.guidance_interface.get_command(0, initial_state, outer_loop=True)
+
         ode_func = lambda t, state: rocket_ode(t, state, 
                                                self._mu, 
                                                self._isp, 
                                                self._thrust_force_max, 
-                                               self._guidance_continuous)
+                                               self._guidance_func_continuous)
         t_res, y_res = rk4(ode_func, tspan, initial_state, self._max_time_step, callback=self._integration_callback)
+        print(np.linalg.norm(y_res[:3, -1]))
 
 
     """ How can I keep the guidance function constant between every timestep, 
@@ -109,22 +115,22 @@ class IntegrationInterface():
             thrust_cmd, pitch_cmd, heading_cmd = (
                 self.guidance_interface.get_command(t, state, outer_loop=False))
 
-        self.thrust_command_store = thrust_cmd
-        self.pitch_command_store = pitch_cmd
-        self.heading_command_store = heading_cmd
+        self._thrust_command_store = thrust_cmd
+        self._pitch_command_store = pitch_cmd
+        self._heading_command_store = heading_cmd
 
     # Is it less than outer_loop_cutoff seconds from guidance termination?
     def _is_outer_loop_cutoff(self, t):
         T = self.guidance_interface.estimated_final_time()
-        return (T - t) < self.outer_loop_cutoff
+        return (T - t) < self._outer_loop_cutoff
     
     # is it time to run outer loop
     def _is_outer_loop_scheduled(self, t):
-        return (t - self.last_outer_loop_time) >= self.outer_loop_interval
+        return (t - self._last_outer_loop_time) >= self._outer_loop_interval
     
     # mark outer loop for _is_outer_loop* functions
     def _mark_outer_loop_calc(self, t):
-        self.last_outer_loop_time = t
+        self._last_outer_loop_time = t
 
     def _guidance_func_continuous(self, t, state):
         thrust_cmd, pitch_cmd, heading_cmd = self.guidance_interface.get_command(t, state, outer_loop=False)
@@ -133,7 +139,7 @@ class IntegrationInterface():
     # this relies on the *_store variables being updated by the 
     # _integration_callback function.
     def _guidance_func_discrete(self, t, state):
-        return self.thrust_cmd_store, self.pitch_cmd_store, self.heading_cmd_store
+        return self._thrust_cmd_store, self._pitch_cmd_store, self._heading_cmd_store
 
 
 # maybe avoid adding input verification for performance.
