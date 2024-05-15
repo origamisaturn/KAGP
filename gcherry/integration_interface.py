@@ -148,7 +148,8 @@ def rocket_ode(t, state, mu, Isp, F_thrust_max, guidance_func):
     
     Derivative of state with respect for time for use in the solve_ivp
     function. Models a rocket under the influence of
-    gravity in 3 dimensions, with instaneous turning.
+    gravity in 3 dimensions, with instantaneous turning.
+    
         Inputs:
             t       double  [s] Time
             state   list    [m, m, m, m/s, m/s, m/s, kg]

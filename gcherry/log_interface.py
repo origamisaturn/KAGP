@@ -1,8 +1,44 @@
 import pickle as pkl
 from copy import deepcopy
+from dataclasses import dataclass
 import pandas as pd
 import numpy as np
 from gcherry.log_utils import get_time_steps, interpolate_state, get_derived_state
+
+@dataclass
+class LogInterfaceRefactor:
+    guidance_interface: GuidanceInterfaceLog
+    integration_interface: IntegrationInterfaceLog
+    def __init__(self):
+        ...
+
+@dataclass
+class StateLog:
+    position: list
+    velocity: list
+    mass: list
+    time: list
+
+@dataclass
+class IntegrationInterfaceLog:
+    state: StateLog
+
+@dataclass
+class OpenMDAOProblemLog:
+    inputs: dict
+    outputs: dict
+    discrete_inputs: dict
+    discrete_outputs: dict
+
+    def __init__(self):
+        ...
+
+@dataclass   
+class GuidanceInterfaceLog:
+    problem: OpenMDAOProblemLog
+    def __init__(self):
+        ...
+
 
 class LogInterface:
     def __init__(self, input_data=None):
