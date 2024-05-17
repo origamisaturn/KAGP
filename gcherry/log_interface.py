@@ -6,13 +6,6 @@ import numpy as np
 from gcherry.log_utils import get_time_steps, interpolate_state, get_derived_state
 
 @dataclass
-class LogInterfaceRefactor:
-    guidance_interface: GuidanceInterfaceLog
-    integration_interface: IntegrationInterfaceLog
-    def __init__(self):
-        ...
-
-@dataclass
 class StateLog:
     position: list
     velocity: list
@@ -33,10 +26,136 @@ class OpenMDAOProblemLog:
     def __init__(self):
         ...
 
+    def init_problem(self, openmdao_problem):
+        """ Sets log dicts based on structure of openmdao_problem.
+
+        Structure of inputs and outputs: 
+        1. Dict where keys are variable names (subsystem_name.var_name)
+        and values are a list of
+            - np.array
+        Structure of discrete_inputs and discrete_outputs:
+        1. Dict where keys are variable names (subsystem_name.var_name)
+        and values are:
+            - dict, where keys are names and values
+              are a list of arbitrary type.
+        
+        Args:
+            openmdao_problem: an OpenMDAO problem.
+        """
+        self.inputs = {}
+        self.outputs = {}
+        model = openmdao_problem.model
+        inputs = model.list_inputs()
+        outputs = model.list_outputs()
+        """ Format of list_inputs() and list_outputs is 2-element tuple,
+        first element is the variable name and second element is a dict.
+        The dict has keys 'val' and 'prom_name'. 
+            The value of 'val' is either an np.array or a dict, whose
+        keys are names and values are of arbitrary type.
+        """
+        for var in inputs:
+            var_name = var[0]
+            var_val = var[1]['val']
+            self.log.inputs[var_name] = list()
+        for var in outputs:
+            var_name = var[0]
+            var_val = var[1]['val']
+            # if var is discrete output
+            if type(var_val) == type(dict()):
+                self.log.discrete_outputs[var_name] = {}
+                for key in var_val:
+                    self.log.discrete_outputs[var_name][key] = []
+            else:
+                self.log.outputs[var_name] = list()
+
+    # WARNING discrete inputs not implemented
+    def log_problem(self, openmdao_problem):
+        input_names = self.inputs.keys()
+        for var_name in input_names:
+            var_val = deepcopy(openmdao_problem[var_name])
+            self.log.inputs[var_name].append(var_val)
+
+        output_names = self.outputs.keys()
+        for var_name in output_names:
+            var_val = deepcopy(openmdao_problem[var_name])
+            self.log.outputs[var_name].append(var_val)
+
+        discrete_output_names = self.discrete_outputs.keys()
+        for var_name in discrete_output_names:
+            for key, value in openmdao_problem[var_name].items():
+                self.log['outputs'][var_name][key].append(deepcopy(value))
+                
+
+    def flatten_log(self):
+        """ Converts log to a flattened format suitable for dataframes. 
+        
+        For inputs and outputs:
+        1. Keys that contain arrays of length 1 will retain the
+        same name, its values will be a list of floats.
+        2. Keys that contain arrays of length greater than 1 will be 
+        changed from "subsystem_name.var_name", to multiple
+        keys of "subsystem_name.var_name[i]", i corresponding to each
+        index of the array. The values of the new keys will be a list
+        of floats corresponding to the index of the original array list.
+
+        For discrete_inputs and discrete_outputs:
+        1. Keys that contain dicts will be changed from 
+        "subsystem_name.var_name" to multiple keys of
+        "subsystem_name.var_name.dict_key". The values of the new keys
+        will correspond to the list of values assigned to each "dict_key."
+
+        """
+        flat_inputs = self._flatten_normal(self.inputs)
+        flat_outputs = self._flatten_normal(self.outputs)
+        flat_discrete_inputs = self._flatten_discrete(self.discrete_inputs)
+        flat_discrete_outputs = self._flatten_discrete(self.discrete_outputs)
+        return (flat_inputs, flat_outputs, 
+                flat_discrete_inputs, flat_discrete_outputs)
+
+    def _flatten_normal(self, table):
+        for var_name, var_val in table.items():
+            var_len = np.shape(var_val)[1]
+            # np_var_val = np.array(var_val)
+            if var_len != 1:
+                for i in range(var_len):
+                    new_key = "{}[{}]".format(var_name, i)
+                    new_val = ???
+        ...
+
+    def _flatten_discrete(self, discrete_table):
+        ...
+
+    def dataframe_log(self):
+        ...
+        
+
 @dataclass   
 class GuidanceInterfaceLog:
     problem: OpenMDAOProblemLog
     def __init__(self):
+        self.problem = OpenMDAOProblemLog()
+
+    def init_problem(self, openmdao_problem):
+        self.problem.init_problem(openmdao_problem)
+
+@dataclass
+class LogInterfaceRefactor:
+    guidance_interface: GuidanceInterfaceLog
+    # integration_interface: IntegrationInterfaceLog
+    def __init__(self, config):
+        self.guidance_interface = GuidanceInterfaceLog()
+
+    def df_error(self):
+        """ Dataframe of error between predicted and actual values. 
+        
+        Extracts data from guidance, and derives values based on stored
+        simulation state, to make a table of error values.
+
+        Returns:
+        Dataframe with independent column t and several
+        error columns.
+
+        """
         ...
 
 

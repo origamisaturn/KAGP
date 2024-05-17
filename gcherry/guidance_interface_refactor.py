@@ -1,6 +1,8 @@
-from abc import ABC, abstractmethod
 import openmdao.api as om
 import gcherry.config as cfg
+
+from abc import ABC, abstractmethod
+from gcherry.log_interface import LogInterfaceRefactor, GuidanceInterfaceLog
 from gcherry.cherry_guidance_refactor import (
     OuterLoopComponent, PitchQuery,
     RadialYawGuidance, PitchHeadingQuery
@@ -20,12 +22,16 @@ class Test3DGuidance(om.Group):
 
 class GCherryGuidanceInterface(GuidanceInterfaceBase):
     _openmdao_problem: om.Problem
+    log: GuidanceInterfaceLog
 
-    def __init__(self, config: cfg.Config):
+    def __init__(self, config: cfg.Config, log_interface: LogInterfaceRefactor):
         model = Test3DGuidance()
         self._openmdao_problem = om.Problem(model)
         self._openmdao_problem.setup()
         self._parse_input(config)
+
+        self.log = log_interface.guidance_interface
+        self.log.init_problem(self._openmdao_problem)
 
     def get_command(self, t, state, outer_loop=True):
         # TODO: replace this with a state or a state factory, like in Poliastro.
@@ -53,6 +59,8 @@ class GCherryGuidanceInterface(GuidanceInterfaceBase):
         thrust_magnitude = 1
         thrust_pitch = self._openmdao_problem['cmd_pitch'][0]
         thrust_heading = self._openmdao_problem['cmd_heading'][0]
+
+        self.log.log_problem(self._openmdao_problem)
 
         return thrust_magnitude, thrust_pitch, thrust_heading
     

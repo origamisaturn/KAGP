@@ -3,6 +3,7 @@ import unittest
 import numpy as np
 import gcherry.config as cfg
 from gcherry.guidance_interface_refactor import GCherryGuidanceInterface
+from gcherry.log_interface import LogInterfaceRefactor
 
 from gcherry.rk4 import rk4
 from gcherry.integration_interface import rocket_ode
@@ -16,7 +17,8 @@ class TestGuidanceInterface(unittest.TestCase):
         v0 = np.array([0.0, 0.0, 0.0])
         m0 = config.spacecraft.wet_mass
 
-        guidance_interface = GCherryGuidanceInterface(config)
+        log_interface = LogInterfaceRefactor(config)
+        guidance_interface = GCherryGuidanceInterface(config, log_interface)
         thrust_mag, thrust_pitch, thrust_heading = (
         guidance_interface.get_command(0, np.concatenate((x0, v0, [m0]))))
         self.assertAlmostEqual(thrust_heading, np.deg2rad(90))
@@ -38,7 +40,8 @@ if __name__ == '__main__':
     m0 = config.spacecraft.wet_mass
     initial_state = np.concatenate((x0, v0, [m0]))
 
-    guidance_interface = GCherryGuidanceInterface(config)
+    log_interface = LogInterfaceRefactor(config)
+    guidance_interface = GCherryGuidanceInterface(config, log_interface)
     guidance_interface.get_command(0, initial_state, outer_loop=True)
 
     tspan = [0, 438]
