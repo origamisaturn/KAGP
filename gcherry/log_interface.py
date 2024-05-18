@@ -18,16 +18,21 @@ class IntegrationInterfaceLog:
 
 @dataclass
 class OpenMDAOProblemLog:
+    """ 
+    Attributes:
+        inputs and outputs must be a dict of lists. The lists may 
+        contain elements of arbitrary type, but each element must 
+        have the same shape if it is an array. """
     inputs: dict
     outputs: dict
-    discrete_inputs: dict
-    discrete_outputs: dict
+    # discrete_inputs: dict
+    # discrete_outputs: dict
 
     def __init__(self):
         self.inputs = {}
         self.outputs = {}
-        self.discrete_inputs = {}
-        self.discrete_outputs = {}
+        # self.discrete_inputs = {}
+        # self.discrete_outputs = {}
 
     def init_problem(self, openmdao_problem):
         """ Sets log dicts based on structure of openmdao_problem.
@@ -54,76 +59,129 @@ class OpenMDAOProblemLog:
             The value of 'val' is either an np.array or a dict, whose
         keys are names and values are of arbitrary type.
         """
+        # TODO: consider not modifying dicts to make logging easier, and
+        # just move the work to the flatten function
         for var in inputs:
             var_name = var[0]
             var_val = var[1]['val']
-            self.inputs[var_name] = list()
+            # if var is discrete output
+            if type(var_val) == type(dict()):
+                self.inputs[var_name] = {}
+                for key in var_val:
+                    self.inputs[var_name][key] = []
+            else:
+                self.inputs[var_name] = list()
         for var in outputs:
             var_name = var[0]
             var_val = var[1]['val']
             # if var is discrete output
             if type(var_val) == type(dict()):
-                self.discrete_outputs[var_name] = {}
+                self.outputs[var_name] = {}
                 for key in var_val:
-                    self.discrete_outputs[var_name][key] = []
+                    self.outputs[var_name][key] = []
             else:
                 self.outputs[var_name] = list()
 
     # WARNING discrete inputs not implemented
     def log_problem(self, openmdao_problem):
+        """
+        
+        Args:
+            openmdao_problem:
+
+
+        """
+        
         input_names = self.inputs.keys()
         for var_name in input_names:
             var_val = deepcopy(openmdao_problem[var_name])
-            self.inputs[var_name].append(var_val)
+            if type(var_val) == type(dict()):
+                for key, value in var_val.items():
+                    self.inputs[var_name][key].append(deepcopy(value))
+            else:
+                self.inputs[var_name].append(var_val)
 
         output_names = self.outputs.keys()
         for var_name in output_names:
             var_val = deepcopy(openmdao_problem[var_name])
-            self.outputs[var_name].append(var_val)
+            if type(var_val) == type(dict()):
+                for key, value in var_val.items():
+                    self.outputs[var_name][key].append(deepcopy(value))
+            else:
+                self.outputs[var_name].append(var_val)
 
-        discrete_output_names = self.discrete_outputs.keys()
-        for var_name in discrete_output_names:
-            for key, value in openmdao_problem[var_name].items():
-                self.discrete_outputs[var_name][key].append(deepcopy(value))
+    def dataframe_log(self):
+        df_log = {}
+        flat_inputs, flat_outputs = self._flatten_log()
+        df_log['inputs'] = pd.DataFrame(flat_inputs)
+        df_log['outputs'] = pd.DataFrame(flat_outputs)
+        return df_log
 
-    # def flatten_log(self):
-    #     """ Converts log to a flattened format suitable for dataframes. 
+    def _flatten_log(self):
+        """ Converts log to a flattened format suitable for dataframes. 
         
-    #     For inputs and outputs:
-    #     1. Keys that contain arrays of length 1 will retain the
-    #     same name, its values will be a list of floats.
-    #     2. Keys that contain arrays of length greater than 1 will be 
-    #     changed from "subsystem_name.var_name", to multiple
-    #     keys of "subsystem_name.var_name[i]", i corresponding to each
-    #     index of the array. The values of the new keys will be a list
-    #     of floats corresponding to the index of the original array list.
+        For inputs and outputs:
+        1. Keys that contain arrays of length 1 will retain the
+        same name, its values will be a list of floats.
+        2. Keys that contain arrays of length greater than 1 will be 
+        changed from "subsystem_name.var_name", to multiple
+        keys of "subsystem_name.var_name[i]", i corresponding to each
+        index of the array. The values of the new keys will be a list
+        of floats corresponding to the index of the original array list.
 
-    #     For discrete_inputs and discrete_outputs:
-    #     1. Keys that contain dicts will be changed from 
-    #     "subsystem_name.var_name" to multiple keys of
-    #     "subsystem_name.var_name.dict_key". The values of the new keys
-    #     will correspond to the list of values assigned to each "dict_key."
+        For discrete_inputs and discrete_outputs:
+        1. Keys that contain dicts will be changed from 
+        "subsystem_name.var_name" to multiple keys of
+        "subsystem_name.var_name.dict_key". The values of the new keys
+        will correspond to the list of values assigned to each "dict_key."
 
-    #     """
-    #     flat_inputs = self._flatten_normal(self.inputs)
-    #     flat_outputs = self._flatten_normal(self.outputs)
-    #     flat_discrete_inputs = self._flatten_discrete(self.discrete_inputs)
-    #     flat_discrete_outputs = self._flatten_discrete(self.discrete_outputs)
-    #     return (flat_inputs, flat_outputs, 
-    #             flat_discrete_inputs, flat_discrete_outputs)
+        """
+        flat_inputs = self._flatten_table(self.inputs)
+        flat_outputs = self._flatten_table(self.outputs)
+        return (flat_inputs, flat_outputs)
 
-    # def _flatten_normal(self, table):
-    #     for var_name, var_val in table.items():
-    #         var_len = np.shape(var_val)[1]
-    #         # np_var_val = np.array(var_val)
-    #         if var_len != 1:
-    #             for i in range(var_len):
-    #                 new_key = "{}[{}]".format(var_name, i)
-    #                 new_val = ???
-    #     ...
+    def _flatten_table(self, table):
+        new_table = {}
+        for var_name, var_val in table.items():
+            if type(var_val) == type(dict()):
+                # (subsystem.variable.dict_entry)
+                self._enter_dict(new_table, var_name, var_val)
+            else:
+                # assuming only 1d and 2d arrays
+                var_shape = np.shape(var_val)
+                if len(var_shape) > 1:
+                        # (subsystem.variable[i])
+                        self._enter_array(new_table, var_name, var_val)
+                else:
+                    # (subsystem.variable)
+                    self._enter_element(new_table, var_name, var_val)
+        return new_table
+    
+    def _enter_dict(self, new_table, var_name, var_val):
+        """ if var_val is a dict of lists (of arbitrary type) """
+        for dict_key, dict_val in var_val.items():
+            new_key = var_name + '.' + dict_key
+            new_val = dict_val
+            self._enter_element(new_table, new_key, new_val)
 
-    # def _flatten_discrete(self, discrete_table):
-    #     ...
+    @staticmethod
+    def _enter_array(new_table, var_name, var_val):
+        """ if var_val is a list of arrays """
+        var_len = np.shape(var_val)[1]
+        np_var_val = np.array(var_val)
+        for i in range(var_len):
+            # only add index if there is more than one index per entry
+            if var_len == 1:
+                new_key = var_name
+            else:
+                new_key = "{}[{}]".format(var_name, i)
+            new_val = list(np_var_val[:, i])
+            new_table[new_key] = new_val
+    
+    @staticmethod
+    def _enter_element(new_table, var_name, var_val):
+        """ if var_val is a list of primitive types """
+        new_table[var_name] = var_val
 
     # def dataframe_log(self):
     #     ...
@@ -147,6 +205,10 @@ class LogInterfaceRefactor:
     # integration_interface: IntegrationInterfaceLog
     def __init__(self, config):
         self.guidance_interface = GuidanceInterfaceLog()
+
+    def save(self, save_path):
+        with open(save_path, 'wb') as fh:
+            pkl.dump(self, fh)
 
     def df_error(self):
         """ Dataframe of error between predicted and actual values. 

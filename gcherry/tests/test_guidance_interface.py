@@ -56,3 +56,4 @@ if __name__ == '__main__':
     print(t_res[-1])
     print(y_res[:, -1])
     print(np.linalg.norm(y_res[:3, -1]))
+    log_interface.save("test.pkl")
