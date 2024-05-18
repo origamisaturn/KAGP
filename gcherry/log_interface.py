@@ -25,69 +25,36 @@ class OpenMDAOProblemLog:
         have the same shape if it is an array. """
     inputs: dict
     outputs: dict
-    # discrete_inputs: dict
-    # discrete_outputs: dict
 
     def __init__(self):
         self.inputs = {}
         self.outputs = {}
-        # self.discrete_inputs = {}
-        # self.discrete_outputs = {}
 
     def init_problem(self, openmdao_problem):
         """ Sets log dicts based on structure of openmdao_problem.
 
-        Structure of inputs and outputs: 
-        1. Dict where keys are variable names (subsystem_name.var_name)
-        and values are a list of
-            - np.array
-        Structure of discrete_inputs and discrete_outputs:
-        1. Dict where keys are variable names (subsystem_name.var_name)
-        and values are:
-            - dict, where keys are names and values
-              are a list of arbitrary type.
+        Each key of self.inputs and self.outputs is a list. This must
+        be called once before calling self.log_problem().
         
         Args:
             openmdao_problem: an OpenMDAO problem.
+
         """
         model = openmdao_problem.model
         inputs = model.list_inputs()
         outputs = model.list_outputs()
-        """ Format of list_inputs() and list_outputs is 2-element tuple,
-        first element is the variable name and second element is a dict.
-        The dict has keys 'val' and 'prom_name'. 
-            The value of 'val' is either an np.array or a dict, whose
-        keys are names and values are of arbitrary type.
-        """
-        # TODO: consider not modifying dicts to make logging easier, and
-        # just move the work to the flatten function
         for var in inputs:
             var_name = var[0]
-            var_val = var[1]['val']
-            # if var is discrete output
-            if type(var_val) == type(dict()):
-                self.inputs[var_name] = {}
-                for key in var_val:
-                    self.inputs[var_name][key] = []
-            else:
-                self.inputs[var_name] = list()
+            self.inputs[var_name] = list()
         for var in outputs:
             var_name = var[0]
-            var_val = var[1]['val']
-            # if var is discrete output
-            if type(var_val) == type(dict()):
-                self.outputs[var_name] = {}
-                for key in var_val:
-                    self.outputs[var_name][key] = []
-            else:
-                self.outputs[var_name] = list()
+            self.outputs[var_name] = list()
 
-    # WARNING discrete inputs not implemented
     def log_problem(self, openmdao_problem):
-        """
+        """ Logs problem variables.
         
         Args:
-            openmdao_problem:
+            openmdao_problem: an OpenMDAO problem.
 
 
         """
@@ -95,22 +62,23 @@ class OpenMDAOProblemLog:
         input_names = self.inputs.keys()
         for var_name in input_names:
             var_val = deepcopy(openmdao_problem[var_name])
-            if type(var_val) == type(dict()):
-                for key, value in var_val.items():
-                    self.inputs[var_name][key].append(deepcopy(value))
-            else:
-                self.inputs[var_name].append(var_val)
+            self.inputs[var_name].append(var_val)
 
         output_names = self.outputs.keys()
         for var_name in output_names:
             var_val = deepcopy(openmdao_problem[var_name])
-            if type(var_val) == type(dict()):
-                for key, value in var_val.items():
-                    self.outputs[var_name][key].append(deepcopy(value))
-            else:
-                self.outputs[var_name].append(var_val)
+            self.outputs[var_name].append(var_val)
 
     def dataframe_log(self):
+        """ Returns dataframe version of log data. 
+        
+        Dict entries are converted into list, and key names are 
+        incorporated into the column names.
+        
+        Array entries are converted into lists for each index, index
+        is incorporated into the column names.
+        
+        """
         df_log = {}
         flat_inputs, flat_outputs = self._flatten_log()
         df_log['inputs'] = pd.DataFrame(flat_inputs)
@@ -119,54 +87,87 @@ class OpenMDAOProblemLog:
 
     def _flatten_log(self):
         """ Converts log to a flattened format suitable for dataframes. 
-        
-        For inputs and outputs:
-        1. Keys that contain arrays of length 1 will retain the
-        same name, its values will be a list of floats.
-        2. Keys that contain arrays of length greater than 1 will be 
-        changed from "subsystem_name.var_name", to multiple
-        keys of "subsystem_name.var_name[i]", i corresponding to each
-        index of the array. The values of the new keys will be a list
-        of floats corresponding to the index of the original array list.
 
-        For discrete_inputs and discrete_outputs:
-        1. Keys that contain dicts will be changed from 
-        "subsystem_name.var_name" to multiple keys of
-        "subsystem_name.var_name.dict_key". The values of the new keys
-        will correspond to the list of values assigned to each "dict_key."
+        Returns:
+            tuple of flattened inputs and flattened outputs, 
+            each one a dict.
 
         """
-        flat_inputs = self._flatten_table(self.inputs)
-        flat_outputs = self._flatten_table(self.outputs)
+        flat_inputs = self._flatten_dict('', self.inputs)
+        flat_outputs = self._flatten_dict('', self.outputs)
         return (flat_inputs, flat_outputs)
+    
+    def _flatten_dict(self, var_name, var_val):
+        """ Flattens var_val into a depth-1 dictionary.
+        
+        Args:
+            var_name: Key associated with var_val. 
+                Set to '' if this is first entry into _flatten_dict.
+            var_val: Value associated with var_name.
 
-    def _flatten_table(self, table):
+        Returns:
+            dictionary with depth of 1.
+        """
         new_table = {}
-        for var_name, var_val in table.items():
-            if type(var_val) == type(dict()):
-                # (subsystem.variable.dict_entry)
-                self._enter_dict(new_table, var_name, var_val)
-            else:
-                # assuming only 1d and 2d arrays
-                var_shape = np.shape(var_val)
-                if len(var_shape) > 1:
-                        # (subsystem.variable[i])
-                        self._enter_array(new_table, var_name, var_val)
+        if type(var_val) == type(dict()):
+            for key, val in var_val.items():
+                if var_name != '':
+                    new_var_name = var_name + "." + key
                 else:
-                    # (subsystem.variable)
-                    self._enter_element(new_table, var_name, var_val)
+                    new_var_name = key
+                out_table = self._flatten_dict(new_var_name, val)
+                new_table.update(out_table)
+        elif type(var_val) == type(list()):
+            if type(var_val[0]) == type(dict()):
+                # TODO: implement check that all dicts have same keys
+                new_var_val = self._lod2dol(var_val)
+                new_table = self._flatten_dict(var_name, new_var_val)
+            elif len(np.shape(var_val)) > 1:
+                new_table = self._flatten_array_list(var_name, var_val)
+            else:
+                new_table = self._flatten_element_list(var_name, var_val)
+        else:
+            raise ValueError("Dict does not contain dict or list.")
         return new_table
     
-    def _enter_dict(self, new_table, var_name, var_val):
-        """ if var_val is a dict of lists (of arbitrary type) """
-        for dict_key, dict_val in var_val.items():
-            new_key = var_name + '.' + dict_key
-            new_val = dict_val
-            self._enter_element(new_table, new_key, new_val)
+    @staticmethod
+    def _lod2dol(lod):
+        """ Transforms list of dicts to a dict of lists. 
+        
+        Args:
+            lod: list of dictionaries. dicts must all have the same keys.
+            Contents of dicts are arbitrary.
+
+        Returns:
+            dictionary of lists.
+
+        Example:
+            [ {'a': 2, 'b': True}, {'a': 3, 'b':False} ] becomes
+            {'a': [2, 3], 'b':[True, False] }
+
+        """
+        dol = {}
+        # init dol
+        for key, val in lod[0]:
+            dol[key] = []
+        for dict_element in lod:
+            for key, val in dict_element:
+                dol[key].append(val)
+        return dol
 
     @staticmethod
-    def _enter_array(new_table, var_name, var_val):
-        """ if var_val is a list of arrays """
+    def _flatten_array_list(var_name, var_val):
+        """ Flattens list of arrays into depth-1 dict.
+         
+        Args:
+            var_name: key of list of arrays
+            var_val: list of arrays
+
+        Returns:
+            dictionary of depth 1, with keys containing index information
+            and with values that are lists of non-iterables.
+        """
+        new_table = {}
         var_len = np.shape(var_val)[1]
         np_var_val = np.array(var_val)
         for i in range(var_len):
@@ -177,15 +178,24 @@ class OpenMDAOProblemLog:
                 new_key = "{}[{}]".format(var_name, i)
             new_val = list(np_var_val[:, i])
             new_table[new_key] = new_val
+        return new_table
     
     @staticmethod
-    def _enter_element(new_table, var_name, var_val):
-        """ if var_val is a list of primitive types """
-        new_table[var_name] = var_val
-
-    # def dataframe_log(self):
-    #     ...
+    def _flatten_element_list(var_name, var_val):
+        """ Assigns list of primitives into dict.
+         
+        Args:
+            var_name: key
+            var_val: list of non-iterables
         
+        Returns:
+            dictionary with key var_name and value var_val.
+        """
+        new_table = {}
+        new_table[var_name] = deepcopy(var_val)
+        return new_table
+
+
 
 @dataclass   
 class GuidanceInterfaceLog:
