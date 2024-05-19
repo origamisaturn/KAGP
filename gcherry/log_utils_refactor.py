@@ -2,7 +2,7 @@ import pickle as pkl
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
-from gcherry.transform import rcn2global_rot
+from gcherry.transform import rcn2global_rot, global2topo_rot, get_ra_decl
 from copy import deepcopy
 
 """ All args and returns are assumed to be in the global frame. The global frame
@@ -18,8 +18,16 @@ def col_mult(mat1, mat2):
         mult[i] = np.dot(mat1[:, i], mat2[:, i])
     return mult
 
-def get_radius():
-    pos = np.array([log['state']['x'], log['state']['y']])
+def get_radius(pos):
+    """ Get radius.
+    
+    Args:
+        pos: 3xN array of position in the global frame.
+        
+    Returns:
+        Length N 1-D array of radius at each column of pos.
+        
+    """
     radius = np.linalg.norm(pos, axis=0)
     return radius
 
@@ -31,7 +39,7 @@ def get_ground_distance(log, ref_pos):
     distance_ref = radius_ref * angle_ref
 
 def get_r_hat(pos):
-    """ Gets radial unit vector.
+    """ Get radial unit vector.
 
     Args:
         pos: 3xN array of position in the global frame.
@@ -45,7 +53,7 @@ def get_r_hat(pos):
     return r_hat
 
 def get_theta_hat(pos, vel):
-    """ Gets circumferential unit vector. 
+    """ Get circumferential unit vector. 
     
     Args:
         pos: 3xN array of position in the global frame.
@@ -63,14 +71,14 @@ def get_theta_hat(pos, vel):
     return theta_hat
 
 def get_r_dot(pos, vel):
-    """ Gets rate of change of radius wrt time. 
+    """ Get rate of change of radius wrt time. 
     
     Args:
         pos: 3xN array of position in the global frame.
         vel: 3xN array of velocity in the global frame.
         
     Returns:
-        3xN array representing rate of change of radius wrt time at each
+        Length N 1-D array representing rate of change of radius wrt time at each
         column of pos and vel.
 
     """
@@ -79,43 +87,86 @@ def get_r_dot(pos, vel):
     return r_dot
 
 def get_v_theta(pos, vel):
+    """ Get velocity along circumferential unit vector. 
+    
+    Args:
+        pos: 3xN array of position in the global frame.
+        vel: 3xN array of velocity in the global frame.
+    Returns:
+        Length N 1-D array representing velocity along circumferential unit vector
+        at each column of pos and vel. 
+    
+    """
     theta_hat = get_theta_hat(pos, vel)
-    v_theta = col_mult(theta_hat, v)
+    v_theta = col_mult(theta_hat, vel)
     return v_theta
 
-def get_r_dot_dot(log):
-    #acc = get_acc(log)
-    #r_hat = get_r_hat(log)
-    #r_dot_dot = col_mult(acc, r_hat)
-    r_dot = get_r_dot(log)
-    t = log['state']['t']
+def get_r_dot_dot(t, pos, vel):
+    """ Get rate of change of r_dot wrt time.
+    
+    Args:
+        t: N-length 1-D array of time.
+        pos: 3xN array of position in the global frame.
+        vel: 3xN array of velocity in the global frame.
+    
+    Returns:
+        Length N 1-D array representing rate of change of r_dot wrt time.
+        
+    """
+    r_dot = get_r_dot(pos, vel)
     r_dot_dot = np.gradient(r_dot, t)
     return r_dot_dot
 
-def get_a_theta(log):
-    #acc = get_acc(log)
-    #theta_hat = get_theta_hat(log)
-    #a_theta = col_mult(acc, theta_hat)
-    v_theta = get_v_theta(log)
-    t = log['state']['t']
+def get_a_theta(t, pos, vel):
+    """ Get rate of change of circumferential velocity wrt time.
+    
+    Args:
+        t: N-length 1-D array of time.
+        pos: 3xN array of position in the global frame.
+        vel: 3xN array of velocity in the global frame.
+
+    Returns:
+        Length N 1-D array representing rate of change of v_theta wrt time.
+
+    """
+    v_theta = get_v_theta(pos, vel)
     a_theta = np.gradient(v_theta, t)
     return a_theta
 
-def get_acc(log):
-    vx = log['state']['vx']
-    vy = log['state']['vy']
-    t = log['state']['t']
-    v = np.array((vx, vy))
-    acc = np.gradient(v, t, axis=1)
+def get_acc(t, vel):
+    """ Get acceleration.
+    
+    Args:
+        t: N-length 1-D array of time.
+        pos: 3xN array of position in the global frame.
+        vel: 3xN array of velocity in the global frame.
+    
+    Returns:
+        3xN array representing acceleration at each t element.
+
+    """
+    acc = np.gradient(vel, t, axis=1)
     return acc
 
-def get_gravity(log, mu):
-    r_hat = get_r_hat(log)
-    r = get_radius(log)
+def get_gravity(pos, mu):
+    """ Get acceleration due to gravity. Assumes spherical major body.
+    
+    Args:
+        pos: [m] 3xN array of position in the global frame.
+        mu: [m**3 s**-2] Gravitational parameter 
+    
+    Returns:
+        3xN array representing acceleration due to gravity at each pos
+        column.
+    
+    """
+    r_hat = get_r_hat(pos)
+    r = get_radius(pos)
     a_g = -mu/r**2 * r_hat
     return a_g
 
 def global_to_orbital_rot(log, coordinates):
+
     # coordinates are 2 by N
     r_hat = get_r_hat(log)
     theta_hat = get_theta_hat(log)
@@ -130,33 +181,76 @@ def global_to_orbital_rot(log, coordinates):
         new_coordinates[:, i] = rot_mat@coordinates[:, i]
     return new_coordinates
 
-def get_thrust_acc(log, mu):
-    # in the future this should be included in logged state. This assumes
-    # only thrust and gravity act on the spacecraft
-    # This is along circumferential coordinates
-    a_g = get_gravity(log, mu)
-    acc = get_acc(log)
-    thrust = acc - a_g
-    thrust_local = global_to_orbital_rot(log, thrust)
-    return thrust_local
+def get_non_gravity_acc(t, pos, vel, mu):
+    """ Get acceleration not due to gravity.
+    
+    Args:
+        t: [s] N-length 1-D array of time.
+        pos: [m] 3xN array of position in the global frame.
+        vel: [m/s] 3xN array of velocity in the global frame.
+        mu: [m**3 s**-2] Gravitational parameter 
+    
+    Returns:
+        3xN array representing acceleration due to thrust.
+    
+    """
+    a_g = get_gravity(pos, mu)
+    acc = get_acc(t, vel)
+    perturb = acc - a_g
+    return perturb
 
-def get_thrust_acc_mag(log, mu):
-    thrust = get_thrust_acc(log, mu)
-    thrust_acc_mag = np.linalg.norm(thrust, axis=0)
-    return thrust_acc_mag
+def get_non_gravity_acc_mag(t, pos, vel, mu):
+    """ Get magnitude of acceleration due to sources other than gravity.
+    
+    Args:
+        t: [s] N-length 1-D array of time.
+        pos: [m] 3xN array of position in the global frame.
+        vel: [m/s] 3xN array of velocity in the global frame.
+        mu: [m**3 s**-2] Gravitational parameter 
 
-def get_orbital_elements(log):
+    Returns:
+        Length N 1-D array representing rate of change of v_theta wrt time.
+
+    """
+    perturb = get_non_gravity_acc(t, pos, vel, mu)
+    perturb_mag = np.linalg.norm(perturb, axis=0)
+    return perturb_mag
+
+def get_orbital_elements(pos, vel, mu):
+    """ Get orbital elements """
     ...
 
-def get_alpha(log, mu):
-    # the input and output already have alpha
-    # but this can be used to compare
-    # x is r_hat, y is v_theta
-    thrust_acc = get_thrust_acc(log, mu)
-    alpha = np.arctan2(thrust_acc[0, :], thrust_acc[1, :])
+def get_thrust_pitch(t, pos, vel, mu):
+    """ Get pitch of thrust, assuming get_non_gravity_acc() results in 
+    thrust acceleration.
+    
+    Args:
+        t:
+        pos:
+        vel:
+        mu:
+
+    Returns:
+        Length N 1-D array representing pitch of thrust relative to
+        local horizon.
+
+    """
+    thrust_acc = get_non_gravity_acc(t, pos, vel, mu)
+    ra, decl = get_ra_decl(pos)
+    thrust_acc_topo = global2topo_rot(ra, decl)@thrust_acc
+    alpha = np.arctan2(-thrust_acc_topo[2, :], thrust_acc[:2, :])
     return alpha
     
 def get_time_steps(t):
+    """ Get step between each time entry. 
+    
+    Args:
+        t: 
+    
+    Returns:
+        Length N 1-D array of time steps.
+
+    """
     time_steps = np.zeros(len(t))
     for i, t_val in enumerate(t):
         if i == 0:
