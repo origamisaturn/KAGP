@@ -149,3 +149,9 @@ def global2body_rot(roll, pitch, yaw, pos_global):
         
     """
     return body2global_rot(roll, pitch, yaw, pos_global).T
+
+def global2rcn_rot(pos_global, vel_global):
+    return rcn2global_rot(pos_global, vel_global).T
+
+def rcn2global_rot(pos_global, vel_global):
+    raise NotImplementedError()

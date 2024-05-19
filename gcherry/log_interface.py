@@ -7,10 +7,48 @@ from gcherry.log_utils import get_time_steps, interpolate_state, get_derived_sta
 
 @dataclass
 class StateLog:
-    position: list
-    velocity: list
-    mass: list
+    # position: list
+    # velocity: list
+    # mass: list
+    state_vector: list
     time: list
+
+    def __init__(self):
+        # self.position = {}
+        # self.velocity = {}
+        # self.mass = {}
+        self.time = {}
+        self.state_vector
+
+    def log_state(self, t, state):
+        if len(state) != 7:
+            ValueError("State has incorrect length.")
+        # self.position.append(state[:3])
+        # self.velocity.append(state[3:6])
+        # self.mass.append(state[7])
+        self.state_vector.append(state)
+        self.time.append(t)
+
+    def get_position(self):
+        np_state_vector = np.array(self.state_vector)
+        return np_state_vector[:, :3].T
+
+    def get_velocity(self):
+        np_state_vector = np.array(self.state_vector)
+        return np_state_vector[:, 3:6].T
+    
+    def get_mass(self):
+        np_state_vector = np.array(self.state_vector)
+        return np_state_vector[:, 7].T
+
+    def get_time(self):
+        return np.array(self.time).T
+
+    def _flatten_dict():
+        ...
+
+    def get_derived_values(self, t, state):
+        
 
 @dataclass
 class IntegrationInterfaceLog:
@@ -196,7 +234,6 @@ class OpenMDAOProblemLog:
         return new_table
 
 
-
 @dataclass   
 class GuidanceInterfaceLog:
     problem: OpenMDAOProblemLog
@@ -212,7 +249,7 @@ class GuidanceInterfaceLog:
 @dataclass
 class LogInterfaceRefactor:
     guidance_interface: GuidanceInterfaceLog
-    # integration_interface: IntegrationInterfaceLog
+    integration_interface: IntegrationInterfaceLog
     def __init__(self, config):
         self.guidance_interface = GuidanceInterfaceLog()
 
