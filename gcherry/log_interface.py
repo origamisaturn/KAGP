@@ -48,7 +48,7 @@ class StateLog:
         ...
 
     def get_derived_values(self, t, state):
-        
+        ...
 
 @dataclass
 class IntegrationInterfaceLog:

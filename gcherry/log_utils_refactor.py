@@ -5,6 +5,8 @@ import pandas as pd
 from gcherry.transform import rcn2global_rot, global2topo_rot, get_ra_decl
 from copy import deepcopy
 
+from poliastro.core.elements import rv2coe
+
 """ All args and returns are assumed to be in the global frame. The global frame
 is an inertial frame whose origin is fixed at the center of the major
 body.
@@ -165,22 +167,6 @@ def get_gravity(pos, mu):
     a_g = -mu/r**2 * r_hat
     return a_g
 
-def global_to_orbital_rot(log, coordinates):
-
-    # coordinates are 2 by N
-    r_hat = get_r_hat(log)
-    theta_hat = get_theta_hat(log)
-    # (2, 2, N) matrix where its each theta_hat, r_hat concatenated
-    # along second axes.
-    rotation_matrices = np.stack((r_hat, theta_hat), axis=0)
-
-    N = np.shape(coordinates)[1]
-    new_coordinates = np.zeros((2, N))
-    for i in range(N):
-        rot_mat = rotation_matrices[:, :, i]
-        new_coordinates[:, i] = rot_mat@coordinates[:, i]
-    return new_coordinates
-
 def get_non_gravity_acc(t, pos, vel, mu):
     """ Get acceleration not due to gravity.
     
@@ -217,8 +203,38 @@ def get_non_gravity_acc_mag(t, pos, vel, mu):
     return perturb_mag
 
 def get_orbital_elements(pos, vel, mu):
-    """ Get orbital elements """
-    ...
+    """ Get orbital elements.
+
+    Args:
+        pos: [m] 3xN array of position in the global frame.
+        vel: [m/s] 3xN array of velocity in the global frame.
+        mu: [m**3 s**-2] Gravitational parameter 
+
+    Returns:
+        6xN array of orbital elements at each column of pos. Each entry
+        contains:
+            a: Semi-major axis
+            e: Eccentricity
+            i: [rad.] Inclination
+            lan: [rad.] Longitude of ascending node
+            argp: [rad.] Argument of periapsis
+            nu: [rad.] True anomaly
+    
+    """
+    N = np.shape(pos)[1]
+    orbital_elements = np.zeros((6, N))
+    m_to_km = 1/1e3
+    k = mu * m_to_km**3
+    for i in range(N):
+        r = pos[:, i] * m_to_km
+        v = vel[:, i] * m_to_km
+        # p [km], ecc, inc [rad.], raan [rad.], argp [rad.], nu [rad.]
+        p, ecc, inc, raan, argp, nu = rv2coe(k, r, v)
+        # convert semi-latus rectum [km] to semi-major axis [m]
+        a = p/(1 - ecc**2) * 1/m_to_km
+        orbital_elements[:, i] = [a, ecc, inc, raan, argp, nu]
+    return orbital_elements
+
 
 def get_thrust_pitch(t, pos, vel, mu):
     """ Get pitch of thrust, assuming get_non_gravity_acc() results in 
