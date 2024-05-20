@@ -39,7 +39,7 @@ class Config(BaseModel):
     spacecraft: Spacecraft
     body: CelestialBody
     mission: Mission
-    # integrator: Integrator | None
+    integrator: Integrator | None
     # ksp_interface: KSP_Interface
 
 def load_config(filenames):

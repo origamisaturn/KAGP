@@ -486,12 +486,18 @@ class PitchHeadingQuery(om.ExplicitComponent):
         c1_radial, c2_radial: Coefficients for radial guidance equation.
         c1_yaw, c2_yaw: Coefficients for yaw guidance equation.
 
+        --- DEBUG ---
+        target_r_T:
+        target_r_dot_T:
+
     Outputs:
         --- User Output ---
         cmd_pitch: [rad.] Commanded pitch.
         cmd_heading: [rad.] Commanded heading.
 
         --- DEBUG ---
+        _debug: dict containing:
+
     
     Raises: 
 
@@ -522,16 +528,26 @@ class PitchHeadingQuery(om.ExplicitComponent):
                        'a0', 'a1', 'a2',
                        'c1_radial', 'c2_radial',
                        'c1_yaw', 'c2_yaw',
-                       'T']
+                       'T',
+                       'target_r_T', 'target_r_dot_T']
         for name in input_names:
             self.add_input(name, val=0.0)
 
         output_names = ['cmd_pitch', 'cmd_heading']
         for name in output_names:
             self.add_output(name, val=0.0)
+
+        self.add_discrete_output('_debug', val={
+            'r': 0,
+            'r_dot': 0,
+            'r_dot_dot': 0,
+            'y': 0,
+            'y_dot': 0,
+            'y_dot_dot': 0 })
         ...
 
     def compute(self, inputs, outputs):
+        # Set up inputs
         x0 = inputs['query_x']
         v0 = inputs['query_v']
         t = inputs['query_t'][0]
@@ -550,6 +566,7 @@ class PitchHeadingQuery(om.ExplicitComponent):
         c1_yaw = inputs['c1_yaw'][0]
         c2_yaw = inputs['c2_yaw'][0]
         
+        # Calculate general values from inputs
         tau = m0/m_dot
         # circumferential_unit = rcn2global(x0, v0) @ np.array([0, 1, 0])
         # v_theta_0 = np.dot(v0, circumferential_unit)
@@ -563,10 +580,12 @@ class PitchHeadingQuery(om.ExplicitComponent):
         p1 = a0 + a1*(T-t) + a2*(T-t)**2
         p2 = p1 * (T-t)
 
+        # Find cmd_pitch
         r_dot_dot = c1_radial*p1 + c2_radial*p2
         a_thrust_r = r_dot_dot - g_eff
         cmd_pitch = math.asin(a_thrust_r/a_thrust_mag)
 
+        # Find cmd_heading
         # _y is component along normal of target orbital plane
         target_normal_vec = (perifocal2global_rot(target_lan, target_inc, 0) @ 
                             np.array([0, 0, 1]))
@@ -579,8 +598,35 @@ class PitchHeadingQuery(om.ExplicitComponent):
         cmd_heading = np.arctan2(a_thrust_topo[1], a_thrust_topo[0])%(2*np.pi)
         # TODO: consider calculating pitch here instead
 
+        # Set outputs
         outputs["cmd_pitch"] = cmd_pitch
         outputs["cmd_heading"] = cmd_heading
+
+        ## DEBUG OUTPUTS
+        F_mat = get_F_mat(t, T, a0, a1, a2)
+        f11 = F_mat[0, 0]
+        f12 = F_mat[0, 1]
+        f21 = F_mat[1, 0]
+        f22 = F_mat[1, 1]
+        T_go = T - t
+
+        r_dot_T = inputs['target_r_dot_T']
+        r_T = inputs['target_r_T'][0]
+        r_dot = r_dot_T - f11*c1_radial - f12*c2_radial
+        r = r_T - (f21*c1_radial + f22*c2_radial + r_dot*T_go)
+        outputs['_debug']['r'] = r
+        outputs['_debug']['r_dot'] = r_dot
+        outputs['_debug']['r_dot_dot'] = r_dot_dot
+
+        y_T = 0
+        y_dot_T = 0
+        y_dot = y_dot_T - f11*c1_yaw - f12*c2_yaw
+        y = y_T - (f21*c1_yaw + f22*c2_yaw + y_dot*T_go)
+        outputs['_debug']['y'] = y
+        outputs['_debug']['y_dot'] = y_dot
+        outputs['_debug']['y_dot_dot'] = y_dot_dot
+
+
         
 def guidance_to_global(a_thrust_r, a_thrust_y, a_thrust_mag, pos_global, target_lan, target_inc):
         """ Converts guidance commands to global thrust vector. 

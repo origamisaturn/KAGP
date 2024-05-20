@@ -47,8 +47,24 @@ class StateLog:
     def _flatten_dict():
         ...
 
-    def get_derived_values(self, t, state):
-        ...
+    # def get_derived_values(self, mu):
+    #     t = self.get_time()
+    #     pos = self.get_position()
+    #     vel = self.get_velocity()
+    #     derived = {}
+    #     derived['radius'] = get_radius(pos)
+    #     derived['r_dot'] = get_r_dot
+    #     derived['r_dot_dot'] = get_r_dot_dot
+    #     derived['v_theta'] = get_v_theta
+    #     derived['a_theta'] = get_a_theta
+    #     derived['non_gravity_acc_mag'] = get_non_gravity_acc_mag
+    #     derived['thrust_pitch'] = get_thrust_pitch
+    #     derived['orbital_elements'] = get_orbital_elements(pos, vel, mu)
+    #     derived['dt'] = get_time_steps()
+
+    #     return derived
+
+
 
 @dataclass
 class IntegrationInterfaceLog:
@@ -257,17 +273,36 @@ class LogInterfaceRefactor:
         with open(save_path, 'wb') as fh:
             pkl.dump(self, fh)
 
-    def df_error(self):
-        """ Dataframe of error between predicted and actual values. 
+    # def dataframe_error(self):
+    #     """ Dataframe of error between predicted and actual values. 
         
-        Extracts data from guidance, and derives values based on stored
-        simulation state, to make a table of error values.
+    #     Extracts data from guidance, and derives values based on stored
+    #     simulation state, to make a table of error values.
 
-        Returns:
-        Dataframe with independent column t and several
-        error columns.
+    #     Returns:
+    #     Dataframe with independent column t and several
+    #     error columns.
 
-        """
+    #     """
+    #     df_dict = {}
+    #     df_dict['problem'] = self.guidance_interface.problem.dataframe_log()
+    #     df_dict['derived'] = self.integration_interface.state.dataframe_derived()
+    #     return pd.DataFrame(
+    #         {
+    #             't': t,
+    #             't_step': ,
+    #             'r_err': df_dict['problem']['inputs']['._debug.r'],
+    #             'r_dot_err': ,
+    #             'r_dot_dot_err': ,
+    #             'y1_err': ,
+    #             'y1_dot_err': ,
+    #             'y1_dot_dot_err': ,
+    #             'thrust_acc_err': ,
+    #             'thrust_alpha_err': 
+    #         }
+    #     )
+    
+    def dataframe_oe_error(self, a_tgt, e_tgt, i_tgt, lan_tgt, argp_tgt):
         ...
 
 

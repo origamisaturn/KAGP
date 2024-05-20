@@ -96,6 +96,7 @@ class IntegrationInterface():
                                                self._guidance_func_continuous)
         t_res, y_res = rk4(ode_func, tspan, initial_state, self._max_time_step, callback=self._integration_callback)
         print(np.linalg.norm(y_res[:3, -1]))
+        return t_res, y_res
 
 
     """ How can I keep the guidance function constant between every timestep, 

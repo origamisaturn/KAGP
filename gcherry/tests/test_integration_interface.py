@@ -3,10 +3,13 @@ import numpy as np
 import gcherry.config as cfg
 from gcherry.guidance_interface_refactor import GCherryGuidanceInterface
 from gcherry.integration_interface import IntegrationInterface
+from gcherry.log_interface import LogInterfaceRefactor
 
 if __name__ == '__main__':
     filenames = ["gcherry/tests/test_integration_interface.yaml"]
     config = cfg.load_config(filenames)
-    guidance_interface = GCherryGuidanceInterface(config)
+    log_interface = LogInterfaceRefactor(config)
+    guidance_interface = GCherryGuidanceInterface(config, log_interface)
     integration_interface = IntegrationInterface(config, guidance_interface)
-    integration_interface.run()
+    t_res, y_res = integration_interface.run()
+    log_interface.save("test_int_inter.pkl")

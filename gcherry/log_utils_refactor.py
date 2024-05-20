@@ -256,6 +256,16 @@ def get_thrust_pitch(t, pos, vel, mu):
     thrust_acc_topo = global2topo_rot(ra, decl)@thrust_acc
     alpha = np.arctan2(-thrust_acc_topo[2, :], thrust_acc[:2, :])
     return alpha
+
+def get_target_normal_position(pos, target_lan, target_inc):
+    ...
+
+def get_target_normal_velocity():
+    ...
+
+def get_target_normal_acceleration():
+    ...
+
     
 def get_time_steps(t):
     """ Get step between each time entry. 
