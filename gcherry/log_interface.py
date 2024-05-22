@@ -3,7 +3,9 @@ from copy import deepcopy
 from dataclasses import dataclass
 import pandas as pd
 import numpy as np
-from gcherry.log_utils import get_time_steps, interpolate_state, get_derived_state
+from gcherry.log_utils_refactor import get_time_steps, interpolate_state, get_derived_state
+
+import gcherry.log_utils_refactor as log_utils
 
 @dataclass
 class StateLog:
@@ -47,22 +49,7 @@ class StateLog:
     def _flatten_dict():
         ...
 
-    # def get_derived_values(self, mu):
-    #     t = self.get_time()
-    #     pos = self.get_position()
-    #     vel = self.get_velocity()
-    #     derived = {}
-    #     derived['radius'] = get_radius(pos)
-    #     derived['r_dot'] = get_r_dot
-    #     derived['r_dot_dot'] = get_r_dot_dot
-    #     derived['v_theta'] = get_v_theta
-    #     derived['a_theta'] = get_a_theta
-    #     derived['non_gravity_acc_mag'] = get_non_gravity_acc_mag
-    #     derived['thrust_pitch'] = get_thrust_pitch
-    #     derived['orbital_elements'] = get_orbital_elements(pos, vel, mu)
-    #     derived['dt'] = get_time_steps()
 
-    #     return derived
 
 
 
@@ -153,6 +140,14 @@ class OpenMDAOProblemLog:
     
     def _flatten_dict(self, var_name, var_val):
         """ Flattens var_val into a depth-1 dictionary.
+
+        Will go deeper into dictionary, building the flattened key name
+        along the way, until it reaches a list. If the elements of the
+        list are dicts (each with the same keys), then the list is 
+        converted into a dictionary of lists and the program iterates
+        into this dict. Otherwise, if the elements of the list are not
+        dicts, the function obtains the new keys and values from the 
+        list.
         
         Args:
             var_name: Key associated with var_val. 
@@ -273,34 +268,99 @@ class LogInterfaceRefactor:
         with open(save_path, 'wb') as fh:
             pkl.dump(self, fh)
 
-    # def dataframe_error(self):
-    #     """ Dataframe of error between predicted and actual values. 
+    def get_derived_values(self, t_interp=None):
+        """ Obtains values calculated from state history. 
         
-    #     Extracts data from guidance, and derives values based on stored
-    #     simulation state, to make a table of error values.
+        Args:
+            t_interp: Optional. If not None, must be an iterable of
+            times at which to interpolate the state variables before
+            finding derived values.
 
-    #     Returns:
-    #     Dataframe with independent column t and several
-    #     error columns.
+        Returns:
+            Dictionary, where keys are names of derived values and 
+            values are arrays of data.
 
-    #     """
-    #     df_dict = {}
-    #     df_dict['problem'] = self.guidance_interface.problem.dataframe_log()
-    #     df_dict['derived'] = self.integration_interface.state.dataframe_derived()
-    #     return pd.DataFrame(
-    #         {
-    #             't': t,
-    #             't_step': ,
-    #             'r_err': df_dict['problem']['inputs']['._debug.r'],
-    #             'r_dot_err': ,
-    #             'r_dot_dot_err': ,
-    #             'y1_err': ,
-    #             'y1_dot_err': ,
-    #             'y1_dot_dot_err': ,
-    #             'thrust_acc_err': ,
-    #             'thrust_alpha_err': 
-    #         }
-    #     )
+        """
+        t = self.integration_interface.state.get_time()
+        pos = self.integration_interface.state.get_position()
+        vel = self.integration_interface.state.get_velocity()
+
+        if t_interp:
+            t_orig = t
+            t = t_interp
+            pos = np.array([np.interp(t_interp, t_orig, pos[i]) for i in pos.shape[1]])
+            vel = np.array([np.interp(t_interp, t_orig, vel[i]) for i in vel.shape[1]])
+
+        # NOTE: Assumes that mu, target_lan, target_inc are constant.
+        # May not be true for guidance that updates target values
+        # during launch.
+        # TODO: dataframe_log() is useful, but this method of accessing
+        # constants and targeting info is very sensitive to changes
+        # in subsystem names. Consider having a dataframe of promoted
+        # variable names, or built-in log methods that access constants
+        # and targeting info.
+        df_prob = self.guidance_interface.problem.dataframe_log()
+        mu = df_prob['pitch_heading_query.mu'][0]
+        target_lan = df_prob['outer_loop.target_lan'][0]
+        target_inc = df_prob['outer_loop.target_inc'][0]
+
+        derived = {}
+        derived['t'] = t
+        derived['dt'] = log_utils.get_time_steps(t)
+
+        derived['radius'] = log_utils.get_radius(pos)
+        derived['r_dot'] = log_utils.get_r_dot(pos, vel)
+        derived['r_dot_dot'] = log_utils.get_r_dot_dot(t, pos, vel)
+
+        derived['y1'] = log_utils.get_target_normal_position(pos, target_lan, target_inc)
+        derived['y1_dot'] = log_utils.get_target_normal_velocity(vel, target_lan, target_inc)
+        derived['y1_dot_dot'] = log_utils.get_target_normal_acceleration(t, vel, target_lan, target_inc)
+
+        derived['v_theta'] = log_utils.get_v_theta(pos, vel)
+        derived['a_theta'] = log_utils.get_a_theta(t, pos, vel)
+        derived['non_gravity_acc_mag'] = log_utils.get_non_gravity_acc_mag(t, pos, vel, mu)
+        derived['thrust_pitch'] = log_utils.get_thrust_pitch(t, pos, vel, mu)
+        derived['orbital_elements'] = log_utils.get_orbital_elements(pos, vel, mu)
+
+        return derived
+
+    def dataframe_error(self):
+        """ Dataframe of error between predicted and actual values. 
+        
+        Extracts data from guidance, and derives values based on stored
+        simulation state, to make a table of error values.
+
+        Returns:
+        Dataframe with independent column t and several
+        error columns.
+
+        """
+        df_dict = {}
+        df_dict['problem'] = self.guidance_interface.problem.dataframe_log()
+        df_dict['derived'] = self.integration_interface.state.dataframe_derived(
+            t_interp=df_dict['problem']['inputs']['pitch_heading_query.query_t'])
+        return pd.DataFrame(
+            {
+                't': df_dict['derived'],
+                't_step': df_dict['derived']['dt'],
+                'r_err': (df_dict['problem']['outputs']['pitch_heading_query._debug.r'] - 
+                    df_dict['derived']['radius']),
+                'r_dot_err': (df_dict['problem']['outputs']['pitch_heading_query._debug.r_dot'] - 
+                    df_dict['derived']['r_dot']),
+                'r_dot_dot_err': (df_dict['problem']['outputs']['pitch_heading_query._debug.r_dot_dot'] - 
+                    df_dict['derived']['r_dot_dot']),
+                'y1_err': (df_dict['problem']['outputs']['pitch_heading_query._debug.y'] - 
+                    df_dict['derived']['y1']),
+                'y1_dot_err': (df_dict['problem']['outputs']['pitch_heading_query._debug.y_dot'] - 
+                    df_dict['derived']['y1_dot']),
+                'y1_dot_dot_err': (df_dict['problem']['outputs']['pitch_heading_query._debug.y_dot_dot'] - 
+                    df_dict['derived']['y1_dot_dot']),
+                'thrust_acc_err': (df_dict['problem']['outputs']['pitch_heading_query._debug.a_thrust_mag'] - 
+                    df_dict['derived']['non_gravity_acc_mag']),
+                'thrust_alpha_err': (df_dict['problem']['outputs']['pitch_heading_query.cmd_pitch'] - 
+                    df_dict['derived']['thrust_pitch'])
+            }
+        )
     
     def dataframe_oe_error(self, a_tgt, e_tgt, i_tgt, lan_tgt, argp_tgt):
         ...

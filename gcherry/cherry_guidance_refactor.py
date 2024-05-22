@@ -590,7 +590,7 @@ class PitchHeadingQuery(om.ExplicitComponent):
         target_normal_vec = (perifocal2global_rot(target_lan, target_inc, 0) @ 
                             np.array([0, 0, 1]))
         y_dot_dot = c1_yaw*p1 + c2_yaw*p2
-        a_thrust_y = y_dot_dot - g @ target_normal_vec
+        a_thrust_y = y_dot_dot - np.dot(g, target_normal_vec)
         a_thrust_global = guidance_to_global(a_thrust_r, a_thrust_y, a_thrust_mag, x0, target_lan, target_inc)
         a_thrust_topo = global2topo_rot(*(get_ra_decl(x0)))@a_thrust_global
         # TODO: heading can be undefined.
@@ -625,6 +625,8 @@ class PitchHeadingQuery(om.ExplicitComponent):
         outputs['_debug']['y'] = y
         outputs['_debug']['y_dot'] = y_dot
         outputs['_debug']['y_dot_dot'] = y_dot_dot
+
+        outputs['_debug']['a_thrust_mag'] = a_thrust_mag
 
 
         

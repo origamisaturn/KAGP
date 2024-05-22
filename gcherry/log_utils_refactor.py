@@ -258,13 +258,21 @@ def get_thrust_pitch(t, pos, vel, mu):
     return alpha
 
 def get_target_normal_position(pos, target_lan, target_inc):
-    ...
+    target_normal_vec = (perifocal2global_rot(target_lan, target_inc, 0) @ 
+                        np.array([0, 0, 1]))
+    target_normal_position = target_normal_vec@pos
+    return target_normal_position
 
-def get_target_normal_velocity():
-    ...
+def get_target_normal_velocity(vel, target_lan, target_inc):
+    target_normal_vec = (perifocal2global_rot(target_lan, target_inc, 0) @ 
+                        np.array([0, 0, 1]))
+    target_normal_velocity = target_normal_vec@vel
+    return target_normal_velocity
 
-def get_target_normal_acceleration():
-    ...
+def get_target_normal_acceleration(t, vel, target_lan, target_inc):
+    target_normal_velocity = get_target_normal_velocity(vel, target_lan, target_inc)
+    target_normal_acceleration = np.gradient(target_normal_velocity, t)
+    return target_normal_acceleration
 
     
 def get_time_steps(t):
@@ -470,14 +478,3 @@ def interpolate_state(log, interpolation_times):
         new_state[var_name] = new_val
 
     return new_state
-
-
-# def flatten_outputs(log):
-#     # dicts are converted to a single name
-#     # multiple dimensions are split
-#     # 2d is converted to 1d array
-#     outputs = log['outputs']
-#     for var_name, var_data in outputs:
-#         np_var_data = np.array(var_data)
-#         if np.shape[1] 
-#     return flat_outputs
