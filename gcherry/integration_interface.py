@@ -2,6 +2,7 @@ import numpy as np
 from gcherry.rk4 import rk4
 import gcherry.config as cfg
 from gcherry.guidance_interface_refactor import GuidanceInterfaceBase
+from gcherry.log_interface import LogInterfaceRefactor, IntegrationInterfaceLog
 from gcherry.transform import body2global_rot
 
 
@@ -34,6 +35,7 @@ class IntegrationInterface():
     _thrust_cmd_store: float
     _pitch_cmd_store: float
     _heading_cmd_store: float
+
     _max_time_step: float
     # will not be exact, will be shifted forward
     # by the integration timestep
@@ -45,23 +47,24 @@ class IntegrationInterface():
     _initial_position: list[float]
     _initial_velocity: list[float]
     _wet_mass: float
-    # make an abstract class to represent this
+
     guidance_interface: GuidanceInterfaceBase
-    # log_interface: LogInterface
+    log: IntegrationInterfaceLog
+
     _last_outer_loop_time: float
 
-    # have to make a Config class
-    # _config: config
 
 
     def __init__(self, config: cfg.Config, 
-                       guidance_interface: GuidanceInterfaceBase):
+                       guidance_interface: GuidanceInterfaceBase,
+                       log: LogInterfaceRefactor):
         self._thrust_cmd_store = 0.0
         self._pitch_cmd_store = np.deg2rad(90)
         self._heading_cmd_store = np.deg2rad(0)
         self._max_time_step = 1.0
         self._last_outer_loop_time = 0.0
         self.guidance_interface = guidance_interface
+        self.log = log.integration_interface
         self._parse_input(config)
         ...
 
@@ -85,9 +88,10 @@ class IntegrationInterface():
         tspan = [sim_start_time, self._sim_end_time]
 
         initial_state = self._initial_position + self._initial_velocity + [self._wet_mass]
+        self.log.state.log_state(sim_start_time, initial_state)
 
         # Initialize outer loop solution
-        self.guidance_interface.get_command(0, initial_state, outer_loop=True)
+        self.guidance_interface.get_command(0, initial_state, outer_loop=True, log=True)
 
         ode_func = lambda t, state: rocket_ode(t, state, 
                                                self._mu, 
@@ -107,14 +111,16 @@ class IntegrationInterface():
     that are updated every callback, and another that reads directly from
     the GuidanceInterface.get_command(). """
     def _integration_callback(self, t, state):
+        self.log.state.log_state(t, state)
+
         if (not self._is_outer_loop_cutoff(t) and 
             self._is_outer_loop_scheduled(t)):
             thrust_cmd, pitch_cmd, heading_cmd = (
-                self.guidance_interface.get_command(t, state, outer_loop=True))
+                self.guidance_interface.get_command(t, state, outer_loop=True, log=True))
             self._mark_outer_loop_calc(t)
         else:
             thrust_cmd, pitch_cmd, heading_cmd = (
-                self.guidance_interface.get_command(t, state, outer_loop=False))
+                self.guidance_interface.get_command(t, state, outer_loop=False, log=True))
 
         self._thrust_command_store = thrust_cmd
         self._pitch_command_store = pitch_cmd
@@ -134,7 +140,7 @@ class IntegrationInterface():
         self._last_outer_loop_time = t
 
     def _guidance_func_continuous(self, t, state):
-        thrust_cmd, pitch_cmd, heading_cmd = self.guidance_interface.get_command(t, state, outer_loop=False)
+        thrust_cmd, pitch_cmd, heading_cmd = self.guidance_interface.get_command(t, state, outer_loop=False, log=False)
         return thrust_cmd, pitch_cmd, heading_cmd
 
     # this relies on the *_store variables being updated by the 

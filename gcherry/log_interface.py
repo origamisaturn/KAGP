@@ -19,8 +19,8 @@ class StateLog:
         # self.position = {}
         # self.velocity = {}
         # self.mass = {}
-        self.time = {}
-        self.state_vector
+        self.time = []
+        self.state_vector = []
 
     def log_state(self, t, state):
         if len(state) != 7:
@@ -56,6 +56,9 @@ class StateLog:
 @dataclass
 class IntegrationInterfaceLog:
     state: StateLog
+    
+    def __init__(self):
+        self.state = StateLog()
 
 @dataclass
 class OpenMDAOProblemLog:
@@ -197,10 +200,12 @@ class OpenMDAOProblemLog:
         """
         dol = {}
         # init dol
-        for key, val in lod[0]:
+        for key, val in lod[0].items():
             dol[key] = []
+
+        # invert list of dicts to dict of lists
         for dict_element in lod:
-            for key, val in dict_element:
+            for key, val in dict_element.items():
                 dol[key].append(val)
         return dol
 
@@ -262,7 +267,10 @@ class LogInterfaceRefactor:
     guidance_interface: GuidanceInterfaceLog
     integration_interface: IntegrationInterfaceLog
     def __init__(self, config):
+        # NOTE: Consider having the interfaces initialize their own
+        # logs and have this class take those as arguments.
         self.guidance_interface = GuidanceInterfaceLog()
+        self.integration_interface = IntegrationInterfaceLog()
 
     def save(self, save_path):
         with open(save_path, 'wb') as fh:
@@ -285,11 +293,11 @@ class LogInterfaceRefactor:
         pos = self.integration_interface.state.get_position()
         vel = self.integration_interface.state.get_velocity()
 
-        if t_interp:
+        if t_interp is not None:
             t_orig = t
             t = t_interp
-            pos = np.array([np.interp(t_interp, t_orig, pos[i]) for i in pos.shape[1]])
-            vel = np.array([np.interp(t_interp, t_orig, vel[i]) for i in vel.shape[1]])
+            pos = np.array([np.interp(t_interp, t_orig, pos[i, :]) for i in range(pos.shape[0])])
+            vel = np.array([np.interp(t_interp, t_orig, vel[i, :]) for i in range(vel.shape[0])])
 
         # NOTE: Assumes that mu, target_lan, target_inc are constant.
         # May not be true for guidance that updates target values
@@ -300,9 +308,9 @@ class LogInterfaceRefactor:
         # variable names, or built-in log methods that access constants
         # and targeting info.
         df_prob = self.guidance_interface.problem.dataframe_log()
-        mu = df_prob['pitch_heading_query.mu'][0]
-        target_lan = df_prob['outer_loop.target_lan'][0]
-        target_inc = df_prob['outer_loop.target_inc'][0]
+        mu = df_prob['inputs']['pitch_heading_query.mu'][0]
+        target_lan = df_prob['inputs']['outer_loop.target_lan'][0]
+        target_inc = df_prob['inputs']['outer_loop.target_inc'][0]
 
         derived = {}
         derived['t'] = t
@@ -316,8 +324,8 @@ class LogInterfaceRefactor:
         derived['y1_dot'] = log_utils.get_target_normal_velocity(vel, target_lan, target_inc)
         derived['y1_dot_dot'] = log_utils.get_target_normal_acceleration(t, vel, target_lan, target_inc)
 
-        derived['v_theta'] = log_utils.get_v_theta(pos, vel)
-        derived['a_theta'] = log_utils.get_a_theta(t, pos, vel)
+        # derived['v_theta'] = log_utils.get_v_theta(pos, vel)
+        # derived['a_theta'] = log_utils.get_a_theta(t, pos, vel)
         derived['non_gravity_acc_mag'] = log_utils.get_non_gravity_acc_mag(t, pos, vel, mu)
         derived['thrust_pitch'] = log_utils.get_thrust_pitch(t, pos, vel, mu)
         derived['orbital_elements'] = log_utils.get_orbital_elements(pos, vel, mu)
@@ -337,11 +345,11 @@ class LogInterfaceRefactor:
         """
         df_dict = {}
         df_dict['problem'] = self.guidance_interface.problem.dataframe_log()
-        df_dict['derived'] = self.integration_interface.state.dataframe_derived(
+        # NOTE: Should be dataframe, but currently oe is stored as array.
+        df_dict['derived'] = self.get_derived_values(
             t_interp=df_dict['problem']['inputs']['pitch_heading_query.query_t'])
-        return pd.DataFrame(
-            {
-                't': df_dict['derived'],
+        err_dict = {
+                't': df_dict['derived']['t'],
                 't_step': df_dict['derived']['dt'],
                 'r_err': (df_dict['problem']['outputs']['pitch_heading_query._debug.r'] - 
                     df_dict['derived']['radius']),
@@ -360,7 +368,7 @@ class LogInterfaceRefactor:
                 'thrust_alpha_err': (df_dict['problem']['outputs']['pitch_heading_query.cmd_pitch'] - 
                     df_dict['derived']['thrust_pitch'])
             }
-        )
+        return pd.DataFrame(err_dict)
     
     def dataframe_oe_error(self, a_tgt, e_tgt, i_tgt, lan_tgt, argp_tgt):
         ...

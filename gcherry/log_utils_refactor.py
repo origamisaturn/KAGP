@@ -2,7 +2,7 @@ import pickle as pkl
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
-from gcherry.transform import rcn2global_rot, global2topo_rot, get_ra_decl
+from gcherry.transform import rcn2global_rot, global2topo_rot, get_ra_decl, perifocal2global_rot
 from copy import deepcopy
 
 from poliastro.core.elements import rv2coe
@@ -228,11 +228,17 @@ def get_orbital_elements(pos, vel, mu):
     for i in range(N):
         r = pos[:, i] * m_to_km
         v = vel[:, i] * m_to_km
+
+        # If orbital elements exist
+        if (np.linalg.norm(v) > 1e-8 and
+            np.linalg.norm(np.cross(r, v)) > 1e-8):
         # p [km], ecc, inc [rad.], raan [rad.], argp [rad.], nu [rad.]
-        p, ecc, inc, raan, argp, nu = rv2coe(k, r, v)
-        # convert semi-latus rectum [km] to semi-major axis [m]
-        a = p/(1 - ecc**2) * 1/m_to_km
-        orbital_elements[:, i] = [a, ecc, inc, raan, argp, nu]
+            p, ecc, inc, raan, argp, nu = rv2coe(k, r, v)
+            # convert semi-latus rectum [km] to semi-major axis [m]
+            a = p/(1 - ecc**2) * 1/m_to_km
+            orbital_elements[:, i] = [a, ecc, inc, raan, argp, nu]
+        else:
+            orbital_elements[:, i] = [None for i in range(6)]
     return orbital_elements
 
 
@@ -252,9 +258,11 @@ def get_thrust_pitch(t, pos, vel, mu):
 
     """
     thrust_acc = get_non_gravity_acc(t, pos, vel, mu)
-    ra, decl = get_ra_decl(pos)
-    thrust_acc_topo = global2topo_rot(ra, decl)@thrust_acc
-    alpha = np.arctan2(-thrust_acc_topo[2, :], thrust_acc[:2, :])
+    thrust_acc_topo = np.zeros(np.shape(thrust_acc))
+    for i in range(thrust_acc.shape[1]):
+        ra, decl = get_ra_decl(pos[:, i])
+        thrust_acc_topo[:, i] = global2topo_rot(ra, decl)@thrust_acc[:, i]
+    alpha = np.arctan2(-thrust_acc_topo[2, :], np.linalg.norm(thrust_acc[:2, :], axis=0))
     return alpha
 
 def get_target_normal_position(pos, target_lan, target_inc):

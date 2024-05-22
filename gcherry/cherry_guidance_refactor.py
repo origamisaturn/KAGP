@@ -546,7 +546,7 @@ class PitchHeadingQuery(om.ExplicitComponent):
             'y_dot_dot': 0 })
         ...
 
-    def compute(self, inputs, outputs):
+    def compute(self, inputs, outputs, discrete_inputs, discrete_outputs):
         # Set up inputs
         x0 = inputs['query_x']
         v0 = inputs['query_v']
@@ -614,19 +614,19 @@ class PitchHeadingQuery(om.ExplicitComponent):
         r_T = inputs['target_r_T'][0]
         r_dot = r_dot_T - f11*c1_radial - f12*c2_radial
         r = r_T - (f21*c1_radial + f22*c2_radial + r_dot*T_go)
-        outputs['_debug']['r'] = r
-        outputs['_debug']['r_dot'] = r_dot
-        outputs['_debug']['r_dot_dot'] = r_dot_dot
+        discrete_outputs['_debug']['r'] = r
+        discrete_outputs['_debug']['r_dot'] = r_dot
+        discrete_outputs['_debug']['r_dot_dot'] = r_dot_dot
 
         y_T = 0
         y_dot_T = 0
         y_dot = y_dot_T - f11*c1_yaw - f12*c2_yaw
         y = y_T - (f21*c1_yaw + f22*c2_yaw + y_dot*T_go)
-        outputs['_debug']['y'] = y
-        outputs['_debug']['y_dot'] = y_dot
-        outputs['_debug']['y_dot_dot'] = y_dot_dot
+        discrete_outputs['_debug']['y'] = y
+        discrete_outputs['_debug']['y_dot'] = y_dot
+        discrete_outputs['_debug']['y_dot_dot'] = y_dot_dot
 
-        outputs['_debug']['a_thrust_mag'] = a_thrust_mag
+        discrete_outputs['_debug']['a_thrust_mag'] = a_thrust_mag
 
 
         

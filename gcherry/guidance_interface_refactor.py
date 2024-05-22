@@ -33,7 +33,7 @@ class GCherryGuidanceInterface(GuidanceInterfaceBase):
         self.log = log_interface.guidance_interface
         self.log.init_problem(self._openmdao_problem)
 
-    def get_command(self, t, state, outer_loop=True):
+    def get_command(self, t, state, outer_loop=True, log=True):
         # TODO: replace this with a state or a state factory, like in Poliastro.
         # or maybe not, might be too complicated
         position = state[:3]
@@ -60,7 +60,8 @@ class GCherryGuidanceInterface(GuidanceInterfaceBase):
         thrust_pitch = self._openmdao_problem['cmd_pitch'][0]
         thrust_heading = self._openmdao_problem['cmd_heading'][0]
 
-        self.log.log_problem(self._openmdao_problem)
+        if log:
+            self.log.log_problem(self._openmdao_problem)
 
         return thrust_magnitude, thrust_pitch, thrust_heading
     
