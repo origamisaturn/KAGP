@@ -643,8 +643,14 @@ def guidance_to_global(a_thrust_r, a_thrust_y, a_thrust_mag, pos_global, target_
         # Find k component based on _i and _y component of thrust
         # NOTE: should only have i and k component
         target_normal_vec_pcf = pcf_axes.T@target_normal_vec
+        y1_hat = target_normal_vec_pcf
+        a_thrust_k = (a_thrust_y - a_thrust_r*y1_hat[0])/y1_hat[2]
+        # a_thrust_y_global = a_thrust_y * target_normal_vec
+        # a_thrust_y_pcf = pcf_axes.T@a_thrust_y_global
 
-        a_thrust_k = (a_thrust_y*target_normal_vec_pcf)[2]
+        # k_unit = pcf_axes @ np.array([0, 0, 1])
+        # a_thrust_y is composed of i and k components of thrust.
+        # a_thrust_k = np.dot(a_thrust_y_global, k_unit)
         # a_thrust_k = ((a_thrust_y - 
         #               a_thrust_i*(target_normal_vec*i_unit)) /
         #               (target_normal_vec*k_unit))

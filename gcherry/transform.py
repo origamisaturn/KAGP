@@ -38,7 +38,7 @@ def unit_vector(vec):
         of vehicle travel, Z is normal, collinear with angular
         momentum vector.
     Plane Control Frame: Frame origin at vehicle CoM, X is radial, Y is
-        perpendicular to normal vector of desired orbital plane and X,
+        along the cross of the normal vector of desired orbital plane and X,
         Z points to the local horizon toward the direction of the normal
         vector of the desired orbital plane.
 
@@ -111,6 +111,7 @@ def topo2body_rot(roll, pitch, yaw):
     """
     return body2topo_rot(roll, pitch, yaw).T
 
+# TODO: Change input to be pos_global instead
 def topo2global_rot(ra, decl):
     """ Rotation from topocentric to global axes. 
     Args:

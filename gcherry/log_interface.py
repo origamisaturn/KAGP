@@ -328,7 +328,7 @@ class LogInterfaceRefactor:
         # derived['a_theta'] = log_utils.get_a_theta(t, pos, vel)
         derived['non_gravity_acc_mag'] = log_utils.get_non_gravity_acc_mag(t, pos, vel, mu)
         derived['thrust_pitch'] = log_utils.get_thrust_pitch(t, pos, vel, mu)
-        derived['orbital_elements'] = log_utils.get_orbital_elements(pos, vel, mu)
+        # derived['orbital_elements'] = log_utils.get_orbital_elements(pos, vel, mu)
 
         return derived
 

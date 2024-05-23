@@ -262,7 +262,7 @@ def get_thrust_pitch(t, pos, vel, mu):
     for i in range(thrust_acc.shape[1]):
         ra, decl = get_ra_decl(pos[:, i])
         thrust_acc_topo[:, i] = global2topo_rot(ra, decl)@thrust_acc[:, i]
-    alpha = np.arctan2(-thrust_acc_topo[2, :], np.linalg.norm(thrust_acc[:2, :], axis=0))
+    alpha = np.arctan2(-thrust_acc_topo[2, :], np.linalg.norm(thrust_acc_topo[:2, :], axis=0))
     return alpha
 
 def get_target_normal_position(pos, target_lan, target_inc):
