@@ -21,8 +21,18 @@ def Rz(angle: float):
                      [s1, c1, 0],
                      [0, 0, 1]])
 
-def unit_vector(vec):
-    return vec/np.linalg.norm(vec)
+def unit_vector(vec, axis=0):
+    """ Returns unit vector or array.
+    
+    Args:
+        vec: A 1-D vector or 2-D array
+        axis: Axis along which to take vector norm
+    
+    Returns:
+        Unit vector or array of unit vectors.
+        
+    """
+    return vec/np.linalg.norm(vec, axis=axis)
 
 """ Body: Frame fixed to vehicle CoM, rotates with the vehicle. X is 
         forward, Y to the right, Z down.
@@ -35,7 +45,7 @@ def unit_vector(vec):
         normal to orbital plane.
     Radial-Circumferential-Normal: Frame origin at vehicle CoM, X is 
         radial, Y points to the local horizon toward the direction
-        of vehicle travel, Z is normal, collinear with angular
+        of vehicle travel, Z is normal, parallel with angular
         momentum vector.
     Plane Control Frame: Frame origin at vehicle CoM, X is radial, Y is
         along the cross of the normal vector of desired orbital plane and X,
@@ -154,5 +164,11 @@ def global2body_rot(roll, pitch, yaw, pos_global):
 def global2rcn_rot(pos_global, vel_global):
     return rcn2global_rot(pos_global, vel_global).T
 
+# TODO: add unit test for this.
+# NOTE: Check if this works with collinear or 0 value vel
 def rcn2global_rot(pos_global, vel_global):
-    raise NotImplementedError()
+    i = unit_vector(pos_global)
+    k = unit_vector(np.cross(pos_global, vel_global))
+    j = unit_vector(np.cross(k, i))
+    rot_mat = np.stack((i, j, k), axis=-1)
+    return rot_mat

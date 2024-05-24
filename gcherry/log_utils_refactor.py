@@ -69,7 +69,8 @@ def get_theta_hat(pos, vel):
     N = pos.shape[1]
     theta_hat = np.zeros((3, N))
     for i in range(N):
-        theta_hat[:, i] = rcn2global_rot(pos, vel)@np.array([0, 1, 0])
+        theta_hat[:, i] = (rcn2global_rot(pos[:, i], vel[:, i])
+                           @np.array([0, 1, 0]))
     return theta_hat
 
 def get_r_dot(pos, vel):
@@ -219,6 +220,9 @@ def get_orbital_elements(pos, vel, mu):
             lan: [rad.] Longitude of ascending node
             argp: [rad.] Argument of periapsis
             nu: [rad.] True anomaly
+
+        If velocity vector is 0 or colinear w/ radius, then orbital
+        elements are NaN for that column.
     
     """
     N = np.shape(pos)[1]
@@ -238,7 +242,7 @@ def get_orbital_elements(pos, vel, mu):
             a = p/(1 - ecc**2) * 1/m_to_km
             orbital_elements[:, i] = [a, ecc, inc, raan, argp, nu]
         else:
-            orbital_elements[:, i] = [None for i in range(6)]
+            orbital_elements[:, i] = [np.nan for i in range(6)]
     return orbital_elements
 
 

@@ -324,11 +324,18 @@ class LogInterfaceRefactor:
         derived['y1_dot'] = log_utils.get_target_normal_velocity(vel, target_lan, target_inc)
         derived['y1_dot_dot'] = log_utils.get_target_normal_acceleration(t, vel, target_lan, target_inc)
 
-        # derived['v_theta'] = log_utils.get_v_theta(pos, vel)
-        # derived['a_theta'] = log_utils.get_a_theta(t, pos, vel)
+        derived['v_theta'] = log_utils.get_v_theta(pos, vel)
+        derived['a_theta'] = log_utils.get_a_theta(t, pos, vel)
         derived['non_gravity_acc_mag'] = log_utils.get_non_gravity_acc_mag(t, pos, vel, mu)
         derived['thrust_pitch'] = log_utils.get_thrust_pitch(t, pos, vel, mu)
-        # derived['orbital_elements'] = log_utils.get_orbital_elements(pos, vel, mu)
+
+        oe = log_utils.get_orbital_elements(pos, vel, mu)
+        derived['semi_major_axis'] = oe[0, :]
+        derived['ecc'] = oe[1, :]
+        derived['inc'] = oe[2, :]
+        derived['lan'] = oe[3, :]
+        derived['argp'] = oe[4, :]
+        derived['nu'] = oe[5, :]
 
         return derived
 
@@ -336,42 +343,55 @@ class LogInterfaceRefactor:
         """ Dataframe of error between predicted and actual values. 
         
         Extracts data from guidance, and derives values based on stored
-        simulation state, to make a table of error values.
+        simulation state to make a table of error values.
 
         Returns:
         Dataframe with independent column t and several
         error columns.
 
         """
-        df_dict = {}
-        df_dict['problem'] = self.guidance_interface.problem.dataframe_log()
+        df_prob = self.guidance_interface.problem.dataframe_log()
+        t = df_prob['inputs']['pitch_heading_query.query_t']
+        # NOTE: Assumes that target values do not change over time
+        target_r_T = df_prob['inputs']['outer_loop.target_r_T'][0]
+        target_r_dot_T = df_prob['inputs']['outer_loop.target_r_dot_T'][0]
+        target_lan = df_prob['inputs']['outer_loop.target_lan'][0]
+        target_inc = df_prob['inputs']['outer_loop.target_inc'][0]
+        # Zero by definition of yaw guidance.
+        target_y1_T = 0
+        target_y1_dot_T = 0
+
         # NOTE: Should be dataframe, but currently oe is stored as array.
-        df_dict['derived'] = self.get_derived_values(
-            t_interp=df_dict['problem']['inputs']['pitch_heading_query.query_t'])
+        df_deriv = self.get_derived_values(
+            t_interp=t)
         err_dict = {
-                't': df_dict['derived']['t'],
-                't_step': df_dict['derived']['dt'],
-                'r_err': (df_dict['problem']['outputs']['pitch_heading_query._debug.r'] - 
-                    df_dict['derived']['radius']),
-                'r_dot_err': (df_dict['problem']['outputs']['pitch_heading_query._debug.r_dot'] - 
-                    df_dict['derived']['r_dot']),
-                'r_dot_dot_err': (df_dict['problem']['outputs']['pitch_heading_query._debug.r_dot_dot'] - 
-                    df_dict['derived']['r_dot_dot']),
-                'y1_err': (df_dict['problem']['outputs']['pitch_heading_query._debug.y'] - 
-                    df_dict['derived']['y1']),
-                'y1_dot_err': (df_dict['problem']['outputs']['pitch_heading_query._debug.y_dot'] - 
-                    df_dict['derived']['y1_dot']),
-                'y1_dot_dot_err': (df_dict['problem']['outputs']['pitch_heading_query._debug.y_dot_dot'] - 
-                    df_dict['derived']['y1_dot_dot']),
-                'thrust_acc_err': (df_dict['problem']['outputs']['pitch_heading_query._debug.a_thrust_mag'] - 
-                    df_dict['derived']['non_gravity_acc_mag']),
-                'thrust_alpha_err': (df_dict['problem']['outputs']['pitch_heading_query.cmd_pitch'] - 
-                    df_dict['derived']['thrust_pitch'])
+                't': df_deriv['t'],
+                't_step': df_deriv['dt'],
+                'r_err': (df_prob['outputs']['pitch_heading_query._debug.r'] - 
+                    df_deriv['radius']),
+                'r_dot_err': (df_prob['outputs']['pitch_heading_query._debug.r_dot'] - 
+                    df_deriv['r_dot']),
+                'r_dot_dot_err': (df_prob['outputs']['pitch_heading_query._debug.r_dot_dot'] - 
+                    df_deriv['r_dot_dot']),
+                'y1_err': (df_prob['outputs']['pitch_heading_query._debug.y'] - 
+                    df_deriv['y1']),
+                'y1_dot_err': (df_prob['outputs']['pitch_heading_query._debug.y_dot'] - 
+                    df_deriv['y1_dot']),
+                'y1_dot_dot_err': (df_prob['outputs']['pitch_heading_query._debug.y_dot_dot'] - 
+                    df_deriv['y1_dot_dot']),
+                'thrust_acc_err': (df_prob['outputs']['pitch_heading_query._debug.a_thrust_mag'] - 
+                    df_deriv['non_gravity_acc_mag']),
+                'thrust_alpha_err': (df_prob['outputs']['pitch_heading_query.cmd_pitch'] - 
+                    df_deriv['thrust_pitch']),
+
+                'final_r_err': df_deriv['radius'] - target_r_T,
+                'final_r_dot_err': df_deriv['r_dot'] - target_r_dot_T,
+                'final_y1_err': df_deriv['y1'] - target_y1_T,
+                'final_y1_dot_err': df_deriv['y1_dot'] - target_y1_dot_T,
+                'final_target_lan': df_deriv['lan'] - target_lan,
+                'final_target_inc': df_deriv['inc'] - target_inc
             }
         return pd.DataFrame(err_dict)
-    
-    def dataframe_oe_error(self, a_tgt, e_tgt, i_tgt, lan_tgt, argp_tgt):
-        ...
 
 
 class LogInterface:
