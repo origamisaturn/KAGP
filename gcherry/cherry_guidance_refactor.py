@@ -351,6 +351,8 @@ def get_guidance_coefficients(t, T, F_mat, q0, q_dot_0, q_T, q_dot_T):
 
 class RadialYawGuidance(om.ExplicitComponent):
     """ Solves equation for pitch and yaw scheduling. 
+
+    Note that guidance assumes a start time at t=0.
     
     Inputs:
         --- User Input ---
@@ -369,7 +371,7 @@ class RadialYawGuidance(om.ExplicitComponent):
         --- Constants ---
         v_e: [m/s] Effective exhaust velocity of thruster.
         m_dot: [kg/s] Thruster mass flow.
-        m0: [kg] Total mass of spacecraft at launch.
+        m0: [kg] Total mass of spacecraft at launch (sample_t == 0).
 
         --- Component Connections ---
         T: [s] Terminal time; main engine cut-off
@@ -460,6 +462,8 @@ class RadialYawGuidance(om.ExplicitComponent):
 class PitchHeadingQuery(om.ExplicitComponent):
     """ Solves for pitch and heading based on radial and out-of-plane 
     acceleration schedule. 
+
+    Note that guidance assumes a start time at t=0.
     
     Inputs:
         --- User Input ---
@@ -478,7 +482,7 @@ class PitchHeadingQuery(om.ExplicitComponent):
         mu: [m^3/s^2] Gravitational parameter.
         v_e: [m/s] Effective exhaust velocity of thruster.
         m_dot: [kg/s] Thruster mass flow.
-        m0: [kg] Total mass of spacecraft at launch.
+        m0: [kg] Total mass of spacecraft at launch (sample_t == 0).
 
         --- Component Connections ---
         T: [s] Terminal time; main engine cut-off.
