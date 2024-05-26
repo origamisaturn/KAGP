@@ -1,6 +1,8 @@
 import yaml
 from enum import Enum
-from pydantic import BaseModel, Field, PositiveFloat, NonNegativeFloat
+from pydantic import BaseModel, Field, PositiveFloat, NonNegativeFloat, model_validator
+from typing import Optional
+from typing_extensions import Self
 import os
 
 class GuidanceName(Enum):
@@ -39,8 +41,20 @@ class Config(BaseModel):
     spacecraft: Spacecraft
     body: CelestialBody
     mission: Mission
-    integrator: Integrator | None
-    # ksp_interface: KSP_Interface
+    integrator: Optional[Integrator] = None
+    ksp_interface: Optional[KSP_Interface] = None
+
+    @model_validator(mode='after')
+    def check_one_simulation_defined(self) -> Self:
+        sim_attr = ['integrator', 'ksp_interface']
+        defined_sum = 0
+        for attr in sim_attr:
+            if getattr(self, attr):
+                defined_sum += 1
+        if defined_sum == 0:
+            raise ValueError("No simulation defined.")
+        elif defined_sum != 1:
+            raise ValueError("More than one simulation defined.")
 
 def load_config(filenames):
     input_data = {}
