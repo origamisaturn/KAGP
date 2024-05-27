@@ -13,7 +13,7 @@ def rk4(fun, tspan, y0, max_step, callback=None):
         y0: Initial state, 1-D array.
         max_step: Maximum change in t for each step.
         callback: Function called at the end of every rk4 step. Arguments
-            t (float) and state (1-D array of state at time t), 
+            are t (float) and state (1-D array of state at time t), 
             representing the t and state just calculated.
         
     Returns:
