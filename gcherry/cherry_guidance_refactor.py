@@ -11,6 +11,7 @@ from gcherry.transform import (
     pcf2global_rot,
     get_ra_decl
 )
+from gcherry.rk4 import rk4
 
 def rot_mat_2d(theta):
     cos = math.cos
@@ -324,6 +325,7 @@ def get_guidance_coefficients(t, T, F_mat, q0, q_dot_0, q_T, q_dot_T):
     Args:
         t: [s] Time at which q0 and q_dot_0 were measured.
         T: [s] Terminal time; main engine cut-off.
+        NOTE: F_mat must have equal t and T arguments as this function?
         F_mat: 2x2 matrix from get_F_mat().
         q0: [m] Initial boundary condition, distance.
         q_dot_0: [m/s] Initial boundary condition, velocity.
@@ -347,6 +349,39 @@ def get_guidance_coefficients(t, T, F_mat, q0, q_dot_0, q_T, q_dot_T):
     c = np.linalg.solve(A, b).reshape(2)
 
     return c[0], c[1]
+
+def get_expected_guidance_values(t, T, F_mat, c1, c2, q_T, q_dot_T):
+    """ Obtain expected coordinate and its derivative at time t.
+
+    #TODO: Provide equation reference.
+
+    q is generalized distance coordinate. For radial guidance it is
+    radius, for yaw guidance it is normal distance from desired 
+    orbital plane.
+    
+    Args:
+        t: [s] Time at which q0 and q_dot_0 were measured.
+        T: [s] Terminal time; main engine cut-off.
+        NOTE: F_mat must have equal t and T arguments as this function?
+        F_mat: 2x2 matrix from get_F_mat().
+        q_T: [m] Final boundary condition, distance.
+        q_dot_T: [m/s] Final boundary condition, velocity.
+
+    Returns:
+        q, q_dot which are the expected values at time
+        t.
+    
+    """
+    f11 = F_mat[0, 0]
+    f12 = F_mat[0, 1]
+    f21 = F_mat[1, 0]
+    f22 = F_mat[1, 1]
+    T_go = T - t
+
+    q_dot = q_dot_T - f11*c1 - f12*c2
+    q = q_T - (f21*c1+ f22*c2 + q_dot*T_go)
+
+    return q, q_dot
 
 
 class RadialYawGuidance(om.ExplicitComponent):
@@ -572,10 +607,10 @@ class PitchHeadingQuery(om.ExplicitComponent):
         
         # Calculate general values from inputs
         tau = m0/m_dot
-        # circumferential_unit = rcn2global(x0, v0) @ np.array([0, 1, 0])
-        # v_theta_0 = np.dot(v0, circumferential_unit)
         r_hat = unit_vector(x0)
         # TODO: Check this
+        # Probably more robust than using RCN in case where 
+        # v_theta_0 == 0
         v_theta_0 = (np.linalg.norm(v0)**2 - np.dot(v0, r_hat)**2)**0.5
         r0 = np.linalg.norm(x0)
         g = -mu/r0**2 * r_hat
@@ -590,7 +625,7 @@ class PitchHeadingQuery(om.ExplicitComponent):
         cmd_pitch = math.asin(a_thrust_r/a_thrust_mag)
 
         # Find cmd_heading
-        # _y is component along normal of target orbital plane
+        # y is component along normal of target orbital plane
         target_normal_vec = (perifocal2global_rot(target_lan, target_inc, 0) @ 
                             np.array([0, 0, 1]))
         y_dot_dot = c1_yaw*p1 + c2_yaw*p2
@@ -614,6 +649,8 @@ class PitchHeadingQuery(om.ExplicitComponent):
         f22 = F_mat[1, 1]
         T_go = T - t
 
+        # TODO: Turn this into a function
+        # This would be get_expected_guidance_values()
         r_dot_T = inputs['target_r_dot_T']
         r_T = inputs['target_r_T'][0]
         r_dot = r_dot_T - f11*c1_radial - f12*c2_radial
@@ -641,24 +678,13 @@ def guidance_to_global(a_thrust_r, a_thrust_y, a_thrust_mag, pos_global, target_
                             np.array([0, 0, 1]))
         # _i, _j, _k are components along plane control axes.
         pcf_axes = pcf2global_rot(pos_global, target_lan, target_inc)
-        # i_unit = pcf_axes @ np.array([1, 0, 0])
-        # k_unit = pcf_axes @ np.array([0, 0, 1])
         a_thrust_i = a_thrust_r
         # Find k component based on _i and _y component of thrust
         # NOTE: should only have i and k component
         target_normal_vec_pcf = pcf_axes.T@target_normal_vec
         y1_hat = target_normal_vec_pcf
         a_thrust_k = (a_thrust_y - a_thrust_r*y1_hat[0])/y1_hat[2]
-        # a_thrust_y_global = a_thrust_y * target_normal_vec
-        # a_thrust_y_pcf = pcf_axes.T@a_thrust_y_global
 
-        # k_unit = pcf_axes @ np.array([0, 0, 1])
-        # a_thrust_y is composed of i and k components of thrust.
-        # a_thrust_k = np.dot(a_thrust_y_global, k_unit)
-        # a_thrust_k = ((a_thrust_y - 
-        #               a_thrust_i*(target_normal_vec*i_unit)) /
-        #               (target_normal_vec*k_unit))
-        # j component based on remaining available thrust
         # TODO: a_thrust_j can be imaginary
         radicand = a_thrust_mag**2 - a_thrust_i**2 - a_thrust_k**2
         if radicand < 0:
@@ -670,151 +696,7 @@ def guidance_to_global(a_thrust_r, a_thrust_y, a_thrust_mag, pos_global, target_
         a_thrust_global = pcf2global_rot(pos_global, target_lan, target_inc)@a_thrust_pcf
         return a_thrust_global
 
-
-class PitchQuery(om.ExplicitComponent):
-    """ Component containing the equation for pitch of the fixed-thrust control
-    law. Accepts equation terms from the radialControl block. This is
-    called at a much higher rate than radialControl, which is called whenver 
-    we want to update Tgo (at approximately 1hz).
-
-    Inputs:
-        --- User Input ---
-        t: [s] Note this is NOT equal to sample_t. This is the time
-            input to the equation described by the coefficients 
-            given from RadialControl(). The output is alpha based on
-            predicted state at time t.
-
-        --- Constants ---
-        m0: [kg] Total mass of spacecraft at launch.
-        m_dot: [kg/s] Thruster mass flow.
-        v_e: [m/s] Effective exhaust velocity of thruster.
-
-        --- Component Connections ---
-        T: [s] Terminal time; main engine cut-off.
-        a0, a1, a2, c1, c2: Coefficients used to describe radial
-            acceleration over time.
-        g_eff: [m/s^2] Effective gravity at time sample_t.
-
-        --- DEBUG --- [CONSIDER OWN COMPONENT]
-        target_r_dot_T:
-        target_r_T:
-    
-    Outputs:
-        --- User Output ---
-        alpha: [rad.] Commanded pitch angle above local horizon at time
-            t.
-
-        --- DEBUG ---
-        _debug: Dictionary of outputs unnecessary for guidance, but
-            helpful for debugging.
-            a_thrust: [m/s^2] Predicted thrust at time t.
-            r_dot_dot: [m/s^2] Predicted radial acceleration at time t.
-            [CONSIDER OWN COMPONENT] r_dot: [m/s] Predicted radial velocity at time t.
-            [CONSIDER OWN COMPONENT] r: [m] Predicted radial position at time t.
-            p1, p2: Polynomials, part of equation described by 
-                RadialControl().
-
-    Raises:
-        ValueError: Error when calculating alpha. Likely indication of
-            insufficient thrust or a terminal time T that is too early.
-
-    Note that t = 0 is assumed to be the start time of ascent.
-    """
-    # TODO: add more descriptive value error.
-    def setup(self):
-        # iron out differences in t and sample_x, this is a hack.
-        input_names = ['t', 'T', 'a0', 'a1', 'a2', 'c1', 'c2', 
-                       'g_eff', 'm0', 'm_dot', 'v_e', 'mu',
-                       'target_r_T', 'target_r_dot_T']
-        for name in input_names:
-            self.add_input(name, val=0.0)
-        self.add_input('sample_x', val=np.zeros((2)))
-        self.add_input('sample_v', val=np.zeros((2)))
-        
-        output_names = ['alpha']
-        for name in output_names:
-            self.add_output(name, val=0.0)
-        
-        debug_names = ['a_thrust', 'r_dot_dot', 'p1', 'p2', 'r_dot', 'r']
-        debug_dict = {}
-        for name in debug_names:
-            debug_dict[name] = 0.0
-
-        self.add_discrete_output('_debug', debug_dict)
-
-    def compute(self, inputs, outputs, discrete_inputs, discrete_outputs):
-        t = inputs['t'][0]
-        T = inputs['T'][0]
-        a0 = inputs['a0'][0]
-        a1 = inputs['a1'][0]
-        a2 = inputs['a2'][0]
-        c1 = inputs['c1'][0]
-        c2 = inputs['c2'][0]
-        # g_eff = inputs['g_eff'][0]
-        m0 = inputs['m0'][0]
-        mdot = inputs['m_dot'][0]
-        mu = inputs['mu'][0]
-        v_e = inputs['v_e'][0]
-        tau = m0/mdot
-
-        # here g_eff is calculated once, so it is an approximation.
-        # stop out-of-bounds calculations silently
-        if t > T:
-            t = T
-        
-        p1 = a0 + a1*(T-t) + a2*(T-t)**2
-        p2 = p1 * (T-t)
-        r_dot_dot = c1 * p1 + c2 * p2
-        a_thrust = v_e/(tau - t)
-
-        x0 = np.array(inputs['sample_x'])
-        v0 = np.array(inputs['sample_v'])
-        r_dot_0, v_theta_0 = calc_2D_local_velocity(x0, v0)
-        r0 = np.linalg.norm(x0)
-        g_eff = -mu/r0**2 + v_theta_0**2/r0
-        # Note: g_eff is based on time (state actually) but we will assume
-        # it is static for each iteration.
-        alpha = math.asin((r_dot_dot - g_eff)/(a_thrust))
-
-        outputs['alpha'] = alpha
-
-        discrete_outputs['_debug']['a_thrust'] = a_thrust
-        discrete_outputs['_debug']['r_dot_dot'] = r_dot_dot
-        discrete_outputs['_debug']['p1'] = p1
-        discrete_outputs['_debug']['p2'] = p2
-
-        # Copied from VThetaSolver
-        r_dot_T = inputs['target_r_dot_T'][0]
-        r_T = inputs['target_r_T'][0]
-
-        F_mat = calculate_F_mat(t, T, v_e, mdot, m0)
-        f11 = F_mat[0, 0]
-        f12 = F_mat[0, 1]
-        f21 = F_mat[1, 0]
-        f22 = F_mat[1, 1]
-        T_go = T - t
-        r_dot = r_dot_T - f11*c1 - f12*c2
-        r = r_T - (f21*c1 + f22*c2 + r_dot*T_go)
-
-        discrete_outputs['_debug']['r_dot'] = r_dot
-        discrete_outputs['_debug']['r'] = r
-
-def calculate_F_mat(t, T, v_e, m_dot, m0):
-    T_go = T - t
-    tau = m0 / m_dot
-    a0 = v_e/(tau - T)
-    a1 = -a0**2/v_e
-    a2 = a0**3/v_e**2
-
-    f11 = a0*T_go + a1*T_go**2/2 + a2*T_go**3/3
-    f21 = a0*T_go**2/2 + a1*T_go**3/3 + a2*T_go**4/4
-    f22 = a0*T_go**3/3 + a1*T_go**4/4 + a2*T_go**5/5
-    f12 = f21
-
-    F_mat = np.array([[f11, f12], [f21, f22]])
-    return F_mat
-
-class VThetaSolver(om.ExplicitComponent):
+class VThetaSolver_deprecated(om.ExplicitComponent):
     """ Estimates final tangential velocity for given radial rate control path.
 
     Inputs:
@@ -940,6 +822,120 @@ class VThetaSolver(om.ExplicitComponent):
         except:
             print("V_theta block failed to calculate.")
 
+class VThetaSolver(om.ExplicitComponent):
+    """ Estimates final tangential velocity for given radial rate control path.
+
+    Inputs:
+        --- User Input ---
+        sample_x: [m] (len(x) == 3) 3D position in global inertial 
+            frame. Origin is at gravitational body center.
+        sample_v: [m/s] (len(v) == 3) 3D velocity in global inertial 
+            frame.
+        sample_t: [s] Time at which sample_x and sample_v were collected.
+
+        --- Targeting ---
+        target_r_T: [m] Target final radial position.
+        target_r_dot_T: [m/s] Target final radial velocity.
+
+        --- Constants ---
+        mu: [m^3/s^2] Gravitational parameter.
+        v_e: [m/s] Effective exhaust velocity of thruster.
+        m_dot: [kg/s] Thruster mass flow.
+        m0: [kg] Total mass of spacecraft at launch (sample_t == 0).
+
+        --- Component Connections ---
+        T: [s] Terminal time; main engine cut-off.
+        a0, a1, a2: Coefficients of p equation.
+        c1_radial, c2_radial: Coefficients for radial guidance equation.
+        c1_yaw, c2_yaw: Coefficients for yaw guidance equation.
+
+    Outputs:
+        --- Component Connections ---
+        v_theta_T: [m/s] Estimated tangential velocity at terminal time
+            T given radial rate control path.
+        v_theta_loss_T: [m/s] Estimated potential tangential velocity
+            lost to vertical thrusting by time T.
+
+    """
+    def setup(self):
+        self.add_input('sample_x', val=np.zeros((3)))
+        self.add_input('sample_v', val=np.zeros((3)))
+        input_names = ['sample_t', 
+                       'target_r_T', 'target_r_dot_T',
+                       'mu', 'v_e', 'm_dot', 'm0',
+                       'T', 
+                       'a0', 'a1', 'a2',
+                       'c1_radial', 'c2_radial',
+                       'c1_yaw', 'c2_yaw']
+        for name in input_names:
+            self.add_input(name, val=0.0)
+        
+        output_names = ['v_theta_T', 'v_theta_loss_T']
+        for name in output_names:
+            self.add_output(name, val=0.0)
+
+    def compute(self, inputs, outputs):
+        pos = inputs['sample_x']
+        vel = inputs['sample_v']
+        t0 = inputs['sample_t'][0]
+        target_r_T = inputs['target_r_T'][0]
+        target_r_dot_T = inputs['target_r_dot_T'][0]
+        mu = inputs['mu'][0]
+        v_e = inputs['v_e'][0]
+        m_dot = inputs['m_dot'][0]
+        m0 = inputs['m0'][0]
+        T = inputs['T'][0]
+        a0 = inputs['a0'][0]
+        a1 = inputs['a1'][0]
+        a2 = inputs['a2'][0]
+        c1_radial = inputs['c1_radial'][0]
+        c2_radial = inputs['c2_radial'][0]
+        c1_yaw = inputs['c1_yaw'][0]
+        c2_yaw = inputs['c2_yaw'][0]
+
+        tau = m0/m_dot
+        r_hat = unit_vector(pos)
+        v_theta_0 = (np.linalg.norm(vel)**2 - np.dot(vel, r_hat)**2)**0.5
+
+        def get_v_theta_dot(t, v_theta):
+            T_go = T - t
+            a_thrust_mag = v_e/(tau - t)
+            F_mat = get_F_mat(t, T, a0, a1, a2)
+            f11 = F_mat[0, 0]
+            f12 = F_mat[0, 1]
+            f21 = F_mat[1, 0]
+            f22 = F_mat[1, 1]
+            p1 = a0 + a1*(T-t) + a2*(T-t)**2
+            p2 = p1 * (T-t)
+
+            r_dot = target_r_dot_T - f11*c1_radial - f12*c2_radial
+            r = target_r_T - (f21*c1_radial + f22*c2_radial + r_dot*T_go)
+            g_eff = -mu/r**2 + v_theta**2/r
+
+            r_dot_dot = c1_radial*p1 + c2_radial*p2
+            a_thrust_r = r_dot_dot - g_eff
+            y_dot_dot = c1_yaw*p1 + c2_yaw*p2
+            a_thrust_y = y_dot_dot
+
+            # NOTE: assumes that r is orthogonal to y. This becomes
+            # more accurate as the spacecraft approaches the target 
+            # orbital plane.
+            a_thrust_theta = np.sqrt(a_thrust_mag**2 - a_thrust_r**2 - 
+                                     a_thrust_y**2)
+            
+            v_theta_dot = a_thrust_theta - r_dot * v_theta/r
+            return v_theta_dot
+        
+        tspan = [t0, T]
+        max_step = 1
+        t_res, y_res = rk4(get_v_theta_dot, tspan, [v_theta_0], max_step)
+
+        T_go = T-t0
+        estimated_v_theta_T = y_res[:, -1]
+        estimated_v_theta_loss_T = -v_e*math.log(1 - T_go/(tau-t0)) - (estimated_v_theta_T - v_theta_0)
+
+        outputs['estimated_v_theta_T'] = estimated_v_theta_T
+        outputs['estimated_v_theta_loss_T'] = estimated_v_theta_loss_T
 
 
 class TimeToGo(om.ExplicitComponent):
