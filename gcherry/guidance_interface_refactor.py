@@ -4,8 +4,9 @@ import gcherry.config as cfg
 from abc import ABC, abstractmethod
 from gcherry.log_interface import LogInterfaceRefactor, GuidanceInterfaceLog
 from gcherry.cherry_guidance_refactor import (
-    OuterLoopComponent, PitchQuery,
-    RadialYawGuidance, PitchHeadingQuery
+    OuterLoopComponent,
+     PitchHeadingQuery,
+    VThetaSolver
 )
 
 class GuidanceInterfaceBase(ABC):
@@ -19,6 +20,7 @@ class Test3DGuidance(om.Group):
     def setup(self):
         self.add_subsystem('outer_loop', OuterLoopComponent(), promotes=['*'])
         self.add_subsystem('pitch_heading_query', PitchHeadingQuery(), promotes=['*'])
+        self.add_subsystem('v_theta_solver', VThetaSolver(), promotes=['*'])
 
 class GCherryGuidanceInterface(GuidanceInterfaceBase):
     _openmdao_problem: om.Problem

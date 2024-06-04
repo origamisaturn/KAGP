@@ -3,7 +3,7 @@ from copy import deepcopy
 from dataclasses import dataclass
 import pandas as pd
 import numpy as np
-from gcherry.log_utils_refactor import get_time_steps, interpolate_state, get_derived_state, plot_vars
+from gcherry.log_utils_refactor import plot_vars
 
 import gcherry.log_utils_refactor as log_utils
 
@@ -411,6 +411,7 @@ class LogInterfaceRefactor:
                 'thrust_alpha_err': (df_prob['outputs']['pitch_heading_query.cmd_pitch'] - 
                     df_deriv['thrust_pitch']),
 
+                # 'final_v_theta_err': df_deriv['v_theta'] - target_v_theta_T
                 'final_r_err': df_deriv['radius'] - target_r_T,
                 'final_r_dot_err': df_deriv['r_dot'] - target_r_dot_T,
                 'final_y1_err': df_deriv['y1'] - target_y1_T,
