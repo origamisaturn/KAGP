@@ -20,7 +20,6 @@ class Test3DGuidance(om.Group):
     def setup(self):
         self.add_subsystem('outer_loop', OuterLoopComponent(), promotes=['*'])
         self.add_subsystem('pitch_heading_query', PitchHeadingQuery(), promotes=['*'])
-        self.add_subsystem('v_theta_solver', VThetaSolver(), promotes=['*'])
 
 class GCherryGuidanceInterface(GuidanceInterfaceBase):
     _openmdao_problem: om.Problem
@@ -82,7 +81,7 @@ class GCherryGuidanceInterface(GuidanceInterfaceBase):
          ('v_e', v_e),
          ('m_dot', m_dot),
          ('m0', config.spacecraft.wet_mass),
-         ('T', 438)]
+         ('target_v_theta_T', 1549.5925262655273)]
         for key, value in mdao_vals:
             self._openmdao_problem.set_val(key, value)
 

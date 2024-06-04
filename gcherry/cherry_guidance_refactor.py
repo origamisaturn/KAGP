@@ -811,77 +811,6 @@ class VThetaSolver(om.ExplicitComponent):
 
 
 class TimeToGo(om.ExplicitComponent):
-    """ Generates new estimate of terminal time using fixed-point iteration.
-
-    Inputs:
-        --- User Input ---
-        sample_x: [m] (len(sample_x) == 2) 2D position in inertial 
-            frame. Origin is at gravitational body center.
-        sample_v: [m/s] (len(sample_v) == 2) 2D velocity in inertial frame.
-        sample_t: [s] Time at which sample_x and sample_v were 
-            collected.
-        
-        --- Targeting ---
-        target_v_theta_T: [m/s] Target final tangential velocity.
-
-        --- Constants ---
-        v_e: [m/s] Effective exhaust velocity of thruster.
-        m_dot: [kg/s] Thruster mass flow.
-        m0: [kg] Total mass of spacecraft at launch.
-
-        --- Component Connections ---
-        v_theta_T: [m/s] Estimated tangential velocity at terminal time
-            T given radial rate control path.
-        v_theta_loss_T: [m/s] Estimated potential tangential velocity
-            lost to vertical thrusting by time T.
-
-    Outputs:
-        --- Component Connections ---
-        T: [s] New predicted terminal time; main engine cut-off.
-
-    """
-    def setup(self):
-        self.add_input('sample_x', val=np.zeros((2)))
-        self.add_input('sample_v', val=np.zeros((2)))
-        input_names = ['sample_t', 'target_v_theta_T', 
-                       'v_theta_loss_T', 'v_theta_T', 
-                       'v_e', 'm0', 'm_dot']
-        for name in input_names:
-            self.add_input(name, val=0.0)
-        
-        output_names = ['T', 'T_est']
-        for name in output_names:
-            self.add_output(name, val=0.0)
-
-    def compute(self, inputs, outputs):
-        v_theta_loss_Tn = inputs['v_theta_loss_T']
-        v_theta_Tn = inputs['v_theta_T']
-        target_v_theta_T = inputs['target_v_theta_T']
-        t0 = inputs['sample_t']
-        v_e = inputs['v_e']
-        m0 = inputs['m0']
-        m_dot = inputs['m_dot']
-
-        pos = inputs['sample_x']
-        vel = inputs['sample_v']
-
-        r_dot_0, v_theta_0 = calc_2D_local_velocity(pos, vel)
-
-        tau = m0/m_dot
-        tau0 = tau - t0
-        v_theta_loss_Tn_1 = target_v_theta_T - v_theta_Tn + v_theta_loss_Tn
-        # Normally not negative but I have done unfortunate things with the
-        # sign of v_theta
-        #CHANGED V_THETA_LOSS TO TN
-        T_go_n_1 = tau0 * (1 - math.exp(-(target_v_theta_T - v_theta_0 + v_theta_loss_Tn)/v_e))
-        T_n_1 = T_go_n_1 + t0
-        T_go_est = tau0 * (1 - math.exp(-(v_theta_Tn - v_theta_0 + v_theta_loss_Tn)/v_e))
-        T_est = T_go_est + t0
-        outputs['T'] = T_n_1
-        outputs['T_est'] = T_est
-
-
-class TimeToGo2(om.ExplicitComponent):
     """
 
     Inputs:
@@ -891,8 +820,8 @@ class TimeToGo2(om.ExplicitComponent):
 
     """
     def setup(self):
-        self.add_input('sample_x', val=np.zeros((2)))
-        self.add_input('sample_v', val=np.zeros((2)))
+        self.add_input('sample_x', val=np.zeros((3)))
+        self.add_input('sample_v', val=np.zeros((3)))
         input_names = ['sample_t', 'target_v_theta_T', 
                        'v_theta_T', 
                        'v_e', 'm0', 'm_dot']
@@ -919,7 +848,8 @@ class TimeToGo2(om.ExplicitComponent):
 
         pos = inputs['sample_x']
         vel = inputs['sample_v']
-        r_dot_0, v_theta_0 = calc_2D_local_velocity(pos, vel)
+        r_hat = unit_vector(pos)
+        v_theta_0 = (np.linalg.norm(vel)**2 - np.dot(vel, r_hat)**2)**0.5
 
         tau = m0/m_dot
         tau0 = tau - t0
@@ -951,8 +881,14 @@ class OuterLoopGroup(om.Group):
 
 class OuterLoopGroupRefactor(om.Group):
     def setup(self):
+        self.add_subsystem('time_to_go', TimeToGo(), promotes=['*'])
         self.add_subsystem('radial_yaw_guidance', RadialYawGuidance(),
                             promotes=['*'])
+        self.add_subsystem('v_theta_solver', VThetaSolver(), promotes=['*'])
+        self.nonlinear_solver = om.NonlinearBlockGS()
+        self.nonlinear_solver.options['maxiter'] = 100
+        self.nonlinear_solver.options['atol'] = 1e-3
+
 
 class OuterLoopComponent(om.ExplicitComponent):
     def setup(self):
@@ -965,15 +901,17 @@ class OuterLoopComponent(om.ExplicitComponent):
         input_names = ['sample_t', 
                        'target_r_T', 'target_r_dot_T',
                        'target_lan', 'target_inc',
-                       'v_e', 'm_dot', 'm0',
-                       'T']
+                       'target_v_theta_T',
+                       'v_e', 'm_dot', 'm0']
         for name in input_names:
             self.add_input(name, val=0.0)
 
         # consider making this a class attribute
         output_names = ['a0', 'a1', 'a2',
                         'c1_radial', 'c2_radial',
-                        'c1_yaw', 'c2_yaw']
+                        'c1_yaw', 'c2_yaw',
+                        'v_theta_T',
+                        'T']
         for name in output_names:
             self.add_output(name, val=0.0)
 
@@ -991,14 +929,16 @@ class OuterLoopComponent(om.ExplicitComponent):
         input_names = ['sample_t', 
                        'target_r_T', 'target_r_dot_T',
                        'target_lan', 'target_inc',
-                       'v_e', 'm_dot', 'm0',
-                       'T']
+                       'target_v_theta_T',
+                       'v_e', 'm_dot', 'm0']
         for name in input_names:
             self.prob[name] = inputs[name][0]
 
     def pass_prob_outputs(self, outputs):
         output_names = ['a0', 'a1', 'a2',
                         'c1_radial', 'c2_radial',
-                        'c1_yaw', 'c2_yaw']
+                        'c1_yaw', 'c2_yaw',
+                        'v_theta_T',
+                        'T']
         for name in output_names:
             outputs[name] = self.prob[name]
