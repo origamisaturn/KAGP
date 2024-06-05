@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 from gcherry.log_interface import LogInterfaceRefactor, GuidanceInterfaceLog
 from gcherry.cherry_guidance_refactor import (
     OuterLoopComponent,
-     PitchHeadingQuery,
+    PitchHeadingQuery,
     VThetaSolver
 )
 

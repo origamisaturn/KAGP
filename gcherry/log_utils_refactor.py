@@ -342,3 +342,10 @@ def plot_vars(vars, t, columns=3, keys=None):
                 axs[i, j].plot(t, var_val)
                 axs[i, j].set_title(var_name)
     return fig, axs
+
+def almost_equal(val1, val2, tol=1e-8):
+    arr_type = type(np.ndarray([]))
+    if type(val1) == arr_type or type(val2) == arr_type:
+        return (val1-val2 > -tol).all() and (val1-val2 < tol).all()
+    else:
+        return val1-val2 > -tol and val1-val2 < tol

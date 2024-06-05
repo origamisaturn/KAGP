@@ -3,49 +3,40 @@ import numpy as np
 import math
 import openmdao.api as om
 
-import sys, os
-sys.path.append(os.path.abspath(os.path.join(__file__, '..', '..', 'core')))
-from cherry_guidance_refactor import RadialControl
+from gcherry.cherry_guidance_refactor import RadialYawGuidance
+from gcherry.log_utils_refactor import almost_equal 
 
-
-def almost_equal(val1, val2, tol=1e-8):
-    arr_type = type(np.ndarray([]))
-    if type(val1) == arr_type or type(val2) == arr_type:
-        return (val1-val2 > -tol).all() and (val1-val2 < tol).all()
-    else:
-        return val1-val2 > -tol and val1-val2 < tol
-    
-
-def set_radial_control_default(prob):
-    """ Sets default input values for RadialControl.
+def set_radial_yaw_guidance_default(prob):
+    """ Sets default input values for RadialYawGuidance.
     
     Args:
-        prob: openmdao.api.Problem containing only a RadialControl() explicit
+        prob: openmdao.api.Problem containing only a RadialYawGuidance() explicit
             component.
     
     """
     r0 = 1737.4e3
-    prob['x'] = np.array([r0, 0])
-    prob['v'] = np.array([0, 0])
-    prob['sample_t'] = 0
-    # Other inputs
-    prob['T'] = 438
-    # Boundary conditions
-    #   (Loosely following Apollo 11 LM ascent profile:
-    #   https://history.nasa.gov/alsj/nasa-tnd-6846pt.1.pdf)
-    prob['target_r_dot_T'] = 0
-    prob['target_r_T'] = r0 + 18.52e3 # m
-    # Physical constants 
-    prob['mu'] = 4.90e12
-    prob['v_e'] = 3900
-    prob['m_dot'] = 0.42
-    prob['m0'] = 500
 
-def get_radial_control_coefficients(prob):
-    """ Convenience function for getting RadialControl() output.
+    input_dict = {
+        'sample_x': [r0, 0, 0],
+        'sample_v': [0, 0, 0],
+        'sample_t': 0,
+        'target_r_T':  r0 + 18.52e3,
+        'target_r_dot_T': 0,
+        'target_lan': 0,
+        'target_inc': 0,
+        'v_e': 3900,
+        'm_dot': 0.42,
+        'm0': 500,
+        'T': 438}
+    
+    for key, value in input_dict.items():
+        prob[key] = value
+
+def get_radial_guidance_coefficients(prob):
+    """ Convenience function for getting RadialYawGuidance() output.
     
     Args:
-        prob: openmdao.api.Problem containing only a RadialControl() explicit
+        prob: openmdao.api.Problem containing only a RadialYawGuidance() explicit
             component.
     
     Returns:
@@ -84,16 +75,16 @@ def calculate_final_radial_state(a0, a1, a2, c1, c2, Tgo, r0, r_dot_0):
 
     return r_T, r_dot_T
 
-class RadialControlGroup(om.Group):
+class RadialYawGuidanceGroup(om.Group):
     def setup(self):
-        self.add_subsystem('radial_control', RadialControl(), promotes=['*'])
+        self.add_subsystem('radial_yaw_guidance', RadialYawGuidance(), promotes=['*'])
 
     
-class TestRadialControl(unittest.TestCase):
+class TestRadialYawGuidance(unittest.TestCase):
     def setUp(self):
-        self.prob = om.Problem(RadialControlGroup())
+        self.prob = om.Problem(RadialYawGuidanceGroup())
         self.prob.setup()
-        set_radial_control_default(self.prob)
+        set_radial_yaw_guidance_default(self.prob)
 
     def test_case_1(self):
         """ Tests stationary start.
@@ -103,16 +94,16 @@ class TestRadialControl(unittest.TestCase):
 
         """
         r0 = 1737.4e3
-        self.prob['x'] = np.array([r0, 0])
-        self.prob['v'] = np.array([0, 0])
+        self.prob['sample_x'] = np.array([r0, 0, 0])
+        self.prob['sample_v'] = np.array([0, 0, 0])
         self.prob['target_r_T'] = r0 + 18.52e3
         self.prob['target_r_dot_T'] = 0
         self.prob['T'] = 438
         self.prob.run_model()
-        a0, a1, a2, c1, c2 = get_radial_control_coefficients(self.prob)
+        a0, a1, a2, c1, c2 = get_radial_guidance_coefficients(self.prob)
 
 
-        # Check radial control coefficents have expected final state.
+        # Check radial guidance coefficents have expected final state.
         Tgo = self.prob['T'] - self.prob['sample_t']
         r_dot_0 = 0
 
@@ -127,7 +118,7 @@ class TestRadialControl(unittest.TestCase):
         self.assertTrue(almost_equal(r_dot_T_residual, 0, tol))
 
     def test_case_2(self):
-        """ Tests RadialControl() mid-flight. 
+        """ Tests RadialYawGuidance() mid-flight. 
 
         Compares target state against calculated values for r_T
         and r_dot_T.
@@ -138,17 +129,17 @@ class TestRadialControl(unittest.TestCase):
         start_altitude = 9.0e3
         r0 = 1737.4e3
         r_t = r0 + start_altitude
-        self.prob['x'] = np.array([r_t, 0])
-        self.prob['v'] = np.array([0, 0])
+        self.prob['sample_x'] = np.array([r_t, 0, 0])
+        self.prob['sample_v'] = np.array([0, 0, 0])
         self.prob['target_r_T'] = r0 + 18.52e3
         self.prob['target_r_dot_T'] = 0
         self.prob['sample_t'] = 200
         self.prob['T'] = 438
         self.prob.run_model()
-        a0, a1, a2, c1, c2 = get_radial_control_coefficients(self.prob)
+        a0, a1, a2, c1, c2 = get_radial_guidance_coefficients(self.prob)
 
 
-        # Check radial control coefficents have expected final state.
+        # Check radial guidance coefficents have expected final state.
         Tgo = self.prob['T'] - self.prob['sample_t']
         r_dot_0 = 0
 

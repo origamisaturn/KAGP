@@ -12,6 +12,7 @@ from gcherry.transform import (
     get_ra_decl
 )
 from gcherry.rk4 import rk4
+from gcherry.log_utils_refactor import almost_equal
 
 def rot_mat_2d(theta):
     cos = math.cos
@@ -23,14 +24,6 @@ def rot_mat_2d(theta):
 def angle_between_vectors(v1, v2):
     cos_theta = np.dot(v1, v2)/(np.linalg.norm(v1) * np.linalg.norm(v2))
     return math.acos(cos_theta)
-
-def almost_equal(val1, val2, tol=1e-8):
-    arr_type = type(np.ndarray([]))
-    if type(val1) == arr_type or type(val2) == arr_type:
-        return (val1-val2 > -tol).all() and (val1-val2 < tol).all()
-    else:
-        return val1-val2 > -tol and val1-val2 < tol
-
 
 def get_2D_local_axes(x, v):
     """ Calculates r_hat and theta_hat.
@@ -155,111 +148,6 @@ class EnginePropertyEstimator(om.ExplicitComponent):
 
                 outputs['v_e'] = estimated_v_e
                 outputs['m_dot'] = estimated_m_dot 
-
-
-class RadialControl(om.ExplicitComponent):
-    """
-    Component containing radial rate control block.
-
-    Inputs:
-        --- User Input ---
-        sample_x: [m] (len(x) == 2) 2D position in inertial frame. Origin is 
-            at gravitational body center.
-        sample_v: [m/s] (len(v) == 2) 2D velocity in inertial frame.
-        sample_t: [s] Time at which sample_x and sample_v were collected.
-
-        --- Targeting ---
-        target_r_dot_T: [m/s] Target final radial velocity.
-        target_r_T: [m] Target final radial position.
-
-        --- Constants ---
-        mu: [m^3/s^2] Gravitational parameter.
-        v_e: [m/s] Effective exhaust velocity of thruster.
-        m_dot: [kg/s] Thruster mass flow.
-        m0: [kg] Total mass of spacecraft at launch.
-
-        --- Component Connections ---
-        T: [s] Terminal time; main engine cut-off.
-
-
-    Outputs:
-        --- Component Connections ---
-        a0, a1, a2, c1, c2: Coefficients used to describe radial
-            acceleration over time.
-        g_eff: [m/s^2] Effective gravity at time sample_t.
-
-    Note that t = 0 is assumed to be the start time of ascent.
-    """
-
-    def setup(self):
-        # 2D state.
-        self.add_input('sample_x', val=np.zeros((2)))
-        self.add_input('sample_v', val=np.zeros((2)))
-        input_names = ['sample_t', 'target_r_dot_T',
-                        'target_r_T', 'T', 'mu', 'v_e', 'm_dot', 'm0']
-        for name in input_names:
-            self.add_input(name, val=0.0)
-
-        output_names = ['a0', 'a1', 'a2', 'c1', 'c2', 'g_eff']
-        for name in output_names:
-            self.add_output(name, val=0.0)
-
-    def setup_partials(self):
-        self.declare_partials('*', '*', method='fd')
-
-    def compute(self, inputs, outputs):
-        # This assumes thrust on since t = 0
-        
-        x0 = np.array(inputs['sample_x'])
-        v0 = np.array(inputs['sample_v'])
-        t = inputs['sample_t'][0]
-        T = inputs['T'][0]
-        mu = inputs['mu'][0]
-        v_e = inputs['v_e'][0]
-        m_dot = inputs['m_dot'][0]
-        m0 = inputs['m0'][0]
-        tau = m0/m_dot
-        r_dot_T = inputs['target_r_dot_T'][0]
-        r_T = inputs['target_r_T'][0]
-        T_go = T-t
-
-        r_dot_0, v_theta_0 = calc_2D_local_velocity(x0, v0)
-
-        # Calculate F matrix
-        # Compute values of ai
-        # a0 is equivalent to thrust at terminal time
-        # This might assume t=0.
-        a0 = v_e/(tau - T)
-        a1 = -a0**2/v_e
-        a2 = a0**3/v_e**2
-
-        f11 = a0*T_go + a1*T_go**2/2 + a2*T_go**3/3
-        f21 = a0*T_go**2/2 + a1*T_go**3/3 + a2*T_go**4/4
-        f22 = a0*T_go**3/3 + a1*T_go**4/4 + a2*T_go**5/5
-        f12 = f21
-
-        # Ax = b, where A is F vector, b is boundary conditions, x is 
-        # [c1, c2]
-        r0 = np.linalg.norm(x0)
-
-        A = np.array([[f11, f12], [f21, f22]])
-        b = np.array([[r_dot_T - r_dot_0], 
-                    [r_T - (r0 + r_dot_0*T_go)]])
-        c = np.linalg.solve(A, b).reshape(2)
-
-        c1 = c[0]
-        c2 = c[1]
-
-        # Compute effective g_eff at current time. This is a function of t,
-        # but we will assume it is static for each iteration.
-        g_eff = -mu/r0**2 + v_theta_0**2/r0
-        
-        output_names = ['a0', 'a1', 'a2', 'c1', 'c2', 'g_eff']
-        output_vals = [a0, a1, a2, c1, c2, g_eff]
-        for i, name in enumerate(output_names):
-            val = output_vals[i]
-            outputs[name] = val
-
 
 def get_p_coefficients(T, m0, mdot, v_e):
     """ Coefficients of p polynomial.
