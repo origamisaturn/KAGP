@@ -20,7 +20,7 @@ def set_radial_yaw_guidance_default(prob):
         'sample_x': [r0, 0, 0],
         'sample_v': [0, 0, 0],
         'sample_t': 0,
-        'target_r_T':  r0 + 18.52e3,
+        'target_r_T': r0 + 18.52e3,
         'target_r_dot_T': 0,
         'target_lan': 0,
         'target_inc': 0,
@@ -45,16 +45,16 @@ def get_radial_guidance_coefficients(prob):
     
     """
     coefficient_list = []
-    coefficient_keys = ['a0', 'a1', 'a2', 'c1', 'c2']
+    coefficient_keys = ['a0', 'a1', 'a2', 'c1_radial', 'c2_radial']
     for key in coefficient_keys:
         coefficient_list.append(prob[key])
     return tuple(coefficient_list)
 
-def calculate_final_radial_state(a0, a1, a2, c1, c2, Tgo, r0, r_dot_0):
+def calculate_final_radial_state(a0, a1, a2, c1_radial, c2_radial, Tgo, r0, r_dot_0):
     """ Finds radius and radial rate at end time for given coefficents.
     
     Args:
-        a0, a1, a2, c1, c2: Coefficients which describe the commanded
+        a0, a1, a2, c1_radial, c2_radial: Coefficients which describe the commanded
           radial acceleration of the spacecraft over time.
         Tgo: [s] Time until engine cut-off. Equivalent to terminal time
           T subtracted by current time sample_t.
@@ -70,8 +70,8 @@ def calculate_final_radial_state(a0, a1, a2, c1, c2, Tgo, r0, r_dot_0):
     f12 = f21
     f22 = a0*Tgo**3/3 + a1*Tgo**4/4 + a2*Tgo**5/5
 
-    r_dot_T = r_dot_0 + f11*c1 + f12*c2
-    r_T = r0 + r_dot_0*Tgo + f21*c1 + f22*c2
+    r_dot_T = r_dot_0 + f11*c1_radial + f12*c2_radial
+    r_T = r0 + r_dot_0*Tgo + f21*c1_radial + f22*c2_radial
 
     return r_T, r_dot_T
 
@@ -100,7 +100,7 @@ class TestRadialYawGuidance(unittest.TestCase):
         self.prob['target_r_dot_T'] = 0
         self.prob['T'] = 438
         self.prob.run_model()
-        a0, a1, a2, c1, c2 = get_radial_guidance_coefficients(self.prob)
+        a0, a1, a2, c1_radial, c2_radial = get_radial_guidance_coefficients(self.prob)
 
 
         # Check radial guidance coefficents have expected final state.
@@ -108,7 +108,7 @@ class TestRadialYawGuidance(unittest.TestCase):
         r_dot_0 = 0
 
         r_T_calculated, r_dot_T_calculated = calculate_final_radial_state(
-            a0, a1, a2, c1, c2, Tgo, r0, r_dot_0)
+            a0, a1, a2, c1_radial, c2_radial, Tgo, r0, r_dot_0)
         
         r_T_residual = r_T_calculated - self.prob['target_r_T']
         r_dot_T_residual = r_dot_T_calculated - self.prob['target_r_dot_T']
@@ -136,7 +136,7 @@ class TestRadialYawGuidance(unittest.TestCase):
         self.prob['sample_t'] = 200
         self.prob['T'] = 438
         self.prob.run_model()
-        a0, a1, a2, c1, c2 = get_radial_guidance_coefficients(self.prob)
+        a0, a1, a2, c1_radial, c2_radial = get_radial_guidance_coefficients(self.prob)
 
 
         # Check radial guidance coefficents have expected final state.
@@ -144,7 +144,7 @@ class TestRadialYawGuidance(unittest.TestCase):
         r_dot_0 = 0
 
         r_T_calculated, r_dot_T_calculated = calculate_final_radial_state(
-            a0, a1, a2, c1, c2, Tgo, r_t, r_dot_0)
+            a0, a1, a2, c1_radial, c2_radial, Tgo, r_t, r_dot_0)
         
         r_T_residual = r_T_calculated - self.prob['target_r_T']
         r_dot_T_residual = r_dot_T_calculated - self.prob['target_r_dot_T']
