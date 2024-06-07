@@ -1,12 +1,8 @@
 import unittest
 import numpy as np
-import math
 import openmdao.api as om
-from copy import deepcopy
 
-import sys, os
-sys.path.append(os.path.abspath(os.path.join(__file__, '..', '..', 'core')))
-from cherry_guidance_refactor import TimeToGo
+from gcherry.cherry_guidance_refactor import TimeToGo
 
 def almost_equal(val1, val2, tol=1e-8):
     arr_type = type(np.ndarray([]))
@@ -17,15 +13,14 @@ def almost_equal(val1, val2, tol=1e-8):
     
 def set_time_to_go_default(prob):
     r0 = 1737.4e3
-    input_dict = {'sample_x': np.array([r0, 0]),
-                  'sample_v': np.array([0, 0]),
+    input_dict = {'sample_x': np.array([r0, 0, 0]),
+                  'sample_v': np.array([0, 0, 0]),
                   'sample_t': 0,
                   'target_v_theta_T': 1600,
                   'v_e': 3900,
                   'm_dot': 0.42,
                   'm0': 500,
-                  'v_theta_T': 1400,
-                  'v_theta_loss_T': 400}
+                  'v_theta_T': 1400}
     
     for key, value in input_dict.items():
         prob[key] = value

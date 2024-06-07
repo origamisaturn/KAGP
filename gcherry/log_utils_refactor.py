@@ -63,7 +63,7 @@ def get_theta_hat(pos, vel):
         
     Returns:
         3xN array representing circumferential unit vector at each
-        column of pos and vel.
+        column of pos and vel. Will be NaN if pos and vel are parallel.
 
     """
     N = pos.shape[1]
@@ -90,18 +90,22 @@ def get_r_dot(pos, vel):
     return r_dot
 
 def get_v_theta(pos, vel):
-    """ Get velocity along circumferential unit vector. 
+    """ Get velocity along circumferential unit vector.
     
     Args:
         pos: 3xN array of position in the global frame.
         vel: 3xN array of velocity in the global frame.
     Returns:
         Length N 1-D array representing velocity along circumferential unit vector
-        at each column of pos and vel. 
+        at each column of pos and vel. Positive by definition.
     
     """
-    theta_hat = get_theta_hat(pos, vel)
-    v_theta = col_mult(theta_hat, vel)
+    # theta_hat = get_theta_hat(pos, vel)
+    # v_theta = col_mult(theta_hat, vel)
+    # more robust to theta_hat not existing
+    r_dot = get_r_dot(pos, vel)
+    v_mag = np.linalg.norm(vel, axis=0)
+    v_theta = np.sqrt(v_mag**2 - r_dot**2)
     return v_theta
 
 def get_r_dot_dot(t, pos, vel):

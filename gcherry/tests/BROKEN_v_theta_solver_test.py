@@ -1,19 +1,11 @@
 import unittest
 import numpy as np
-import math
 import openmdao.api as om
 from copy import deepcopy
 
-import sys, os
-sys.path.append(os.path.abspath(os.path.join(__file__, '..', '..', 'core')))
-from cherry_guidance_refactor import VThetaSolver
+from gcherry.cherry_guidance_refactor import VThetaSolver
+from gcherry.log_utils_refactor import almost_equal
 
-def almost_equal(val1, val2, tol=1e-8):
-    arr_type = type(np.ndarray([]))
-    if type(val1) == arr_type or type(val2) == arr_type:
-        return (val1-val2 > -tol).all() and (val1-val2 < tol).all()
-    else:
-        return val1-val2 > -tol and val1-val2 < tol
     
 def set_v_theta_solver_default(prob):
     a0, a1, a2, c1, c2 = (5.182888241994683,
@@ -22,21 +14,23 @@ def set_v_theta_solver_default(prob):
                         -0.12670854928655143, 
                         0.0006085997594104416)
     r0 = 1737.4e3
-    input_dict = {'sample_x': np.array([r0, 0]),
-                  'sample_v': np.array([0, 0]),
+    input_dict = {'sample_x': np.array([r0, 0, 0]),
+                  'sample_v': np.array([0, 0, 0]),
                   'sample_t': 0,
                   'target_r_dot_T': 0,
                   'target_r_T': r0 + 18.52e3,
+                  'mu': 4.90e12,
+                  'v_e': 3900,
+                  'm_dot': 0.42,
+                  'm0': 500,
                   'T': 438,
                   'a0': a0,
                   'a1': a1,
                   'a2': a2,
-                  'c1': c1,
-                  'c2': c2,
-                  'mu': 4.90e12,
-                  'v_e': 3900,
-                  'm_dot': 0.42,
-                  'm0': 500}
+                  'c1_radial': c1,
+                  'c2_radial': c2,
+                  'c1_yaw': 0,
+                  'c2_yaw': 0}
     
     for key, value in input_dict.items():
         prob[key] = value
@@ -73,8 +67,8 @@ class TestVThetaSolver(unittest.TestCase):
     def test_case_2(self):
         # Tests while in motion
         r0 = 1737.4e3
-        self.prob['sample_x'] = np.array([r0+1e3, 1e3])
-        self.prob['sample_v'] = np.array([20, 400])
+        self.prob['sample_x'] = np.array([r0+1e3, 1e3, 0])
+        self.prob['sample_v'] = np.array([20, 400, 0])
         self.prob['sample_t'] = 100
         self.prob.run_model()
         v_theta_calc = self.prob['v_theta_T']
