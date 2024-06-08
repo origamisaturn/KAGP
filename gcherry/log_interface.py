@@ -3,6 +3,7 @@ from copy import deepcopy
 from dataclasses import dataclass
 import pandas as pd
 import numpy as np
+import os
 from gcherry.log_utils_refactor import plot_vars
 
 import gcherry.log_utils_refactor as log_utils
@@ -41,10 +42,27 @@ class StateLog:
     
     def get_mass(self):
         np_state_vector = np.array(self.state_vector)
-        return np_state_vector[:, 7].T
+        return np_state_vector[:, 6].T
 
     def get_time(self):
         return np.array(self.time).T
+    
+    def dataframe_log(self):
+        t = self.get_time()
+        pos = self.get_position()
+        vel = self.get_velocity()
+        m = self.get_mass()
+        df_dict = {
+            't': t,
+            'x': pos[0, :],
+            'y': pos[1, :],
+            'z': pos[2, :],
+            'vx': vel[0, :],
+            'vy': vel[1, :],
+            'vz': vel[2, :],
+            'm': m
+        }
+        return pd.DataFrame(df_dict)
 
     def plot_state(self):
         t = self.get_time()
@@ -303,6 +321,27 @@ class LogInterfaceRefactor:
         with open(save_path, 'wb') as fh:
             pkl.dump(self, fh)
 
+    def save_csv(self, save_path):
+        if not os.path.exists(save_path):
+            os.makedirs(save_path)
+        
+        inputs_name = "inputs.csv"
+        outputs_name = "outputs.csv"
+        state_name = "state.csv"
+        derived_name = "derived.csv"
+        err_name = "err.csv"
+
+        df_log = self.guidance_interface.problem.dataframe_log()
+        df_state = self.integration_interface.state.dataframe_log()
+        df_derived = self.get_derived_values()
+        df_err = self.dataframe_error()
+
+        df_log['inputs'].to_csv(os.path.join(save_path, inputs_name))
+        df_log['outputs'].to_csv(os.path.join(save_path, outputs_name))
+        df_state.to_csv(os.path.join(save_path, state_name))
+        df_derived.to_csv(os.path.join(save_path, derived_name))
+        df_err.to_csv(os.path.join(save_path, err_name))
+
     def get_derived_values(self, t_interp=None):
         """ Obtains values calculated from state history. 
         
@@ -312,7 +351,7 @@ class LogInterfaceRefactor:
             finding derived values.
 
         Returns:
-            Dictionary, where keys are names of derived values and 
+            Dataframe, where keys are names of derived values and 
             values are arrays of data.
 
         """
@@ -364,7 +403,7 @@ class LogInterfaceRefactor:
         derived['argp'] = oe[4, :]
         derived['nu'] = oe[5, :]
 
-        return derived
+        return pd.DataFrame(derived)
 
     def dataframe_error(self):
         """ Dataframe of error between predicted and actual values. 

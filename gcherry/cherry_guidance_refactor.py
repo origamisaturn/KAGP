@@ -799,7 +799,7 @@ class VThetaSolver(om.ExplicitComponent):
             return v_theta_dot
         
         tspan = [t0, T]
-        max_step = 20
+        max_step = 1
         t_res, y_res = rk4(get_v_theta_dot, tspan, [v_theta_0], max_step)
 
         T_go = T-t0

@@ -13,6 +13,7 @@ if __name__ == '__main__':
     tp_derived = derived_values['thrust_pitch']
     tp_cmd = df_log['outputs']['pitch_heading_query.cmd_pitch']
     df_err = log_interface.dataframe_error()
+    log_interface.save_csv("test")
     log_interface.plot_error()
     log_interface.plot_derived()
     log_interface.plot_inputs()
