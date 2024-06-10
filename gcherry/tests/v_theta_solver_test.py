@@ -88,13 +88,13 @@ class VThetaSolverGroup(om.Group):
 class TestVThetaSolver(unittest.TestCase):   
     # See set_v_theta_solver_scenario_1() 
     def test_case_1(self):
+        v_theta_expected = 1549.78024878931
+
         self.prob = om.Problem(VThetaSolverGroup())
         self.prob.setup()
         set_v_theta_solver_scenario_1(self.prob)
 
         # Test from stationary start.
-        v_theta_expected = 1549.78024878931
-
         self.prob.run_model()
         v_theta_calc = self.prob['v_theta_T']
         v_theta_loss_calc = self.prob['v_theta_loss_T']
@@ -122,13 +122,13 @@ class TestVThetaSolver(unittest.TestCase):
 
     # See set_v_theta_solver_scenario_2()
     def test_case_2(self):
+        v_theta_expected = 1725.02901332511
+
         self.prob = om.Problem(VThetaSolverGroup())
         self.prob.setup()
         set_v_theta_solver_scenario_2(self.prob)
 
         # Test from stationary start
-        v_theta_expected = 1725.02901332511
-
         self.prob.run_model()
         v_theta_calc = self.prob['v_theta_T']
         v_theta_residual = v_theta_calc - v_theta_expected
