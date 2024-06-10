@@ -583,7 +583,6 @@ class PitchHeadingQuery(om.ExplicitComponent):
             'y': 0,
             'y_dot': 0,
             'y_dot_dot': 0 })
-        ...
 
     def compute(self, inputs, outputs, discrete_inputs, discrete_outputs):
         # Set up inputs
@@ -721,12 +720,18 @@ class VThetaSolver(om.ExplicitComponent):
         c1_radial, c2_radial: Coefficients for radial guidance equation.
         c1_yaw, c2_yaw: Coefficients for yaw guidance equation.
 
+        --- DEBUG ---
+        query_t: [s]
+
     Outputs:
         --- Component Connections ---
         v_theta_T: [m/s] Estimated tangential velocity at terminal time
             T given radial rate control path.
         v_theta_loss_T: [m/s] Estimated potential tangential velocity
             lost to vertical thrusting by time T.
+
+        --- DEBUG ---
+        _debug: dict containing:
 
     """
     def setup(self):
@@ -741,10 +746,15 @@ class VThetaSolver(om.ExplicitComponent):
                        'c1_yaw', 'c2_yaw']
         for name in input_names:
             self.add_input(name, val=0.0)
+
+        # self.add_input('query_t', val=0.0)
         
         output_names = ['v_theta_T', 'v_theta_loss_T']
         for name in output_names:
             self.add_output(name, val=0.0)
+
+        # self.add_discrete_output('_debug', val={
+        #     'v_theta_dot': 0 })
 
     def compute(self, inputs, outputs):
         pos = inputs['sample_x']
@@ -792,6 +802,10 @@ class VThetaSolver(om.ExplicitComponent):
             # NOTE: assumes that r is orthogonal to y. This becomes
             # more accurate as the spacecraft approaches the target 
             # orbital plane.
+            # NOTE: An unnecessary approximation, you can use y remaining
+            # and orbital radius to calculate (or approximate) sine
+            # of orbital plane direction, then use it to calculate 
+            # g dot y1 (and y1 axis direction).
             a_thrust_theta = np.sqrt(a_thrust_mag**2 - a_thrust_r**2 - 
                                      a_thrust_y**2)
             
@@ -799,7 +813,7 @@ class VThetaSolver(om.ExplicitComponent):
             return v_theta_dot
         
         tspan = [t0, T]
-        max_step = 1
+        max_step = 20
         t_res, y_res = rk4(get_v_theta_dot, tspan, [v_theta_0], max_step)
 
         T_go = T-t0
@@ -808,6 +822,8 @@ class VThetaSolver(om.ExplicitComponent):
 
         outputs['v_theta_T'] = estimated_v_theta_T
         outputs['v_theta_loss_T'] = estimated_v_theta_loss_T
+
+        # discrete_outputs['_debug']['v_theta_dot'] = get_v_theta_dot
 
 
 class TimeToGo(om.ExplicitComponent):
