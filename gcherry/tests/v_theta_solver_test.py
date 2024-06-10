@@ -85,14 +85,13 @@ class VThetaSolverGroup(om.Group):
     def setup(self):
         self.add_subsystem('v_theta_solver', VThetaSolver(), promotes=['*'])
 
-# See set_v_theta_solver_scenario_1()
-class TestVThetaSolver_Scenario1(unittest.TestCase):
-    def setUp(self):
+class TestVThetaSolver(unittest.TestCase):   
+    # See set_v_theta_solver_scenario_1() 
+    def test_case_1(self):
         self.prob = om.Problem(VThetaSolverGroup())
         self.prob.setup()
         set_v_theta_solver_scenario_1(self.prob)
-    
-    def test_case_1(self):
+
         # Test from stationary start.
         v_theta_expected = 1549.78024878931
 
@@ -121,14 +120,12 @@ class TestVThetaSolver_Scenario1(unittest.TestCase):
         self.assertTrue(almost_equal(v_theta_residual, 0, tol))
         # self.assertTrue(almost_equal(v_theta_loss_residual, 0, tol))
 
-# See set_v_theta_solver_scenario_2()
-class TestVThetaSolver_Scenario2(unittest.TestCase):
-    def setUp(self):
+    # See set_v_theta_solver_scenario_2()
+    def test_case_2(self):
         self.prob = om.Problem(VThetaSolverGroup())
         self.prob.setup()
         set_v_theta_solver_scenario_2(self.prob)
 
-    def test_case_1(self):
         # Test from stationary start
         v_theta_expected = 1725.02901332511
 
@@ -138,6 +135,7 @@ class TestVThetaSolver_Scenario2(unittest.TestCase):
         tol = 2e-1
         self.assertTrue(almost_equal(v_theta_residual, 0, tol))
 
+        # Test from mid-flight
         # Due to the approximation that the normal of the target orbital
         # plane is orthogonal to the radial vector, it is expected that 
         # midway thru the trajectory the estimation will be less accurate.

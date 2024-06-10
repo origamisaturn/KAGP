@@ -4,9 +4,10 @@ import math
 import openmdao.api as om
 from copy import deepcopy
 
-import sys, os
-sys.path.append(os.path.abspath(os.path.join(__file__, '..', '..', 'core')))
-from cherry_guidance_refactor import TimeToGo
+from gcherry.cherry_guidance_refactor import (
+    TimeToGo,
+    RadialYawGuidance,
+    VThetaSolver)
 
 def almost_equal(val1, val2, tol=1e-8):
     arr_type = type(np.ndarray([]))
@@ -15,41 +16,70 @@ def almost_equal(val1, val2, tol=1e-8):
     else:
         return val1-val2 > -tol and val1-val2 < tol
     
-def set_time_to_go_default(prob):
+def set_time_to_go_scenario1(prob):
     r0 = 1737.4e3
-    input_dict = {'sample_x': np.array([r0, 0]),
-                  'sample_v': np.array([0, 0]),
+    input_dict = {'sample_x': np.array([r0, 0, 0]),
+                  'sample_v': np.array([0, 0, 0]),
                   'sample_t': 0,
-                  'target_v_theta_T': 1600,
-                  'v_e': 3900,
-                  'm_dot': 0.42,
+                  'target_r_dot_T': 0,
+                  'target_r_T': 1785.0e3,
+                  'target_lan': 0.0,
+                  'target_inc': 0.0,
+                  'mu': 4.9028e12,
+                  'v_e': 3893.24005,
+                  'm_dot': 0.420729258654369,
                   'm0': 500,
-                  'v_theta_T': 1400,
-                  'v_theta_loss_T': 400}
+                  'target_v_theta_T': 1549.78024878931}
     
     for key, value in input_dict.items():
         prob[key] = value
 
+# Testing TimeToGo with the other components makes sense as it is
+# intended to iteratively find the terminal time T.
 class TimeToGoGroup(om.Group):
     def setup(self):
         self.add_subsystem('time_to_go', TimeToGo(), promotes=['*'])
+        self.add_subsystem('radial_yaw_guidance', RadialYawGuidance(), promotes=['*'])
+        self.add_subsystem('v_theta_solver', VThetaSolver(), promotes=['*'])
+        self.nonlinear_solver = om.NonlinearBlockGS()
+        self.nonlinear_solver.options['maxiter'] = 100
+        self.nonlinear_solver.options['atol'] = 1e-3
 
 class TestVThetaSolver(unittest.TestCase):
     def setUp(self):
         self.prob = om.Problem(TimeToGoGroup())
         self.prob.setup()
-        set_time_to_go_default(self.prob)
+        set_time_to_go_scenario1(self.prob)
 
     def test_case_1(self):
-        self.prob.run_model()
-        T_calc = self.prob['T']
-
+        # self.prob.model.time_to_go.is_first_entry = True
         T_expected = 438
 
+        # Test from stationary start
+        self.prob.run_model()
+        T_calc = self.prob['T']
         T_residual = T_calc - T_expected
-
-        tol = 1e-8
+        tol = 1e-3
         self.assertTrue(almost_equal(T_residual, 0, tol))
+
+        # Test from mid-flight
+        # self.prob.model.time_to_go.is_first_entry = True
+        self.prob['sample_x'] = np.array([1743371.45973407,
+                                          9064.77377033883,
+                                          0])
+        self.prob['sample_v'] = np.array([108.553696158295,
+                                          204.538775905435,
+                                          0])
+        self.prob['sample_t'] = 100
+        self.prob.run_model()
+        T_calc = self.prob['T']
+        T_residual = T_calc - T_expected
+        tol = 1e-3
+        self.assertTrue(almost_equal(T_residual, 0, tol))
+
+    def test_case_2(self):
+        ...
+
 
 if __name__ == '__main__':
     unittest.main()
