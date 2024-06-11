@@ -1,9 +1,9 @@
+import unittest
+import numpy as np
+import openmdao.api as om
 from gcherry.cherry_guidance_refactor import (
-    VThetaSolver,
-    TimeToGo,
-    RadialYawGuidance,
-    PitchHeadingQuery,
     OuterLoopComponent)
+from gcherry.log_utils_refactor import almost_equal
 
 # Takeoff from lunar surface along equator to a position with 0 r_dot.
 # Only radial guidance, no yaw.    
@@ -48,6 +48,86 @@ def set_outer_loop_component_scenario2(prob):
     for key, value in input_dict.items():
         prob[key] = value
 
+class OuterLoopComponentGroup(om.Group):
+    def setup(self):
+        self.add_subsystem('outer_loop', OuterLoopComponent(), promotes=['*'])
+
 class TestOuterLoopComponent(unittest.TestCase):
+    # See set_outer_loop_component_scenario1()
     def test_case_1(self):
-        ...
+        T_expected = 438
+
+        self.prob = om.Problem(OuterLoopComponentGroup())
+        self.prob.setup()
+        set_outer_loop_component_scenario1(self.prob)
+
+        # Test from stationary start
+        self.prob.run_model()
+        T_calc = self.prob['T']
+        T_residual = T_calc - T_expected
+        tol = 1e-3
+        self.assertTrue(almost_equal(T_residual, 0, tol))
+
+        # Test from mid-flight
+        #self.prob.model.time_to_go.is_first_entry = True
+        self.prob['sample_x'] = np.array([1743371.45973407,
+                                          9064.77377033883,
+                                          0])
+        self.prob['sample_v'] = np.array([108.553696158295,
+                                          204.538775905435,
+                                          0])
+        self.prob['sample_t'] = 100
+        self.prob.run_model()
+        T_calc = self.prob['T']
+        T_residual = T_calc - T_expected
+        tol = 1e-3
+        self.assertTrue(almost_equal(T_residual, 0, tol))
+
+        # See set_time_to_go_scenario2()
+    def test_case_2(self):
+        T_expected = 470
+
+        self.prob = om.Problem(OuterLoopComponentGroup())
+        self.prob.setup()
+        set_outer_loop_component_scenario2(self.prob)
+
+        # Test from stationary start
+        self.prob.run_model()
+        T_calc = self.prob['T']
+        T_residual = T_calc - T_expected
+        tol = 2e-2
+        self.assertTrue(almost_equal(T_residual, 0, tol))
+
+        # Test from mid-flight
+        self.prob['sample_x'] = np.array([1490528.02411845,
+                                          -849036.637175544,
+                                          305753.440395322])
+        self.prob['sample_v'] = np.array([177.904433951903,
+                                          149.952620578308,
+                                          75.5017709619082])
+        self.prob['sample_t'] = 100
+        self.prob.run_model()
+        T_calc = self.prob['T']
+        T_residual = T_calc - T_expected
+        # Less accurate due to approximation used by v_theta_solver
+        tol = 2
+        self.assertTrue(almost_equal(T_residual, 0, tol))
+
+        # 10 Seconds from trajectory termination.
+        self.prob['sample_x'] = np.array([1653277.85787638,
+                                          -579681.582482377,
+                                          340483.259107105])
+        self.prob['sample_v'] = np.array([583.115089862512,
+                                          1569.12004651024,
+                                          9.93982352281227])
+        self.prob['sample_t'] = 460
+        self.prob.run_model()
+        T_calc = self.prob['T']
+        T_residual = T_calc - T_expected
+        # v_theta_solver becomes more accurate nearing the end of the
+        # trajectory
+        tol = 4e-3
+        self.assertTrue(almost_equal(T_residual, 0, tol))   
+
+if __name__ == '__main__':
+    unittest.main()

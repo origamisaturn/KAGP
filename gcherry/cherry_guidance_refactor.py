@@ -694,6 +694,8 @@ class VThetaSolver(om.ExplicitComponent):
             # and orbital radius to calculate (or approximate) sine
             # of orbital plane direction, then use it to calculate 
             # g dot y1 (and y1 axis direction).
+            # NOTE: would be nice to turn this into a taylor
+            # approximation to speed this up
             a_thrust_theta = np.sqrt(a_thrust_mag**2 - a_thrust_r**2 - 
                                      a_thrust_y**2)
             
