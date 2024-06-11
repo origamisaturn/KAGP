@@ -83,9 +83,8 @@ class GCherryGuidanceInterface(GuidanceInterfaceBase):
          ('m_dot', m_dot),
          ('m0', config.spacecraft.wet_mass),
          # NOTE: TEMPORARY
-         ('target_v_theta_T', 1549.5925262655273),
-         # NOTE: TEMPORARY
-         ('T', config.integrator.simulation_end_time)]
+         ('target_v_theta_T', 1725.02901332511)]
+         # NOTE: TEMPORARY]
         for key, value in mdao_vals:
             self._openmdao_problem.set_val(key, value)
 

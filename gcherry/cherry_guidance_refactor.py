@@ -809,7 +809,7 @@ class OuterLoopComponent(om.ExplicitComponent):
                        'target_r_T', 'target_r_dot_T',
                        'target_lan', 'target_inc',
                        'target_v_theta_T',
-                       'v_e', 'm_dot', 'm0']
+                       'mu', 'v_e', 'm_dot', 'm0']
         for name in input_names:
             self.add_input(name, val=0.0)
 
@@ -837,7 +837,7 @@ class OuterLoopComponent(om.ExplicitComponent):
                        'target_r_T', 'target_r_dot_T',
                        'target_lan', 'target_inc',
                        'target_v_theta_T',
-                       'v_e', 'm_dot', 'm0']
+                       'mu', 'v_e', 'm_dot', 'm0']
         for name in input_names:
             self.prob[name] = inputs[name][0]
 
