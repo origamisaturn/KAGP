@@ -29,8 +29,9 @@ class Integrator(BaseModel):
     simulation_end_time: PositiveFloat
     # add check that directory exists
     # log_path: str
-    initial_position: list
-    initial_velocity: list
+    # TODO: Add check that this is a length 3 list non-zero
+    initial_position: list[float]
+    initial_velocity: list[float]
 
 class KSP_Interface(BaseModel):
     simulation_end_time: PositiveFloat

@@ -74,14 +74,18 @@ class GCherryGuidanceInterface(GuidanceInterfaceBase):
                                           config.spacecraft.thrust)
         # TODO: 
         mdao_vals = [('target_r_T', config.mission.periapsis),
-         ('target_r_dot_T', 0),
+        # NOTE: TEMPORARY
+         ('target_r_dot_T', 20),
          ('target_lan', config.mission.longitude_of_ascending_node),
          ('target_inc', config.mission.inclination),
          ('mu', config.body.gravitational_parameter),
          ('v_e', v_e),
          ('m_dot', m_dot),
          ('m0', config.spacecraft.wet_mass),
-         ('target_v_theta_T', 1549.5925262655273)]
+         # NOTE: TEMPORARY
+         ('target_v_theta_T', 1549.5925262655273),
+         # NOTE: TEMPORARY
+         ('T', config.integrator.simulation_end_time)]
         for key, value in mdao_vals:
             self._openmdao_problem.set_val(key, value)
 
