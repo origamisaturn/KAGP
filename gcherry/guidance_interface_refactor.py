@@ -1,5 +1,6 @@
 import openmdao.api as om
 import gcherry.config as cfg
+import numpy as np
 
 from abc import ABC, abstractmethod
 from gcherry.log_interface import LogInterfaceRefactor, GuidanceInterfaceLog
@@ -72,6 +73,10 @@ class GCherryGuidanceInterface(GuidanceInterfaceBase):
     def _parse_input(self, config):
         v_e, m_dot = _convert_engine_data(config.spacecraft.specific_impulse,
                                           config.spacecraft.thrust)
+        r_T, r_dot_T, v_theta_T = _orbit_to_guidance_target(
+            config.mission.periapsis,
+            config.mission.apoapsis,
+            config.mi) ???
         # TODO: 
         mdao_vals = [('target_r_T', config.mission.periapsis),
         # NOTE: TEMPORARY

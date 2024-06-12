@@ -13,6 +13,7 @@ from gcherry.transform import (
 )
 from gcherry.rk4 import rk4
 from gcherry.log_utils_refactor import almost_equal
+from gcherry.transform import global2perifocal_rot
 
 def rot_mat_2d(theta):
     cos = math.cos
@@ -617,6 +618,8 @@ class VThetaSolver(om.ExplicitComponent):
             T given radial rate control path.
         v_theta_loss_T: [m/s] Estimated potential tangential velocity
             lost to vertical thrusting by time T.
+        delta_theta_T: [rad.] Estimated change in true anomaly from 
+            sample_t to terminal time T.
 
         --- DEBUG ---
         _debug: dict containing:
@@ -637,7 +640,7 @@ class VThetaSolver(om.ExplicitComponent):
 
         # self.add_input('query_t', val=0.0)
         
-        output_names = ['v_theta_T', 'v_theta_loss_T']
+        output_names = ['v_theta_T', 'v_theta_loss_T', 'delta_theta_T']
         for name in output_names:
             self.add_output(name, val=0.0)
 
@@ -666,8 +669,11 @@ class VThetaSolver(om.ExplicitComponent):
         tau = m0/m_dot
         r_hat = unit_vector(pos)
         v_theta_0 = (np.linalg.norm(vel)**2 - np.dot(vel, r_hat)**2)**0.5
+        
+        def get_state_dot(t, state):
+            v_theta = state[0]
+            delta_theta = state[1]
 
-        def get_v_theta_dot(t, v_theta):
             T_go = T - t
             a_thrust_mag = v_e/(tau - t)
             F_mat = get_F_mat(t, T, a0, a1, a2)
@@ -687,9 +693,9 @@ class VThetaSolver(om.ExplicitComponent):
             y_dot_dot = c1_yaw*p1 + c2_yaw*p2
             a_thrust_y = y_dot_dot
 
-            # NOTE: assumes that r is orthogonal to y. This becomes
-            # more accurate as the spacecraft approaches the target 
-            # orbital plane.
+            # NOTE: assumes that r is orthogonal to y, and that v_theta 
+            # is orthogonal to r and y. This becomes more accurate as 
+            # the spacecraft approaches the target orbital plane.
             # NOTE: An unnecessary approximation, you can use y remaining
             # and orbital radius to calculate (or approximate) sine
             # of orbital plane direction, then use it to calculate 
@@ -700,23 +706,27 @@ class VThetaSolver(om.ExplicitComponent):
                                      a_thrust_y**2)
             
             v_theta_dot = a_thrust_theta - r_dot * v_theta/r
-            return v_theta_dot
+            theta_dot = v_theta/r
+            return np.array([v_theta_dot, theta_dot])
         
         tspan = [t0, T]
         max_step = 1
-        t_res, y_res = rk4(get_v_theta_dot, tspan, [v_theta_0], max_step)
+        t_res, y_res = rk4(get_state_dot, tspan, [v_theta_0, 0], max_step)
 
         T_go = T-t0
         estimated_v_theta_T = y_res[0, -1]
+        estimated_delta_theta_T = y_res[1, -1]
         # TODO: come up with more robust method of dealing with guidance
         # exceeding thrust requirements.
         if np.isnan(estimated_v_theta_T):
             estimated_v_theta_T = 0
+            estimated_delta_theta_T = 0
 
         estimated_v_theta_loss_T = -v_e*math.log(1 - T_go/(tau-t0)) - (estimated_v_theta_T - v_theta_0)
 
         outputs['v_theta_T'] = estimated_v_theta_T
         outputs['v_theta_loss_T'] = estimated_v_theta_loss_T
+        outputs['delta_theta_T'] = estimated_delta_theta_T
 
         # discrete_outputs['_debug']['v_theta_dot'] = get_v_theta_dot
 
@@ -778,15 +788,64 @@ class TimeToGo(om.ExplicitComponent):
         outputs['Q_n'] = Q_n_1
         outputs['T'] = T_n_1
 
-class OuterLoopGroup(om.Group):
+def _orbit_to_guidance_target(periapsis, apoapsis, true_anomaly, 
+                        gravitational_parameter):
+    mu = gravitational_parameter
+    r_p = periapsis
+    r_a = apoapsis
+    theta = true_anomaly
+
+    cos = np.cos
+    sin = np.sin
+
+    a = 1/2 * (r_p + r_a)
+    e = 1 - r_p/a
+    r = a * (1 - e**2)/(1 + e*cos(theta))
+
+    h = (r_p * mu * (1+e))**0.5
+    v_r = mu/h * e * sin(theta)
+    v_theta = h/r
+
+    return r, v_r, v_theta
+
+class OrbitTargeting(om.ExplicitComponent):
     def setup(self):
-        self.add_subsystem('time_to_go', TimeToGo2(), promotes=['*'])
-        self.add_subsystem('radial_control', RadialControl(),
-                            promotes=['*'])
-        self.add_subsystem('v_theta', VThetaSolver(), promotes=['*'])
-        self.nonlinear_solver = om.NonlinearBlockGS()
-        self.nonlinear_solver.options['maxiter'] = 100
-        self.nonlinear_solver.options['atol'] = 1e-3
+        self.add_input('sample_x', val=np.zeros((3)))
+        self.add_input('sample_v', val=np.zeros((3)))
+        input_names = ['sample_t', 
+                       'target_lan', 'target_inc', 
+                       'target_pe', 'target_ap',
+                       'target_argp',
+                       'mu',
+                       'delta_theta_T']
+        for name in input_names:
+            self.add_input(name, val=0.0)
+        
+        output_names = ['target_r_T', 'target_r_dot_T', 'target_v_theta_T']
+        for name in output_names:
+            self.add_output(name, val=0.0)
+
+    def compute(self, inputs, outputs):
+        x0 = inputs['sample_x']
+        v0 = inputs['sample_v']
+        t = inputs['sample_t'][0]
+        target_lan = inputs['target_lan'][0]
+        target_inc = inputs['target_inc'][0]
+        target_pe = inputs['target_pe'][0]
+        target_ap = inputs['target_ap'][0]
+        target_argp = inputs['target_argp'][0]
+        mu = inputs['mu'][0]
+        delta_theta_T = inputs['delta_theta_T'][0]
+
+        x0_perifocal = global2perifocal_rot(target_lan, target_inc, target_argp)@x0
+        sample_true_anomaly = np.arctan2(x0_perifocal[1], x0_perifocal[0])
+        estimated_true_anomaly = sample_true_anomaly + delta_theta_T
+        r_T, r_dot_T, v_theta_T = _orbit_to_guidance_target(
+            target_pe, target_ap, estimated_true_anomaly, mu)
+        
+        outputs['target_r_T'] = r_T
+        outputs['target_r_dot_T'] = r_dot_T
+        outputs['target_v_theta_T'] = v_theta_T
 
 class OuterLoopGroupRefactor(om.Group):
     def setup(self):
