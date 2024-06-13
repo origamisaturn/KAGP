@@ -416,11 +416,12 @@ class LogInterfaceRefactor:
         error columns.
 
         """
+        # TODO: add error for delta_theta_T
         df_prob = self.guidance_interface.problem.dataframe_log()
         t = df_prob['inputs']['pitch_heading_query.query_t']
         # NOTE: Assumes that target values do not change over time
-        target_r_T = df_prob['inputs']['outer_loop.target_r_T'][0]
-        target_r_dot_T = df_prob['inputs']['outer_loop.target_r_dot_T'][0]
+        target_r_T = df_prob['outputs']['outer_loop.target_r_T'][0]
+        target_r_dot_T = df_prob['outputs']['outer_loop.target_r_dot_T'][0]
         target_lan = df_prob['inputs']['outer_loop.target_lan'][0]
         target_inc = df_prob['inputs']['outer_loop.target_inc'][0]
         # Zero by definition of yaw guidance.

@@ -98,6 +98,9 @@ class IntegrationInterface():
                                                self._isp, 
                                                self._thrust_force_max, 
                                                self._guidance_func_continuous)
+        # NOTE: consider using rk4_step instead in order to change one of
+        # the integration steps to be the estimated final time. That way
+        # there is no thrusting past the estimated final time.
         t_res, y_res = rk4(ode_func, tspan, initial_state, self._max_time_step, callback=self._integration_callback)
         print(np.linalg.norm(y_res[:3, -1]))
         return t_res, y_res

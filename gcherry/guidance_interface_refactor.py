@@ -5,9 +5,8 @@ import numpy as np
 from abc import ABC, abstractmethod
 from gcherry.log_interface import LogInterfaceRefactor, GuidanceInterfaceLog
 from gcherry.cherry_guidance_refactor import (
-    OuterLoopComponent,
-    PitchHeadingQuery,
-    VThetaSolver
+    OrbitGuidanceComponent,
+    PitchHeadingQuery
 )
 
 class GuidanceInterfaceBase(ABC):
@@ -19,7 +18,7 @@ class GuidanceInterfaceBase(ABC):
 
 class Test3DGuidance(om.Group):
     def setup(self):
-        self.add_subsystem('outer_loop', OuterLoopComponent(), promotes=['*'])
+        self.add_subsystem('outer_loop', OrbitGuidanceComponent(), promotes=['*'])
         self.add_subsystem('pitch_heading_query', PitchHeadingQuery(), promotes=['*'])
 
 class GCherryGuidanceInterface(GuidanceInterfaceBase):
@@ -35,6 +34,8 @@ class GCherryGuidanceInterface(GuidanceInterfaceBase):
         self.log = log_interface.guidance_interface
         self.log.init_problem(self._openmdao_problem)
 
+    # NOTE: calling outer_loop after estimated_T is arrived at is 
+    # undefined behavior
     def get_command(self, t, state, outer_loop=True, log=True):
         # TODO: replace this with a state or a state factory, like in Poliastro.
         # or maybe not, might be too complicated
@@ -59,6 +60,8 @@ class GCherryGuidanceInterface(GuidanceInterfaceBase):
         self._openmdao_problem.run_model()
 
         thrust_magnitude = 1
+        if t > self._openmdao_problem['T']:
+            thrust_magnitude = 0
         thrust_pitch = self._openmdao_problem['cmd_pitch'][0]
         thrust_heading = self._openmdao_problem['cmd_heading'][0]
 
@@ -73,26 +76,18 @@ class GCherryGuidanceInterface(GuidanceInterfaceBase):
     def _parse_input(self, config):
         v_e, m_dot = _convert_engine_data(config.spacecraft.specific_impulse,
                                           config.spacecraft.thrust)
-        r_T, r_dot_T, v_theta_T = _orbit_to_guidance_target(
-            config.mission.periapsis,
-            config.mission.apoapsis,
-            config.mi) ???
-        # TODO: 
-        mdao_vals = [('target_r_T', config.mission.periapsis),
-        # NOTE: TEMPORARY
-         ('target_r_dot_T', 20),
+        mdao_vals = [
+         ('target_pe', config.mission.periapsis),
+         ('target_ap', config.mission.apoapsis),
+         ('target_argp', config.mission.argument_of_periapsis),
          ('target_lan', config.mission.longitude_of_ascending_node),
          ('target_inc', config.mission.inclination),
          ('mu', config.body.gravitational_parameter),
          ('v_e', v_e),
          ('m_dot', m_dot),
-         ('m0', config.spacecraft.wet_mass),
-         # NOTE: TEMPORARY
-         ('target_v_theta_T', 1725.02901332511)]
-         # NOTE: TEMPORARY]
+         ('m0', config.spacecraft.wet_mass)]
         for key, value in mdao_vals:
             self._openmdao_problem.set_val(key, value)
-
 
 def _convert_engine_data(specific_impulse, thrust):
     g0 = 9.80665

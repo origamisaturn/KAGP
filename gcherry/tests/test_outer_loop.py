@@ -2,7 +2,7 @@ import unittest
 import numpy as np
 import openmdao.api as om
 from gcherry.cherry_guidance_refactor import (
-    OuterLoopComponent)
+    OuterLoopGroupRefactor)
 from gcherry.log_utils_refactor import almost_equal
 
 # Takeoff from lunar surface along equator to a position with 0 r_dot.
@@ -48,16 +48,16 @@ def set_outer_loop_component_scenario2(prob):
     for key, value in input_dict.items():
         prob[key] = value
 
-class OuterLoopComponentGroup(om.Group):
-    def setup(self):
-        self.add_subsystem('outer_loop', OuterLoopComponent(), promotes=['*'])
+# class OuterLoopComponentGroup(om.Group):
+#     def setup(self):
+#         self.add_subsystem('outer_loop', OuterLoopComponent(), promotes=['*'])
 
 class TestOuterLoopComponent(unittest.TestCase):
     # See set_outer_loop_component_scenario1()
     def test_case_1(self):
         T_expected = 438
 
-        self.prob = om.Problem(OuterLoopComponentGroup())
+        self.prob = om.Problem(OuterLoopGroupRefactor())
         self.prob.setup()
         set_outer_loop_component_scenario1(self.prob)
 
@@ -87,7 +87,7 @@ class TestOuterLoopComponent(unittest.TestCase):
     def test_case_2(self):
         T_expected = 470
 
-        self.prob = om.Problem(OuterLoopComponentGroup())
+        self.prob = om.Problem(OuterLoopGroupRefactor())
         self.prob.setup()
         set_outer_loop_component_scenario2(self.prob)
 

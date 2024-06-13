@@ -2,8 +2,8 @@ import unittest
 import numpy as np
 import openmdao.api as om
 from gcherry.cherry_guidance_refactor import (
-    OrbitTargeting, 
-    OuterLoopComponent)
+    OrbitGuidanceGroup)
+from gcherry.log_utils_refactor import almost_equal
 
 # Takeoff from lunar surface along equator to a position with 0 r_dot.
 # Only radial guidance, no yaw.    
@@ -25,23 +25,51 @@ def set_orbit_targeting_scenario_1(prob):
     for key, value in input_dict.items():
         prob[key] = value
 
-class OrbitTargetingGroup(om.Group):
-    def setup(self):
-        self.add_subsystem('orbit_targeting', OrbitTargeting(), promotes=['*'])
-        self.add_subsystem('outer_loop', OuterLoopComponent(), promotes=['*'])
-        self.nonlinear_solver = om.NonlinearBlockGS()
-        self.nonlinear_solver.options['maxiter'] = 100
-        self.nonlinear_solver.options['atol'] = 1e-3
-
 class TestOrbitTargetingGroup(unittest.TestCase):
     def test_case_1(self):
-        self.prob = om.Problem(OrbitTargetingGroup())
+        tol = 1e-6
+        T_expected = 457.074553487163
+        v_theta_T_expected = 1657.307052620807
+        r_T_expected = 1785000
+        r_dot_T_expected = 0
+
+        self.prob = om.Problem(OrbitGuidanceGroup())
         self.prob.setup()
         set_orbit_targeting_scenario_1(self.prob)
 
         # Test from stationary start
         self.prob.run_model()
-        print("here")
+        T_calc, v_theta_T_calc, r_T_calc, r_dot_T_calc = (
+            self.prob['T'], self.prob['target_v_theta_T'],
+            self.prob['target_r_T'], self.prob['target_r_dot_T'])
+        self.assertTrue(almost_equal(T_calc - T_expected, 0, tol))
+        self.assertTrue(almost_equal(
+            v_theta_T_calc - v_theta_T_expected, 0, tol))
+        self.assertTrue(almost_equal(r_T_calc - r_T_expected, 0, tol))
+        self.assertTrue(almost_equal(
+            r_dot_T_calc - r_dot_T_expected, 0, tol))
+        
+        # Test from mid-flight
+        self.prob['sample_x'] = np.array([1742947.08065715,
+                                          9735.20110926976,
+                                          0])
+        self.prob['sample_v'] = np.array([100.943744375086,
+                                          215.165643404832,
+                                          0])
+        self.prob['sample_t'] = 100
+        self.prob.run_model()
+        T_calc, v_theta_T_calc, r_T_calc, r_dot_T_calc = (
+            self.prob['T'], self.prob['target_v_theta_T'],
+            self.prob['target_r_T'], self.prob['target_r_dot_T'])
+        self.assertTrue(almost_equal(T_calc - T_expected, 0, tol))
+        self.assertTrue(almost_equal(
+            v_theta_T_calc - v_theta_T_expected, 0, tol))
+        self.assertTrue(almost_equal(r_T_calc - r_T_expected, 0, tol))
+        self.assertTrue(almost_equal(
+            r_dot_T_calc - r_dot_T_expected, 0, tol))
+        
+    def test_case_2(self):
+        
 
 if __name__ == '__main__':
     unittest.main()

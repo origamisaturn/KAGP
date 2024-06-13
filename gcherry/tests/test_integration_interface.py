@@ -5,39 +5,39 @@ from gcherry.guidance_interface_refactor import GCherryGuidanceInterface
 from gcherry.integration_interface import IntegrationInterface
 from gcherry.log_interface import LogInterfaceRefactor
 
-class TestIntegrationInterface(unittest.TestCase):
-    def test_case_1(self):
-        filenames = ["gcherry/tests/input/v_theta_solver_test_scenario2.yaml"]
-        config = cfg.load_config(filenames)
-        log_interface = LogInterfaceRefactor(config)
-        guidance_interface = GCherryGuidanceInterface(config, log_interface)
-        integration_interface = IntegrationInterface(config, guidance_interface, log_interface)
+# class TestIntegrationInterface(unittest.TestCase):
+#     def test_case_1(self):
+#         filenames = ["gcherry/tests/input/v_theta_solver_test_scenario2.yaml"]
+#         config = cfg.load_config(filenames)
+#         log_interface = LogInterfaceRefactor(config)
+#         guidance_interface = GCherryGuidanceInterface(config, log_interface)
+#         integration_interface = IntegrationInterface(config, guidance_interface, log_interface)
 
-        integration_interface.run()
+#         integration_interface.run()
 
-        # TODO: revisit structure of the log_interface object.
-        # TODO: Choose between dataframe outputs and dict outputs.
-        # Thinking dicts since they are more flexible.
-        log_interface.save("test_integration_interface_test1.pkl")
-        log_interface.save_csv("test_integration_interface_test1")
+#         # TODO: revisit structure of the log_interface object.
+#         # TODO: Choose between dataframe outputs and dict outputs.
+#         # Thinking dicts since they are more flexible.
+#         log_interface.save("test_integration_interface_test1.pkl")
+#         log_interface.save_csv("test_integration_interface_test1")
 
-        derived_values = log_interface.get_derived_values()
-        df_err = log_interface.dataframe_error()
-        df_prob = log_interface.guidance_interface.problem.dataframe_log()
+#         derived_values = log_interface.get_derived_values()
+#         df_err = log_interface.dataframe_error()
+#         df_prob = log_interface.guidance_interface.problem.dataframe_log()
 
-        expected_v_theta_T = 
-        expected_r = 
-        expected_r_dot = 
-        expected_T = 
-        expected_oe = 
-        tol = 1e-3
+#         expected_v_theta_T = 
+#         expected_r = 
+#         expected_r_dot = 
+#         expected_T = 
+#         expected_oe = 
+#         tol = 1e-3
 
 
 if __name__ == '__main__':
-    filenames = ["gcherry/tests/input/v_theta_solver_test_scenario2.yaml"]
+    filenames = ["gcherry/tests/input/orbit_targeting_test_scenario2.yaml"]
     config = cfg.load_config(filenames)
     log_interface = LogInterfaceRefactor(config)
     guidance_interface = GCherryGuidanceInterface(config, log_interface)
     integration_interface = IntegrationInterface(config, guidance_interface, log_interface)
     t_res, y_res = integration_interface.run()
-    log_interface.save("test_500.pkl")
+    log_interface.save("test_3c.pkl")

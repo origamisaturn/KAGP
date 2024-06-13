@@ -808,6 +808,7 @@ def _orbit_to_guidance_target(periapsis, apoapsis, true_anomaly,
 
     return r, v_r, v_theta
 
+# TODO: add doc
 class OrbitTargeting(om.ExplicitComponent):
     def setup(self):
         self.add_input('sample_x', val=np.zeros((3)))
@@ -825,6 +826,7 @@ class OrbitTargeting(om.ExplicitComponent):
         for name in output_names:
             self.add_output(name, val=0.0)
 
+    # TODO: remove extraneous inputs
     def compute(self, inputs, outputs):
         x0 = inputs['sample_x']
         v0 = inputs['sample_v']
@@ -857,19 +859,27 @@ class OuterLoopGroupRefactor(om.Group):
         self.nonlinear_solver.options['maxiter'] = 100
         self.nonlinear_solver.options['atol'] = 1e-3
 
-
-class OuterLoopComponent(om.ExplicitComponent):
+# TODO: Rename this
+class OrbitGuidanceGroup(om.Group):
     def setup(self):
-        model = OuterLoopGroupRefactor()
+        self.add_subsystem('orbit_targeting', OrbitTargeting(), promotes=['*'])
+        self.add_subsystem('outer_loop', OuterLoopGroupRefactor(), promotes=['*'])
+        self.nonlinear_solver = om.NonlinearBlockGS()
+        self.nonlinear_solver.options['maxiter'] = 100
+        self.nonlinear_solver.options['atol'] = 1e-3
+
+# TODO: add doc, reorganize io
+class OrbitGuidanceComponent(om.ExplicitComponent):
+    def setup(self):
+        model = OrbitGuidanceGroup()
         self.prob = om.Problem(model)
         self.prob.setup()
 
         self.add_input('sample_x', val=np.zeros((3)))
         self.add_input('sample_v', val=np.zeros((3)))
         input_names = ['sample_t', 
-                       'target_r_T', 'target_r_dot_T',
+                       'target_pe', 'target_ap', 'target_argp',
                        'target_lan', 'target_inc',
-                       'target_v_theta_T',
                        'mu', 'v_e', 'm_dot', 'm0']
         for name in input_names:
             self.add_input(name, val=0.0)
@@ -878,8 +888,10 @@ class OuterLoopComponent(om.ExplicitComponent):
         output_names = ['a0', 'a1', 'a2',
                         'c1_radial', 'c2_radial',
                         'c1_yaw', 'c2_yaw',
-                        'v_theta_T',
-                        'T']
+                        'v_theta_T', 'delta_theta_T',
+                        'T',
+                        'target_r_T', 'target_r_dot_T',
+                        'target_v_theta_T']
         for name in output_names:
             self.add_output(name, val=0.0)
 
@@ -895,9 +907,8 @@ class OuterLoopComponent(om.ExplicitComponent):
         self.prob['sample_x'] = inputs['sample_x']
         self.prob['sample_v'] = inputs['sample_v']
         input_names = ['sample_t', 
-                       'target_r_T', 'target_r_dot_T',
+                       'target_pe', 'target_ap', 'target_argp',
                        'target_lan', 'target_inc',
-                       'target_v_theta_T',
                        'mu', 'v_e', 'm_dot', 'm0']
         for name in input_names:
             self.prob[name] = inputs[name][0]
@@ -906,7 +917,9 @@ class OuterLoopComponent(om.ExplicitComponent):
         output_names = ['a0', 'a1', 'a2',
                         'c1_radial', 'c2_radial',
                         'c1_yaw', 'c2_yaw',
-                        'v_theta_T',
-                        'T']
+                        'v_theta_T', 'delta_theta_T',
+                        'T',
+                        'target_r_T', 'target_r_dot_T',
+                        'target_v_theta_T']
         for name in output_names:
             outputs[name] = self.prob[name]
