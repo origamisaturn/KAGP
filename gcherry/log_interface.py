@@ -373,6 +373,7 @@ class LogInterfaceRefactor:
         # in subsystem names. Consider having a dataframe of promoted
         # variable names, or built-in log methods that access constants
         # and targeting info.
+        df_state = self.integration_interface.state.dataframe_log()
         df_prob = self.guidance_interface.problem.dataframe_log()
         mu = df_prob['inputs']['pitch_heading_query.mu'][0]
         target_lan = df_prob['inputs']['outer_loop.target_lan'][0]
@@ -394,6 +395,24 @@ class LogInterfaceRefactor:
         derived['a_theta'] = log_utils.get_a_theta(t, pos, vel)
         derived['non_gravity_acc_mag'] = log_utils.get_non_gravity_acc_mag(t, pos, vel, mu)
         derived['thrust_pitch'] = log_utils.get_thrust_pitch(t, pos, vel, mu)
+
+        # pos = self.integration_interface.state.get_position()
+        # cmd_thrust_pitch = df_prob['outputs']['pitch_heading_query.cmd_pitch']
+        # cmd_thrust_yaw = df_prob['outputs']['pitch_heading_query.cmd_heading']
+        # m = self.integration_interface.state.get_mass()
+        # target_lan = df_prob['inputs']['outer_loop.target_lan']
+        # target_inc = df_prob['inputs']['outer_loop.target_inc']
+        # F_thrust_max = df_prob['inputs']['outer_loop.v_e'][0] * df_prob['inputs']['outer_loop.mdot'][0]
+        # thrust_acc_pcf = log_utils.get_thrust_acc_PCF(
+        #     pos, 
+        #     cmd_thrust_pitch, 
+        #     cmd_thrust_yaw,
+        #     m,
+        #     target_lan,
+        #     target_inc, F_thrust_max)
+        # derived['a_thrust_i_pcf'] = thrust_acc_pcf[0]
+        # derived['a_thrust_j_pcf'] = thrust_acc_pcf[1]
+        # derived['a_thrust_k_pcf'] = thrust_acc_pcf[2]
 
         oe = log_utils.get_orbital_elements(pos, vel, mu)
         derived['semi_major_axis'] = oe[0, :]

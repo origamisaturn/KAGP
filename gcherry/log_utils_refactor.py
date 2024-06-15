@@ -2,7 +2,7 @@ import pickle as pkl
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
-from gcherry.transform import rcn2global_rot, global2topo_rot, get_ra_decl, perifocal2global_rot
+from gcherry.transform import rcn2global_rot, global2topo_rot, get_ra_decl, perifocal2global_rot, body2global_rot, global2pcf_rot
 from copy import deepcopy
 
 from poliastro.core.elements import rv2coe
@@ -218,7 +218,7 @@ def get_orbital_elements(pos, vel, mu):
     Returns:
         6xN array of orbital elements at each column of pos. Each entry
         contains:
-            a: Semi-major axis
+            a: [m] Semi-major axis
             e: Eccentricity
             i: [rad.] Inclination
             lan: [rad.] Longitude of ascending node
@@ -272,6 +272,38 @@ def get_thrust_pitch(t, pos, vel, mu):
         thrust_acc_topo[:, i] = global2topo_rot(ra, decl)@thrust_acc[:, i]
     alpha = np.arctan2(-thrust_acc_topo[2, :], np.linalg.norm(thrust_acc_topo[:2, :], axis=0))
     return alpha
+
+def get_thrust_acc_PCF(pos, thrust_pitch, thrust_yaw, m, target_lan, target_inc, F_thrust_max):
+    """ Get thrust acceleration in Plane Control Frame, as calculated by 
+    rocket_ode().
+
+    Args:
+        pos: [m] 3xN array of global position.
+        thrust_pitch: [rad.] N-length 1-D array of thrust pitch.
+        thrust_yaw: [rad.] N-length 1-D array of thrust yaw.
+        m: [kg] N-length 1-D array of mass.
+        target_lan: [rad.] N-length 1-D array of target longitude of
+          ascending node.
+        target_inc: [rad.] N-length 1-D array of target inclination.
+        F_thrust_max: [N] Maximum thrust
+
+
+
+    Returns:
+        3xN array of acceleration [m/s**2] due to thrust in Plane 
+        Control Frame.
+
+    """
+    F_thrust = F_thrust_max
+    thrust_vector_body = np.array([F_thrust, 0, 0])
+    N = len(m)
+    thrust_acc_pcf = np.zeros((3, N))
+    for i in range(N):
+        thrust_vector_global = (body2global_rot(0, thrust_pitch[i], thrust_yaw[i], pos[:, i]) 
+                                @ thrust_vector_body)
+        thrust_vector_pcf = global2pcf_rot(pos[:, i], target_lan[i], target_inc[i])@thrust_vector_global
+        thrust_acc_pcf[:, i] = thrust_vector_pcf/m[i]
+    return thrust_acc_pcf
 
 def get_target_normal_position(pos, target_lan, target_inc):
     target_normal_vec = (perifocal2global_rot(target_lan, target_inc, 0) @ 

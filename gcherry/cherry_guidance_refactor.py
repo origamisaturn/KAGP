@@ -708,10 +708,14 @@ class VThetaSolver2(om.ExplicitComponent):
 
             theta_hat_PCF = np.zeros(3)
             if v_theta != 0:
+                vel_i = r_dot
+                v_mag = np.sqrt(v_theta**2 + vel_i**2)
+                vel_k = (y_dot - vel_i*y_unit_PCF[0])/y_unit_PCF[2]
+                vel_j = np.sqrt(v_mag**2 - vel_i**2 - vel_k**2)
                 theta_hat_PCF = np.array([
                     0,
-                    np.sqrt(v_theta**2 - (y_dot*cbeta)**2),
-                    y_dot*cbeta
+                    vel_j,
+                    vel_k
                     ]) / v_theta
             else:
                 # only j and k are in the plane of v_theta
