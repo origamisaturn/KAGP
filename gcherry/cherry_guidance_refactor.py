@@ -582,6 +582,172 @@ def guidance_to_global(a_thrust_r, a_thrust_y, a_thrust_mag, pos_global, target_
         a_thrust_global = pcf2global_rot(pos_global, target_lan, target_inc)@a_thrust_pcf
         return a_thrust_global
 
+class VThetaSolver2(om.ExplicitComponent):
+    """ Estimates final tangential velocity for given radial rate control path.
+
+    Inputs:
+        --- User Input ---
+        sample_x: [m] (len(x) == 3) 3D position in global inertial 
+            frame. Origin is at gravitational body center.
+        sample_v: [m/s] (len(v) == 3) 3D velocity in global inertial 
+            frame.
+        sample_t: [s] Time at which sample_x and sample_v were collected.
+
+        --- Targeting ---
+        target_r_T: [m] Target final radial position.
+        target_r_dot_T: [m/s] Target final radial velocity.
+
+        --- Constants ---
+        mu: [m^3/s^2] Gravitational parameter.
+        v_e: [m/s] Effective exhaust velocity of thruster.
+        m_dot: [kg/s] Thruster mass flow.
+        m0: [kg] Total mass of spacecraft at launch (sample_t == 0).
+
+        --- Component Connections ---
+        T: [s] Terminal time; main engine cut-off.
+        a0, a1, a2: Coefficients of p equation.
+        c1_radial, c2_radial: Coefficients for radial guidance equation.
+        c1_yaw, c2_yaw: Coefficients for yaw guidance equation.
+
+        --- DEBUG ---
+        query_t: [s]
+
+    Outputs:
+        --- Component Connections ---
+        v_theta_T: [m/s] Estimated tangential velocity at terminal time
+            T given radial rate control path.
+        v_theta_loss_T: [m/s] Estimated potential tangential velocity
+            lost to vertical thrusting by time T.
+        delta_theta_T: [rad.] Estimated change in true anomaly from 
+            sample_t to terminal time T.
+
+        --- DEBUG ---
+        _debug: dict containing:
+
+    """
+    def setup(self):
+        self.add_input('sample_x', val=np.zeros((3)))
+        self.add_input('sample_v', val=np.zeros((3)))
+        input_names = ['sample_t', 
+                       'target_r_T', 'target_r_dot_T',
+                       'mu', 'v_e', 'm_dot', 'm0',
+                       'T', 
+                       'a0', 'a1', 'a2',
+                       'c1_radial', 'c2_radial',
+                       'c1_yaw', 'c2_yaw']
+        for name in input_names:
+            self.add_input(name, val=0.0)
+
+        # self.add_input('query_t', val=0.0)
+        
+        output_names = ['v_theta_T', 'v_theta_loss_T', 'delta_theta_T']
+        for name in output_names:
+            self.add_output(name, val=0.0)
+
+        # self.add_discrete_output('_debug', val={
+        #     'v_theta_dot': 0 })
+
+    def compute(self, inputs, outputs):
+        pos = inputs['sample_x']
+        vel = inputs['sample_v']
+        t0 = inputs['sample_t'][0]
+        target_r_T = inputs['target_r_T'][0]
+        target_r_dot_T = inputs['target_r_dot_T'][0]
+        mu = inputs['mu'][0]
+        v_e = inputs['v_e'][0]
+        m_dot = inputs['m_dot'][0]
+        m0 = inputs['m0'][0]
+        T = inputs['T'][0]
+        a0 = inputs['a0'][0]
+        a1 = inputs['a1'][0]
+        a2 = inputs['a2'][0]
+        c1_radial = inputs['c1_radial'][0]
+        c2_radial = inputs['c2_radial'][0]
+        c1_yaw = inputs['c1_yaw'][0]
+        c2_yaw = inputs['c2_yaw'][0]
+
+        tau = m0/m_dot
+        r_hat = unit_vector(pos)
+        v_theta_0 = (np.linalg.norm(vel)**2 - np.dot(vel, r_hat)**2)**0.5
+        
+        def get_state_dot(t, state):
+            v_theta = state[0]
+            delta_theta = state[1]
+
+            T_go = T - t
+            a_thrust_mag = v_e/(tau - t)
+            F_mat = get_F_mat(t, T, a0, a1, a2)
+            f11 = F_mat[0, 0]
+            f12 = F_mat[0, 1]
+            f21 = F_mat[1, 0]
+            f22 = F_mat[1, 1]
+            p1 = a0 + a1*(T-t) + a2*(T-t)**2
+            p2 = p1 * (T-t)
+
+            r_dot = target_r_dot_T - f11*c1_radial - f12*c2_radial
+            r = target_r_T - (f21*c1_radial + f22*c2_radial + r_dot*T_go)
+            y_dot = 0 - f11*c1_yaw - f12*c2_yaw
+            y = 0 - (f21*c1_yaw + f22*c2_yaw + y_dot*T_go)
+            g_eff = -mu/r**2 + v_theta**2/r
+
+            r_dot_dot = c1_radial*p1 + c2_radial*p2
+            a_thrust_r = r_dot_dot - g_eff
+            y_dot_dot = c1_yaw*p1 + c2_yaw*p2
+            a_thrust_y = y_dot_dot + (mu/r**2)*(y/r)
+
+            cbeta = np.sqrt(r**2 - y**2)/r
+            sbeta = y/r
+            y_unit_PCF = np.array([sbeta, 0, cbeta])
+
+            
+            # i, j, k are axes in Plane Control Frame
+            a_thrust_i = a_thrust_r
+            a_thrust_k = (a_thrust_y - a_thrust_i*y_unit_PCF[0])/y_unit_PCF[2]
+            a_thrust_j = np.sqrt(a_thrust_mag**2 - a_thrust_i**2 - a_thrust_k**2)
+            a_thrust_PCF = np.array([a_thrust_i, a_thrust_j, a_thrust_k])
+
+            theta_hat_PCF = np.zeros(3)
+            if v_theta != 0:
+                theta_hat_PCF = np.array([
+                    0,
+                    np.sqrt(v_theta**2 - (y_dot*cbeta)**2),
+                    y_dot*cbeta
+                    ]) / v_theta
+            else:
+                # only j and k are in the plane of v_theta
+                theta_hat_PCF = unit_vector(np.array([
+                    0,
+                    a_thrust_PCF[1],
+                    a_thrust_PCF[2]
+                    ]))
+
+            a_thrust_theta = np.dot(a_thrust_PCF, theta_hat_PCF)
+            
+            v_theta_dot = a_thrust_theta - r_dot * v_theta/r
+            theta_dot = v_theta/r
+            return np.array([v_theta_dot, theta_dot])
+        
+        tspan = [t0, T]
+        max_step = 1
+        t_res, y_res = rk4(get_state_dot, tspan, [v_theta_0, 0], max_step)
+
+        T_go = T-t0
+        estimated_v_theta_T = y_res[0, -1]
+        estimated_delta_theta_T = y_res[1, -1]
+        # TODO: come up with more robust method of dealing with guidance
+        # exceeding thrust requirements.
+        if np.isnan(estimated_v_theta_T):
+            estimated_v_theta_T = 0
+            estimated_delta_theta_T = 0
+
+        estimated_v_theta_loss_T = -v_e*math.log(1 - T_go/(tau-t0)) - (estimated_v_theta_T - v_theta_0)
+
+        outputs['v_theta_T'] = estimated_v_theta_T
+        outputs['v_theta_loss_T'] = estimated_v_theta_loss_T
+        outputs['delta_theta_T'] = estimated_delta_theta_T
+
+        # discrete_outputs['_debug']['v_theta_dot'] = get_v_theta_dot
+
 class VThetaSolver(om.ExplicitComponent):
     """ Estimates final tangential velocity for given radial rate control path.
 
