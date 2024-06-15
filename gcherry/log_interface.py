@@ -358,13 +358,17 @@ class LogInterfaceRefactor:
         t = self.integration_interface.state.get_time()
         pos = self.integration_interface.state.get_position()
         vel = self.integration_interface.state.get_velocity()
+        mass = self.integration_interface.state.get_mass()
 
+        # TODO: take a closer look at t_interp. Does this function make
+        # sense without it? like we are indexing the df_prob directly
+        # but interpolating only the state values.
         if t_interp is not None:
             t_orig = t
             t = t_interp
             pos = np.array([np.interp(t_interp, t_orig, pos[i, :]) for i in range(pos.shape[0])])
             vel = np.array([np.interp(t_interp, t_orig, vel[i, :]) for i in range(vel.shape[0])])
-
+            mass = np.interp(t_interp, t_orig, mass)
         # NOTE: Assumes that mu, target_lan, target_inc are constant.
         # May not be true for guidance that updates target values
         # during launch.
@@ -394,6 +398,29 @@ class LogInterfaceRefactor:
         derived['a_theta'] = log_utils.get_a_theta(t, pos, vel)
         derived['non_gravity_acc_mag'] = log_utils.get_non_gravity_acc_mag(t, pos, vel, mu)
         derived['thrust_pitch'] = log_utils.get_thrust_pitch(t, pos, vel, mu)
+
+        cmd_thrust_pitch = df_prob['outputs']['pitch_heading_query.cmd_pitch']
+        cmd_thrust_yaw = df_prob['outputs']['pitch_heading_query.cmd_heading']
+        target_lan = df_prob['inputs']['outer_loop.target_lan']
+        target_inc = df_prob['inputs']['outer_loop.target_inc']
+        F_thrust_max = df_prob['inputs']['outer_loop.v_e'][0] * df_prob['inputs']['outer_loop.m_dot'][0]
+        thrust_acc_pcf = log_utils.get_thrust_acc_PCF(
+            pos, 
+            cmd_thrust_pitch, 
+            cmd_thrust_yaw,
+            mass,
+            target_lan,
+            target_inc, F_thrust_max)
+        derived['a_thrust_i_pcf'] = thrust_acc_pcf[0]
+        derived['a_thrust_j_pcf'] = thrust_acc_pcf[1]
+        derived['a_thrust_k_pcf'] = thrust_acc_pcf[2]
+
+        theta_hat_pcf = log_utils.get_theta_hat_PCF(
+            pos, vel, target_lan, target_inc
+        )
+        derived['theta_hat_i_pcf'] = theta_hat_pcf[0]
+        derived['theta_hat_j_pcf'] = theta_hat_pcf[1]
+        derived['theta_hat_k_pcf'] = theta_hat_pcf[2]
 
         oe = log_utils.get_orbital_elements(pos, vel, mu)
         derived['semi_major_axis'] = oe[0, :]
