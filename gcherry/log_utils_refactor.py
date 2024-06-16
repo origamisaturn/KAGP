@@ -309,6 +309,8 @@ def get_thrust_acc_PCF(pos, thrust_pitch, thrust_yaw, m, target_lan, target_inc,
         target_inc: [rad.] N-length 1-D array of target inclination.
         F_thrust_max: [N] Maximum thrust
 
+
+
     Returns:
         3xN array of acceleration [m/s**2] due to thrust in Plane 
         Control Frame.
@@ -324,6 +326,30 @@ def get_thrust_acc_PCF(pos, thrust_pitch, thrust_yaw, m, target_lan, target_inc,
         thrust_vector_pcf = global2pcf_rot(pos[:, i], target_lan[i], target_inc[i])@thrust_vector_global
         thrust_acc_pcf[:, i] = thrust_vector_pcf/m[i]
     return thrust_acc_pcf
+
+def get_theta_hat_PCF(pos, vel, target_lan, target_inc):
+    """ Get circumferential unit vector. 
+    
+    Args:
+        pos: 3xN array of position in the global frame.
+        vel: 3xN array of velocity in the global frame.
+        target_lan: [rad.] N-length 1-D array of target longitude of
+          ascending node.
+        target_inc: [rad.] N-length 1-D array of target inclination.
+        
+    Returns:
+        3xN array representing circumferential unit vector at each
+        column of pos and vel.
+
+    """
+    N = pos.shape[1]
+    theta_hat = np.zeros((3, N))
+    for i in range(N):
+        theta_hat[:, i] = (
+            global2pcf_rot(pos[:,i], target_lan[i], target_inc[i])
+            @rcn2global_rot(pos[:, i], vel[:, i])
+            @np.array([0, 1, 0]))
+    return theta_hat
 
 def get_target_normal_position(pos, target_lan, target_inc):
     target_normal_vec = (perifocal2global_rot(target_lan, target_inc, 0) @ 
