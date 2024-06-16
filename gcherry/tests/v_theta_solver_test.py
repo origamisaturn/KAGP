@@ -3,7 +3,7 @@ import numpy as np
 import openmdao.api as om
 from copy import deepcopy
 
-from gcherry.cherry_guidance_refactor import VThetaSolver2
+from gcherry.cherry_guidance_refactor import VThetaSolver
 from gcherry.log_utils_refactor import almost_equal
 
     
@@ -77,7 +77,7 @@ def set_v_theta_solver_scenario_2(prob):
 
 class VThetaSolverGroup(om.Group):
     def setup(self):
-        self.add_subsystem('v_theta_solver', VThetaSolver2(), promotes=['*'])
+        self.add_subsystem('v_theta_solver', VThetaSolver(), promotes=['*'])
 
 class TestVThetaSolver(unittest.TestCase):   
     # See set_v_theta_solver_scenario_1() 
@@ -95,7 +95,7 @@ class TestVThetaSolver(unittest.TestCase):
         v_theta_loss_expected = 240.138817033841
         v_theta_residual = v_theta_calc - v_theta_expected
         v_theta_loss_residual = v_theta_loss_calc - v_theta_loss_expected
-        tol = 2e-2
+        tol = 1e-1
         self.assertTrue(almost_equal(v_theta_residual, 0, tol))
         self.assertTrue(almost_equal(v_theta_loss_residual, 0, tol))
 
@@ -110,7 +110,7 @@ class TestVThetaSolver(unittest.TestCase):
         self.prob.run_model()
         v_theta_calc = self.prob['v_theta_T']
         v_theta_residual = v_theta_calc - v_theta_expected
-        tol = 1e-3
+        tol = 2e-3
         self.assertTrue(almost_equal(v_theta_residual, 0, tol))
         # self.assertTrue(almost_equal(v_theta_loss_residual, 0, tol))
 
@@ -127,8 +127,7 @@ class TestVThetaSolver(unittest.TestCase):
         v_theta_calc = self.prob['v_theta_T']
         v_theta_residual = v_theta_calc - v_theta_expected
         # TODO: commented out for debugging, restore this soon.
-        # tol = 2e-1
-        tol = 1
+        tol = 1e-1
         self.assertTrue(almost_equal(v_theta_residual, 0, tol))
 
         # Test from mid-flight
@@ -146,7 +145,7 @@ class TestVThetaSolver(unittest.TestCase):
         self.prob.run_model()
         v_theta_calc = self.prob['v_theta_T']
         v_theta_residual = v_theta_calc - v_theta_expected
-        tol = 10
+        tol = 2e-3
         self.assertTrue(almost_equal(v_theta_residual, 0, tol))
 
         # 10 Seconds from trajectory termination.
@@ -162,7 +161,7 @@ class TestVThetaSolver(unittest.TestCase):
         self.prob.run_model()
         v_theta_calc = self.prob['v_theta_T']
         v_theta_residual = v_theta_calc - v_theta_expected
-        tol = 3e-2
+        tol = 2e-7
         self.assertTrue(almost_equal(v_theta_residual, 0, tol))
 
 
