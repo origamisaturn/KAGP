@@ -2,7 +2,7 @@ import pickle as pkl
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
-from gcherry.transform import rcn2global_rot, global2topo_rot, get_ra_decl, perifocal2global_rot, body2global_rot, global2pcf_rot
+from gcherry.transform import rcn2global_rot, global2topo_rot, get_ra_decl, perifocal2global_rot, body2global_rot, global2pcf_rot, global2perifocal_rot
 from copy import deepcopy
 
 from poliastro.core.elements import rv2coe
@@ -273,6 +273,28 @@ def get_thrust_pitch(t, pos, vel, mu):
     alpha = np.arctan2(-thrust_acc_topo[2, :], np.linalg.norm(thrust_acc_topo[:2, :], axis=0))
     return alpha
 
+def get_projected_true_anomaly(pos, target_lan, target_inc, target_argp):
+    """ Get true anomaly of position as projected onto target orbit.
+    
+    Args:
+        pos: [m] 3xN array of global position.
+        target_lan: [rad.] N-length 1-D array of target longitude of ascending 
+            node.
+        target_inc: [rad.] N-length 1-D array of target inclination.
+        target_argp: [rad.] N-length 1-D array of target argument of periapsis.
+
+    Returns:
+        Length N 1-D array of true anomaly [rad.] as projected onto 
+        target orbit.
+
+    """
+    N = pos.shape[1]
+    nu_proj = np.zeros(N)
+    for i in range(N):
+        pos_perifocal = global2perifocal_rot(target_lan[i], target_inc[i], target_argp[i])@pos[:, i]
+        nu_proj[i] = np.arctan2(pos_perifocal[1], pos_perifocal[0])
+    return nu_proj
+
 def get_thrust_acc_PCF(pos, thrust_pitch, thrust_yaw, m, target_lan, target_inc, F_thrust_max):
     """ Get thrust acceleration in Plane Control Frame, as calculated by 
     rocket_ode().
@@ -286,8 +308,6 @@ def get_thrust_acc_PCF(pos, thrust_pitch, thrust_yaw, m, target_lan, target_inc,
           ascending node.
         target_inc: [rad.] N-length 1-D array of target inclination.
         F_thrust_max: [N] Maximum thrust
-
-
 
     Returns:
         3xN array of acceleration [m/s**2] due to thrust in Plane 

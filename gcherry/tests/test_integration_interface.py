@@ -40,4 +40,4 @@ if __name__ == '__main__':
     guidance_interface = GCherryGuidanceInterface(config, log_interface)
     integration_interface = IntegrationInterface(config, guidance_interface, log_interface)
     t_res, y_res = integration_interface.run()
-    log_interface.save("test_3c.pkl")
+    log_interface.save("test_500.pkl")

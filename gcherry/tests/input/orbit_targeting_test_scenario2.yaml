@@ -13,10 +13,10 @@ mission:
   longitude_of_ascending_node: 4.363323129985824
   inclination: 0.19198621771937624
   argument_of_periapsis: 0.3
-  outer_loop_interval: 1
+  outer_loop_interval: 500
   outer_loop_cutoff: 3
 
 integrator:
-  simulation_end_time: 458.360715
+  simulation_end_time: 458.3449375
   initial_position: [1481773.78741417, -855502.4950417, 301696.34387852]
   initial_velocity: [0.0, 0.0, 0.0]

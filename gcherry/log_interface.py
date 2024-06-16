@@ -414,6 +414,12 @@ class LogInterfaceRefactor:
         # derived['a_thrust_j_pcf'] = thrust_acc_pcf[1]
         # derived['a_thrust_k_pcf'] = thrust_acc_pcf[2]
 
+        target_lan = df_prob['inputs']['outer_loop.target_lan']
+        target_inc = df_prob['inputs']['outer_loop.target_inc']
+        target_argp = df_prob['inputs']['outer_loop.target_argp']
+        derived['projected_nu'] = log_utils.get_projected_true_anomaly(
+            pos, target_lan, target_inc, target_argp)
+
         oe = log_utils.get_orbital_elements(pos, vel, mu)
         derived['semi_major_axis'] = oe[0, :]
         derived['ecc'] = oe[1, :]

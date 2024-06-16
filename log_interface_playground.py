@@ -6,7 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 if __name__ == '__main__':
-    filename = "test_3c"
+    filename = "test_500"
     with open(filename + ".pkl", "rb") as fh:
         log_interface = pkl.load(fh)
     df_log = log_interface.guidance_interface.problem.dataframe_log()

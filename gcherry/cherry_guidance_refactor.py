@@ -716,21 +716,23 @@ class VThetaSolver(om.ExplicitComponent):
                     vel_j,
                     vel_k
                     ]) / v_theta
+                theta_dot = vel_j/r
             else:
                 theta_hat_PCF = unit_vector(np.array([
                     0,
                     a_thrust_PCF[1],
                     a_thrust_PCF[2]
                     ]))
+                theta_dot = 0
 
             a_thrust_theta = np.dot(a_thrust_PCF, theta_hat_PCF)
             
             v_theta_dot = a_thrust_theta - r_dot * v_theta/r
-            theta_dot = v_theta/r
+            # theta is angle on target orbital plane.
             return np.array([v_theta_dot, theta_dot])
         
         tspan = [t0, T]
-        max_step = 50
+        max_step = 1
         t_res, y_res = rk4(get_state_dot, tspan, [v_theta_0, 0], max_step)
 
         T_go = T-t0
