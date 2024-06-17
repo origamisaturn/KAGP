@@ -34,7 +34,7 @@ from gcherry.log_interface import LogInterfaceRefactor
 
 
 if __name__ == '__main__':
-    filenames = ["gcherry/tests/v_theta_solver_test_scenario2.yaml"]
+    filenames = ["gcherry/tests/input/orbit_targeting_test_scenario2.yaml"]
     config = cfg.load_config(filenames)
     log_interface = LogInterfaceRefactor(config)
     guidance_interface = GCherryGuidanceInterface(config, log_interface)
