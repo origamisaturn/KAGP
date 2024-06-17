@@ -11,7 +11,7 @@ from gcherry.log_interface import LogInterfaceRefactor
 import gcherry.config as cfg
 
 filenames = ["gcherry/tests/input/ScriptKRPC.yaml",
-             "gcherry/tests/input/newScriptKRPC.yaml"]
+             "gcherry/tests/input/newScriptKRPC2.yaml"]
 config = cfg.load_config(filenames)
 log_interface = LogInterfaceRefactor(config)
 guidance_interface = GCherryGuidanceInterface(config, log_interface)

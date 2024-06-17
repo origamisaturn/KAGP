@@ -806,6 +806,9 @@ class TimeToGo(om.ExplicitComponent):
         T_go_n_1 = tau0*(1 - P*Q_n_1)
         T_n_1 = T_go_n_1 + t0
 
+        # TODO: good metric for impossible trajectories is to use tau
+        # for T, and if it doesn't run it is bad. For getting VThetaSolver
+        # to output real values, there should be no upper bound on T.
         self._Q_n = Q_n_1
         outputs['Q_n'] = Q_n_1
         outputs['T'] = T_n_1
