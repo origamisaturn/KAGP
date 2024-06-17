@@ -71,7 +71,7 @@ class GCherryGuidanceInterface(GuidanceInterfaceBase):
         return thrust_magnitude, thrust_pitch, thrust_heading
     
     def estimated_final_time(self):
-        return self._openmdao_problem['T']
+        return self._openmdao_problem['T'][0]
 
     def _parse_input(self, config):
         v_e, m_dot = _convert_engine_data(config.spacecraft.specific_impulse,

@@ -27,7 +27,6 @@ def set_orbit_targeting_scenario_1(prob):
         prob[key] = value
 
 def set_orbit_targeting_scenario_2(prob):
-    r0 = 1737.4e3
     input_dict = {'sample_x': np.array([1481773.78741417, -855502.4950417, 301696.34387852]),
                   'sample_v': np.array([0, 0, 0]),
                   'sample_t': 0,

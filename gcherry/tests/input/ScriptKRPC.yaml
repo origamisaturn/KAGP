@@ -1,4 +1,4 @@
 spacecraft:
   specific_impulse: 310
   thrust: 15.57e+3
-  mass_total: 3967
+  wet_mass: 3967
