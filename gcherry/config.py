@@ -4,6 +4,7 @@ from pydantic import BaseModel, Field, PositiveFloat, NonNegativeFloat, model_va
 from typing import Optional
 from typing_extensions import Self
 import os
+from pathlib import Path
 
 class GuidanceName(Enum):
     DEFAULT = "default"
@@ -61,6 +62,9 @@ def load_config(filenames):
     input_data = {}
     # Add functions for checking yaml input and if filename exists
     for filename in filenames:
+        p = Path(filename)
+        if not (p.exists() and p.is_file()):
+            raise RuntimeError("File '{}' does not exist.".format(p))
         with open(filename, 'r') as fh:
             yaml_input = yaml.safe_load(fh)
         input_data.update(yaml_input)

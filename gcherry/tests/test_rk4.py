@@ -7,7 +7,6 @@ def within_tol(val1, val2, tol=1e-8):
     else:
         return False
 
-
 # Following tests based on Ordinary Differential Equations, Tenenbaum and 
 # Pollard, p.656 - 658
 
