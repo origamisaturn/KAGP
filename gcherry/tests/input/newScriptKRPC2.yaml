@@ -11,8 +11,6 @@ mission:
   outer_loop_interval: 500
   outer_loop_cutoff: 3
 
-integrator:
+ksp_interface:
   simulation_end_time: 457.074553487163
-  # simulation_end_time: 460
-  initial_position: [1737.4E+3, 0.0, 0.0E+3]
-  initial_velocity: [0.0, 0.0, 0.0]
+  log_path: "test"

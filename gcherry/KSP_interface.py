@@ -3,14 +3,14 @@ import numpy as np
 
 # TODO: Consider moving into same file as integration interface.
 class KSPInterface:
-    def __init__(self, input_dict, guidance_interface, log_interface):
+    def __init__(self, config, guidance_interface, log_interface):
         self.log_interface = log_interface
         self.guidance_interface = guidance_interface
         # TODO: These should be set by config.
         self._last_outer_loop_time = 0
         self._outer_loop_cutoff = 5
         self._outer_loop_interval = 3
-        self._parse_input(input_dict)
+        self._parse_input(config)
         self._connect()
         self._init_streams()
         ...
@@ -131,7 +131,7 @@ class KSPInterface:
         self._streams['time'] = conn.add_stream(getattr, conn.space_center, 'ut')   
         self._streams['thrust'] = conn.add_stream(getattr, vessel, 'thrust')
 
-    def _parse_input(self, input_dict):
+    def _parse_input(self, config):
         # self.client_name = input_dict['simulator']['name']
         self.client_name = "PLACEHOLDER"
         # self.sim_end_time = input_dict['simulator']['simulation_end_time']
