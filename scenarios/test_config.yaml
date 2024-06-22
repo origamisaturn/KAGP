@@ -7,13 +7,13 @@ mission:
 #  "LAN": 50
 #  "countdown": 10
 
-simulator: 
+integrator: 
   "simulator": "KSP2D"
   "name": "KSP 2D Test"
-  "guidance": "FixedThrustGuidanceFull"
-  "outer_loop_period": 10
+  "guidance": "default"
+  "outer_loop_interval": 10
   "simulation_end_time": 370
   "log_path": "ksp2d_031924_outer_loop_low_att.pkl"
 
-  "initial_position": [1737.4E+3, 0.0]
-  "initial_velocity": [0.0, 0.0]
+  "initial_position": [1737.4E+3, 0.0, 0.0]
+  "initial_velocity": [0.0, 0.0, 0.0]

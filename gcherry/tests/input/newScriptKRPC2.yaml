@@ -1,0 +1,16 @@
+body:
+  gravitational_parameter: 4.9028e+12
+  # for calculating orbital radius from ap and pe
+
+mission:
+  apoapsis: 1790.00e+3
+  periapsis: 1780.00e+3
+  longitude_of_ascending_node: 3.000
+  inclination: 0.0349066
+  argument_of_periapsis: 0.3
+  outer_loop_interval: 500
+  outer_loop_cutoff: 3
+
+ksp_interface:
+  simulation_end_time: 457.074553487163
+  log_path: "test"
