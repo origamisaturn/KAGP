@@ -2,14 +2,42 @@ name: tests
 on: pull_request
 jobs:
   run-pytest:
+    permissions:
+      contents: write
+      pull-requests: write
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.10.x'
-      - name: Install dependencies
-        run: python -m pip install --upgrade pip numpy matplotlib pandas poliastro krpc pyyaml openmdao[all] 
+          cache: 'pip'
+      - name: Install repo
+        run: python -m pip install --upgrade pip .
       - name: Run tests
-        run: pytest gcherry/tests
+        run: |
+          pip install pytest coverage coverage-badge
+          coverage run -m pytest gcherry/tests
+          coverage-badge -fo coverage.svg
+      - name: Verify badge changed
+        uses: tj-actions/verify-changed-files@v16
+        id: verify-badge-changed
+        with:
+          files: coverage.svg
+      - name: Commit coverage badge
+        if: steps.verify-badge-changed.outputs.files_changed == 'true'
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add coverage.svg
+          git commit -m "Update coverage badge."
+      - name: Push changes
+        if: steps.verify-badge-changed.outputs.files_changed == 'true'
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ github.head_ref }} 

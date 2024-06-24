@@ -1,10 +1,10 @@
 [project]
 name = "gcherry"
 version = "0.0.1"
-dependencies = [
-    "numpy",
-    "scipy"
-]
+dynamic = ["dependencies"]
+
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements.txt"]}
 
 [tool.setuptools.packages.find]
 where = ["."]
