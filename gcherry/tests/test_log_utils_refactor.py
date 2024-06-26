@@ -1,3 +1,7 @@
+import unittest
+import numpy as np
+import math
+
 from gcherry.log_utils_refactor import (
     get_radius,
     get_acc, 
@@ -5,9 +9,7 @@ from gcherry.log_utils_refactor import (
     get_v_theta, 
     get_r_dot_dot, 
     get_a_theta)
-import unittest
-import numpy as np
-import math
+
 
 class TestConversions(unittest.TestCase):
     def setUp(self):

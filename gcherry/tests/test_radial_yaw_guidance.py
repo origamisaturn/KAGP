@@ -1,10 +1,10 @@
 import unittest
 import numpy as np
-import math
 import openmdao.api as om
 
 from gcherry.cherry_guidance_refactor import RadialYawGuidance
 from gcherry.log_utils_refactor import almost_equal 
+
 
 def set_radial_yaw_guidance_default(prob):
     """ Sets default input values for RadialYawGuidance.

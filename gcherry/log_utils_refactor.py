@@ -1,11 +1,19 @@
-import pickle as pkl
 import numpy as np
 import matplotlib.pyplot as plt
-import pandas as pd
-from gcherry.transform import rcn2global_rot, global2topo_rot, get_ra_decl, perifocal2global_rot, body2global_rot, global2pcf_rot, global2perifocal_rot
-from copy import deepcopy
 
+from gcherry.transform import (
+    rcn2global_rot,
+    global2topo_rot, 
+    get_ra_decl, 
+    perifocal2global_rot, 
+    body2global_rot, 
+    global2pcf_rot, 
+    global2perifocal_rot)
+
+# TODO: Would be nice to get rid of this, poliastro is holding the python
+# version back
 from poliastro.core.elements import rv2coe
+
 
 """ All args and returns are assumed to be in the global frame. The global frame
 is an inertial frame whose origin is fixed at the center of the major

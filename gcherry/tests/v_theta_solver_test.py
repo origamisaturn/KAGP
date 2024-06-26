@@ -1,7 +1,6 @@
 import unittest
 import numpy as np
 import openmdao.api as om
-from copy import deepcopy
 
 from gcherry.cherry_guidance_refactor import VThetaSolver
 from gcherry.log_utils_refactor import almost_equal

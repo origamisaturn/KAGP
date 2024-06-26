@@ -1,6 +1,5 @@
 import openmdao.api as om
 import gcherry.config as cfg
-import numpy as np
 
 from abc import ABC, abstractmethod
 from gcherry.log_interface import LogInterfaceRefactor, GuidanceInterfaceLog
@@ -8,6 +7,7 @@ from gcherry.cherry_guidance_refactor import (
     OrbitGuidanceComponent,
     PitchHeadingQuery
 )
+
 
 class GuidanceInterfaceBase(ABC):
     @abstractmethod

@@ -1,8 +1,10 @@
 import unittest
-from gcherry.rk4 import rk4
-from gcherry.integration_interface import rocket_ode
 import math
 import numpy as np
+
+from gcherry.rk4 import rk4
+from gcherry.integration_interface import rocket_ode
+
 
 class TestRocketOde(unittest.TestCase):
     def setUp(self):
@@ -182,12 +184,6 @@ class TestRocketOde(unittest.TestCase):
     def test_funct__rocket_ode__5(self):
         ...
 
-
-def within_tol(val1, val2, tol=1e-8):
-    if np.all(abs(val1-val2) < tol):
-        return True
-    else:
-        return False
 
 if __name__ == '__main__':
     unittest.main()

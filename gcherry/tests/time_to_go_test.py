@@ -6,13 +6,8 @@ from gcherry.cherry_guidance_refactor import (
     TimeToGo,
     RadialYawGuidance,
     VThetaSolver)
-
-def almost_equal(val1, val2, tol=1e-8):
-    arr_type = type(np.ndarray([]))
-    if type(val1) == arr_type or type(val2) == arr_type:
-        return (val1-val2 > -tol).all() and (val1-val2 < tol).all()
-    else:
-        return val1-val2 > -tol and val1-val2 < tol
+from gcherry.log_utils_refactor import almost_equal
+    
     
 # Takeoff from lunar surface along equator to a position with 0 r_dot.
 # Only radial guidance, no yaw.    

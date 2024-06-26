@@ -1,9 +1,8 @@
-import openmdao.api as om
 import numpy as np
 import math
-import matplotlib.pyplot as plt
-from scipy.integrate import solve_ivp
+import openmdao.api as om
 from scipy.optimize import least_squares
+
 from gcherry.transform import (
     unit_vector,
     perifocal2global_rot,
@@ -12,8 +11,9 @@ from gcherry.transform import (
     get_ra_decl
 )
 from gcherry.rk4 import rk4
-from gcherry.log_utils_refactor import almost_equal
 from gcherry.transform import global2perifocal_rot
+from gcherry.log_utils_refactor import almost_equal
+
 
 def rot_mat_2d(theta):
     cos = math.cos
