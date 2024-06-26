@@ -1,0 +1,8 @@
+matplotlib
+numpy
+openmdao
+pandas
+pydantic
+poliastro
+krpc
+pyyaml
