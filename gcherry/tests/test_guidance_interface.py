@@ -1,12 +1,10 @@
-import yaml
 import unittest
 import numpy as np
+
 import gcherry.config as cfg
 from gcherry.guidance_interface_refactor import GCherryGuidanceInterface
 from gcherry.log_interface import LogInterfaceRefactor
 
-from gcherry.rk4 import rk4
-from gcherry.integration_interface import rocket_ode
 
 class TestGuidanceInterface(unittest.TestCase):
     # Very basic test to make sure heading output makes sense.

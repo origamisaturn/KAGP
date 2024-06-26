@@ -4,9 +4,10 @@ from dataclasses import dataclass
 import pandas as pd
 import numpy as np
 import os
-from gcherry.log_utils_refactor import plot_vars
 
 import gcherry.log_utils_refactor as log_utils
+from gcherry.log_utils_refactor import plot_vars
+
 
 @dataclass
 class StateLog:

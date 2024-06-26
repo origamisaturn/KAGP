@@ -1,6 +1,7 @@
 import krpc
 import numpy as np
 
+
 # TODO: Consider moving into same file as integration interface.
 class KSPInterface:
     def __init__(self, config, guidance_interface, log_interface):

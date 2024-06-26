@@ -1,9 +1,11 @@
 import unittest
 import numpy as np
 import openmdao.api as om
+
 from gcherry.cherry_guidance_refactor import (
     OuterLoopGroupRefactor)
 from gcherry.log_utils_refactor import almost_equal
+
 
 # Takeoff from lunar surface along equator to a position with 0 r_dot.
 # Only radial guidance, no yaw.    

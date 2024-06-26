@@ -1,11 +1,7 @@
-from gcherry.rk4 import rk4
 import numpy as np
 
-def within_tol(val1, val2, tol=1e-8):
-    if abs(val1-val2) < tol:
-        return True
-    else:
-        return False
+from gcherry.rk4 import rk4, within_tol
+
 
 # Following tests based on Ordinary Differential Equations, Tenenbaum and 
 # Pollard, p.656 - 658
