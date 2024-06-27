@@ -639,13 +639,37 @@ class VThetaSolver(om.ExplicitComponent):
 class TimeToGo(om.ExplicitComponent):
     """ Fixed-point iteration for terminal time T.
     
-    Solves for terminal time T by iterating and checking estimated
+    Creates new estimate of T after checking estimated
     v_theta_T against target v_theta_T.
 
     Inputs:
-        
+        --- User Input ---
+        sample_x: [m] (len(x) == 3) 3D position in global inertial 
+            frame. Origin is at gravitational body center.
+        sample_v: [m/s] (len(v) == 3) 3D velocity in global inertial 
+            frame.
+        sample_t: [s] Time at which sample_x and sample_v were collected.
+
+        --- Targeting ---
+        target_v_theta_T: [m/s] Target final circumferential speed.
+
+        --- Constants ---
+        v_e: [m/s] Effective exhaust velocity of thruster.
+        m_dot: [kg/s] Thruster mass flow.
+        m0: [kg] Total mass of spacecraft at launch (sample_t == 0).
+
+        --- Component Connections ---
+        v_theta_T: [m/s] Estimated tangential velocity at terminal time
+            T given radial rate control path.
+
 
     Outputs:
+        --- Component Connections ---
+        T: [s] Terminal time; main engine cut-off.
+
+        --- DEBUG ---
+        Q_n: e**(-v_theta_loss_T/v_e) (Eq. 155) Variable which changes
+            to solve for new guess of T.
 
     """
     def setup(self):
@@ -701,6 +725,32 @@ class TimeToGo(om.ExplicitComponent):
 
 # TODO: add doc
 class OrbitTargeting(om.ExplicitComponent):
+    """ Iterative solving for target guidance parameters.
+
+    Estimates new guess for final radial and circumferential state based
+    on calculated final true anomaly.
+    
+    --- User Input ---
+    sample_x: [m] (len(x) == 3) 3D position in global inertial 
+        frame. Origin is at gravitational body center.
+    sample_v: [m/s] (len(v) == 3) 3D velocity in global inertial 
+        frame.
+    sample_t: [s] Time at which sample_x and sample_v were collected.
+
+    --- Targeting ---
+    target_lan: [rad.] Target longitude of ascending node.
+    target_inc: [rad.] Target inclination.
+    target_pe: [m]
+    target_ap: [m]
+
+    --- Constants ---
+    mu: 
+
+    --- Component Connections ---
+    delta_theta_T: [rad.] Estimated change in true anomaly from 
+        sample_t to terminal time T.
+        
+    """
     def setup(self):
         self.add_input('sample_x', val=np.zeros((3)))
         self.add_input('sample_v', val=np.zeros((3)))
