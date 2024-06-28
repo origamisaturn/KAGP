@@ -77,8 +77,6 @@ class EnginePropertyEstimator(om.ExplicitComponent):
             self.thrust_acc_history.append(sample_thrust_acc)
             self.time_history.append(sample_t)
 
-            if sample_t > 400:
-                print("here")
             if sample_t > estimator_output_time:
                 v_e_guess = outputs['v_e'][0]
                 m_dot_guess = outputs['m_dot'][0]
@@ -373,9 +371,7 @@ class PitchHeadingQuery(om.ExplicitComponent):
         
         tau = m0/m_dot
         r_hat = unit_vector(x0)
-        # TODO: Check this
-        # Probably more robust than using RCN in case where 
-        # v_theta_0 == 0
+        # Able to handle case where v_theta_0 == 0.
         v_theta_0 = (np.linalg.norm(v0)**2 - np.dot(v0, r_hat)**2)**0.5
         r0 = np.linalg.norm(x0)
         g = -mu/r0**2 * r_hat
@@ -397,10 +393,12 @@ class PitchHeadingQuery(om.ExplicitComponent):
         a_thrust_y = y_dot_dot - np.dot(g, target_normal_vec)
         a_thrust_global = _guidance_to_global(a_thrust_r, a_thrust_y, a_thrust_mag, x0, target_lan, target_inc)
         a_thrust_topo = global2topo_rot(*(get_ra_decl(x0)))@a_thrust_global
-        # TODO: heading can be undefined.
         # heading from 0 deg to 360 deg.
-        cmd_heading = np.arctan2(a_thrust_topo[1], a_thrust_topo[0])%(2*np.pi)
-        # TODO: consider calculating pitch here instead
+        if not (almost_equal(a_thrust_topo[0], 0, 1e-8) and 
+                almost_equal(a_thrust_topo[1], 0, 1e-8)):
+            cmd_heading = np.arctan2(a_thrust_topo[1], a_thrust_topo[0])%(2*np.pi)
+        else:
+            cmd_heading = 0
 
         # Set outputs
         outputs["cmd_pitch"] = cmd_pitch
@@ -435,42 +433,41 @@ class PitchHeadingQuery(om.ExplicitComponent):
         discrete_outputs['_debug']['a_thrust_mag'] = a_thrust_mag
 
 def _guidance_to_global(a_thrust_r, a_thrust_y, a_thrust_mag, pos_global, target_lan, target_inc):
-        """ Converts guidance commands to global thrust vector. 
+    """ Converts guidance commands to global thrust vector. 
 
-        Args:
-            a_thrust_r: [m/s**2] Commanded radial thrust.
-            a_thrust_y: [m/s**2] Commanded target orbit normal thrust.
-            a_thrust_mag: [m/s**2] Current thrust acceleration.
-            pos_global: [m] (len(x) == 3) 3D position in global inertial 
-                frame. Origin is at gravitational body center.
-            target_lan: [rad.] Target longitude of ascending node.
-            target_inc: [rad.] Target inclination.
-        
-        Returns:
-            Length 3 array of thrust acceleration [m/s**2] in global 
-            frame.
-        
-        """
-        target_normal_vec = (perifocal2global_rot(target_lan, target_inc, 0) @ 
-                            np.array([0, 0, 1]))
-        # _i, _j, _k are components along plane control axes.
-        pcf_axes = pcf2global_rot(pos_global, target_lan, target_inc)
-        a_thrust_i = a_thrust_r
+    Args:
+        a_thrust_r: [m/s**2] Commanded radial thrust.
+        a_thrust_y: [m/s**2] Commanded target orbit normal thrust.
+        a_thrust_mag: [m/s**2] Current thrust acceleration.
+        pos_global: [m] (len(x) == 3) 3D position in global inertial 
+            frame. Origin is at gravitational body center.
+        target_lan: [rad.] Target longitude of ascending node.
+        target_inc: [rad.] Target inclination.
+    
+    Returns:
+        Length 3 array of thrust acceleration [m/s**2] in global 
+        frame.
+    
+    """
+    target_normal_vec = (perifocal2global_rot(target_lan, target_inc, 0) @ 
+                        np.array([0, 0, 1]))
+    # _i, _j, _k are components along plane control axes.
+    pcf_axes = pcf2global_rot(pos_global, target_lan, target_inc)
+    a_thrust_i = a_thrust_r
 
-        # Find k component based on _i and _y component of thrust
-        target_normal_vec_pcf = pcf_axes.T@target_normal_vec
-        y1_hat = target_normal_vec_pcf
-        a_thrust_k = (a_thrust_y - a_thrust_r*y1_hat[0])/y1_hat[2]
+    # Find k component based on _i and _y component of thrust
+    target_normal_vec_pcf = pcf_axes.T@target_normal_vec
+    y1_hat = target_normal_vec_pcf
+    a_thrust_k = (a_thrust_y - a_thrust_r*y1_hat[0])/y1_hat[2]
 
-        radicand = a_thrust_mag**2 - a_thrust_i**2 - a_thrust_k**2
-        if radicand < 0:
-            raise ValueError("Cannot take square root of {}: a_thrust_j will be imaginary.".format(radicand))
-        
-        a_thrust_j = np.sqrt(a_thrust_mag**2 - a_thrust_i**2 - a_thrust_k**2)
-        # convert a_thrust to RCN axes
-        a_thrust_pcf = np.array([a_thrust_i, a_thrust_j, a_thrust_k])
-        a_thrust_global = pcf2global_rot(pos_global, target_lan, target_inc)@a_thrust_pcf
-        return a_thrust_global
+    radicand = a_thrust_mag**2 - a_thrust_i**2 - a_thrust_k**2
+    if radicand < 0:
+        raise ValueError("Cannot take square root of {}: a_thrust_j will be imaginary.".format(radicand))
+    
+    a_thrust_j = np.sqrt(radicand)
+    a_thrust_pcf = np.array([a_thrust_i, a_thrust_j, a_thrust_k])
+    a_thrust_global = pcf2global_rot(pos_global, target_lan, target_inc)@a_thrust_pcf
+    return a_thrust_global
 
 class VThetaSolver(om.ExplicitComponent):
     """ Estimates final tangential velocity for given radial rate control path.
@@ -723,39 +720,41 @@ class TimeToGo(om.ExplicitComponent):
         outputs['Q_n'] = Q_n_1
         outputs['T'] = T_n_1
 
-# TODO: add doc
 class OrbitTargeting(om.ExplicitComponent):
     """ Iterative solving for target guidance parameters.
 
     Estimates new guess for final radial and circumferential state based
     on calculated final true anomaly.
-    
-    --- User Input ---
-    sample_x: [m] (len(x) == 3) 3D position in global inertial 
-        frame. Origin is at gravitational body center.
-    sample_v: [m/s] (len(v) == 3) 3D velocity in global inertial 
-        frame.
-    sample_t: [s] Time at which sample_x and sample_v were collected.
 
-    --- Targeting ---
-    target_lan: [rad.] Target longitude of ascending node.
-    target_inc: [rad.] Target inclination.
-    target_pe: [m]
-    target_ap: [m]
+    Inputs:
+        --- User Input ---
+        sample_x: [m] (len(x) == 3) 3D position in global inertial 
+            frame. Origin is at gravitational body center.
 
-    --- Constants ---
-    mu: 
+        --- Targeting ---
+        target_lan: [rad.] Target longitude of ascending node.
+        target_inc: [rad.] Target inclination.
+        target_pe: [m] Target periapsis.
+        target_ap: [m] Target apoapsis.
+        target_argp: [rad.] Target argument of periapsis.
 
-    --- Component Connections ---
-    delta_theta_T: [rad.] Estimated change in true anomaly from 
-        sample_t to terminal time T.
+        --- Constants ---
+        mu: [m^3/s^2] Gravitational parameter.
+
+        --- Component Connections ---
+        delta_theta_T: [rad.] Estimated change in true anomaly from 
+            sample_t to terminal time T.
+
+    Outputs:
+        --- Component Connections ---
+        target_r_T: [m] Target final radial position.
+        target_r_dot_T: [m/s] Target final radial velocity.
+        target_v_theta_T: [m/s] Target final circumferential speed.
         
     """
     def setup(self):
         self.add_input('sample_x', val=np.zeros((3)))
-        self.add_input('sample_v', val=np.zeros((3)))
-        input_names = ['sample_t', 
-                       'target_lan', 'target_inc', 
+        input_names = ['target_lan', 'target_inc', 
                        'target_pe', 'target_ap',
                        'target_argp',
                        'mu',
@@ -767,11 +766,8 @@ class OrbitTargeting(om.ExplicitComponent):
         for name in output_names:
             self.add_output(name, val=0.0)
 
-    # TODO: remove extraneous inputs
     def compute(self, inputs, outputs):
         x0 = inputs['sample_x']
-        v0 = inputs['sample_v']
-        t = inputs['sample_t'][0]
         target_lan = inputs['target_lan'][0]
         target_inc = inputs['target_inc'][0]
         target_pe = inputs['target_pe'][0]
@@ -792,6 +788,19 @@ class OrbitTargeting(om.ExplicitComponent):
       
 def _orbit_to_guidance_target(periapsis, apoapsis, true_anomaly, 
                         gravitational_parameter):
+    """ Convert target orbital parameters to radial guidance targets.
+
+    Args:
+        periapsis: [m]
+        apoapsis: [m]
+        true_anomaly: [m]
+        gravitational_parameter: [m^3/s^2]
+
+    Returns:
+        r [m] radius, v_r [m/s] radial velocity, v_theta [m/s] 
+            circumferential velocity. 
+
+    """
     mu = gravitational_parameter
     r_p = periapsis
     r_a = apoapsis
@@ -811,6 +820,10 @@ def _orbit_to_guidance_target(periapsis, apoapsis, true_anomaly,
     return r, v_r, v_theta
 
 class OuterLoopGroupRefactor(om.Group):
+    """ Group that solves for ascent given target orbital plane and final
+    radial position, velocity, and circumferential velocity.
+
+    """
     def setup(self):
         self.add_subsystem('time_to_go', TimeToGo(), promotes=['*'])
         self.add_subsystem('radial_yaw_guidance', RadialYawGuidance(),
@@ -822,6 +835,9 @@ class OuterLoopGroupRefactor(om.Group):
 
 # TODO: Rename this
 class OrbitGuidanceGroup(om.Group):
+    """ Group for ascent given target orbital parameters. 
+
+    """
     def setup(self):
         self.add_subsystem('orbit_targeting', OrbitTargeting(), promotes=['*'])
         self.add_subsystem('outer_loop', OuterLoopGroupRefactor(), promotes=['*'])
@@ -831,6 +847,51 @@ class OrbitGuidanceGroup(om.Group):
 
 # TODO: add doc, reorganize io
 class OrbitGuidanceComponent(om.ExplicitComponent):
+    """ Solves for ascent guidance equation given target orbital 
+    parameters.
+    
+    Inputs:
+        --- User Input ---
+        sample_x: [m] (len(x) == 3) 3D position in global inertial 
+            frame. Origin is at gravitational body center.
+        sample_v: [m/s] (len(v) == 3) 3D velocity in global inertial 
+            frame.
+        sample_t: [s] Time at which sample_x and sample_v were collected.
+
+        --- Targeting ---
+        target_lan: [rad.] Target longitude of ascending node.
+        target_inc: [rad.] Target inclination.
+        target_pe: [m] Target periapsis.
+        target_ap: [m] Target apoapsis.
+        target_argp: [rad.] Target argument of periapsis.
+
+        --- Constants ---
+        mu: [m^3/s^2] Gravitational parameter.
+        v_e: [m/s] Effective exhaust velocity of thruster.
+        m_dot: [kg/s] Thruster mass flow.
+        m0: [kg] Total mass of spacecraft at launch (sample_t == 0).
+
+        --- Component Connections ---
+        delta_theta_T: [rad.] Estimated change in true anomaly from 
+            sample_t to terminal time T.
+
+    Outputs:
+        --- Component Connections ---
+        T: [s] Terminal time; main engine cut-off.
+        a0, a1, a2: Coefficients of p equation.
+        c1_radial, c2_radial: Coefficients for radial guidance equation.
+        c1_yaw, c2_yaw: Coefficients for yaw guidance equation.
+
+        --- Unused ---
+        target_r_T: [m] Target final radial position.
+        target_r_dot_T: [m/s] Target final radial velocity.
+        target_v_theta_T: [m/s] Target final circumferential speed.
+        v_theta_T: [m/s] Estimated tangential velocity at terminal time
+            T given radial rate control path.
+        delta_theta_T: [rad.] Estimated change in true anomaly from 
+            sample_t to terminal time T.
+        
+    """
     def setup(self):
         model = OrbitGuidanceGroup()
         self.prob = om.Problem(model)
@@ -885,6 +946,7 @@ class OrbitGuidanceComponent(om.ExplicitComponent):
         for name in output_names:
             outputs[name] = self.prob[name]
 
+# TODO: Figure out what to do with this function.
 def _get_expected_guidance_values(t, T, F_mat, c1, c2, q_T, q_dot_T):
     """ Obtain expected coordinate and its derivative at time t.
 
