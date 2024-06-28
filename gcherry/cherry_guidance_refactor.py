@@ -14,6 +14,11 @@ from gcherry.rk4 import rk4
 from gcherry.transform import global2perifocal_rot
 from gcherry.log_utils_refactor import almost_equal
 
+# NOTE: Any reference to equation numbers is in reference to 
+#   "A general, explicit, optimizing guidance law for rocket-propelled spaceflight"
+#   By George W. Gcherry
+#
+
 
 class EnginePropertyEstimator(om.ExplicitComponent):
     """ Estimates values of engine properties in-flight. 
@@ -950,17 +955,15 @@ class OrbitGuidanceComponent(om.ExplicitComponent):
 def _get_expected_guidance_values(t, T, F_mat, c1, c2, q_T, q_dot_T):
     """ Obtain expected coordinate and its derivative at time t.
 
-    #TODO: Provide equation reference.
-
     q is generalized distance coordinate. For radial guidance it is
     radius, for yaw guidance it is normal distance from desired 
-    orbital plane.
+    orbital plane. Based on equations (24) and (25).
     
     Args:
         t: [s] Time at which q0 and q_dot_0 were measured.
         T: [s] Terminal time; main engine cut-off.
-        NOTE: F_mat must have equal t and T arguments as this function?
-        F_mat: 2x2 matrix from _get_F_mat().
+        F_mat: [2x2 array[float]] from _get_F_mat(). Should have equal 
+            t and T arguments as this function.
         q_T: [m] Final boundary condition, distance.
         q_dot_T: [m/s] Final boundary condition, velocity.
 
