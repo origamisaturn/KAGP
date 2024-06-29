@@ -8,7 +8,7 @@ from gcherry.cherry_guidance_refactor import (
     VThetaSolver)
 from gcherry.log_utils_refactor import almost_equal
     
-    
+# TODO: add "SEE V_THETA SCENARIO"
 # Takeoff from lunar surface along equator to a position with 0 r_dot.
 # Only radial guidance, no yaw.    
 def set_time_to_go_scenario1(prob):

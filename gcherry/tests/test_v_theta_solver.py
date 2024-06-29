@@ -15,7 +15,7 @@ def set_v_theta_solver_scenario_1(prob):
         9.21320282887826E-06,
         -0.325367567512005,
         0.00156271732299607)
-
+    c1_yaw, c2_yaw = (0, 0)
     # Lunar radius
     r0 = 1737.4e3
     input_dict = {'sample_x': np.array([r0, 0, 0]),
@@ -29,13 +29,12 @@ def set_v_theta_solver_scenario_1(prob):
                   'a2': a2,
                   'c1_radial': c1_radial,
                   'c2_radial': c2_radial,
-                  'c1_yaw': 0,
-                  'c2_yaw': 0,
+                  'c1_yaw': c1_yaw,
+                  'c2_yaw': c2_yaw,
                   'mu': 4.9028e12,
                   'v_e': 3893.24005,
                   'm_dot': 0.420729258654369,
                   'm0': 500}
-    
     for key, value in input_dict.items():
         prob[key] = value
 
@@ -125,7 +124,6 @@ class TestVThetaSolver(unittest.TestCase):
         self.prob.run_model()
         v_theta_calc = self.prob['v_theta_T']
         v_theta_residual = v_theta_calc - v_theta_expected
-        # TODO: commented out for debugging, restore this soon.
         tol = 1e-1
         self.assertTrue(almost_equal(v_theta_residual, 0, tol))
 
