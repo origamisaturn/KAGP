@@ -850,7 +850,6 @@ class OrbitGuidanceGroup(om.Group):
         self.nonlinear_solver.options['maxiter'] = 100
         self.nonlinear_solver.options['atol'] = 1e-3
 
-# TODO: add doc, reorganize io
 class OrbitGuidanceComponent(om.ExplicitComponent):
     """ Solves for ascent guidance equation given target orbital 
     parameters.
@@ -950,6 +949,57 @@ class OrbitGuidanceComponent(om.ExplicitComponent):
                         'target_v_theta_T']
         for name in output_names:
             outputs[name] = self.prob[name]
+
+
+class VThetaSolverTest(om.Group):
+    """ Group for debugging guidance without iterative solver components.
+    """
+    def setup(self):
+        self.add_subsystem('radial_yaw_guidance', RadialYawGuidance(),
+                            promotes=['*'])
+        self.add_subsystem('v_theta_solver', VThetaSolver(), promotes=['*'])
+
+class VThetaSolverOuterLoop(om.ExplicitComponent):
+    """ Component for debugging guidance without iterative solver components.
+    """
+    def setup(self):
+        model = VThetaSolverTest()
+        self.prob = om.Problem(model)
+        self.prob.setup()
+
+        self._vector_input_names = ['sample_x', 'sample_v']
+        self._scalar_input_names = ['sample_t', 
+                       'target_r_T', 'target_r_dot_T',
+                       'target_lan', 'target_inc',
+                       'mu', 'v_e', 'm_dot', 'm0',
+                       'T']
+        for name in self._scalar_input_names:
+            self.add_input(name, val=0.0)
+        for name in self._vector_input_names:
+            self.add_input(name, val=np.zeros((3)))
+
+        self._scalar_output_names = ['a0', 'a1', 'a2',
+                        'c1_radial', 'c2_radial',
+                        'c1_yaw', 'c2_yaw',
+                        'v_theta_T', 'v_theta_loss_T', 'delta_theta_T']
+        for name in self._scalar_output_names:
+            self.add_output(name, val=0.0)
+
+    def compute(self, inputs, outputs):
+        self.pass_prob_inputs(inputs)
+        self.prob.run_model()
+        self.pass_prob_outputs(outputs)
+
+    def pass_prob_inputs(self, inputs):
+        for name in self._scalar_input_names:
+            self.prob[name] = inputs[name][0]
+        for name in self._vector_input_names:
+            self.prob[name] = inputs[name]
+
+    def pass_prob_outputs(self, outputs):
+        for name in self._scalar_output_names:
+            outputs[name] = self.prob[name]
+
 
 # TODO: Figure out what to do with this function.
 def _get_expected_guidance_values(t, T, F_mat, c1, c2, q_T, q_dot_T):

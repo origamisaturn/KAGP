@@ -169,7 +169,6 @@ def global2rcn_rot(pos_global, vel_global):
     """
     return rcn2global_rot(pos_global, vel_global).T
 
-
 def rcn2global_rot(pos_global, vel_global):
     """ Rotation from Radial-Circumferential-Normal axes to global axes.
     Args:

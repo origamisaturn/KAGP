@@ -63,7 +63,7 @@ class TimeToGoGroup(om.Group):
         self.nonlinear_solver.options['maxiter'] = 100
         self.nonlinear_solver.options['atol'] = 1e-3
 
-class TestVThetaSolver(unittest.TestCase):
+class TestTimeToGo(unittest.TestCase):
     # See set_time_to_go_scenario1()
     def test_case_1(self):
         # self.prob.model.time_to_go.is_first_entry = True
