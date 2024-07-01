@@ -54,7 +54,6 @@ class IntegrationInterface():
     _last_outer_loop_time: float
 
 
-
     def __init__(self, config: cfg.Config, 
                        guidance_interface: GuidanceInterfaceBase,
                        log: LogInterfaceRefactor):
@@ -66,15 +65,14 @@ class IntegrationInterface():
         self.guidance_interface = guidance_interface
         self.log = log.integration_interface
         self._parse_input(config)
-        ...
 
     def _parse_input(self, config: cfg.Config):
         self._isp = config.spacecraft.specific_impulse
         self._thrust_force_max = config.spacecraft.thrust
         self._wet_mass = config.spacecraft.wet_mass
 
-        self._outer_loop_interval = config.mission.outer_loop_interval
-        self._outer_loop_cutoff = config.mission.outer_loop_cutoff
+        self._outer_loop_interval = config.integrator.outer_loop_interval
+        self._outer_loop_cutoff = config.integrator.outer_loop_cutoff
 
         self._mu = config.body.gravitational_parameter
 

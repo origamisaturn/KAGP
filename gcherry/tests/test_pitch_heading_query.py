@@ -71,8 +71,8 @@ class TestPitchQuery(unittest.TestCase):
         pitch_expected_2 = 0.41136374957895405
         heading_expected_2 = np.deg2rad(90)
         self.prob['query_t'] = 229.803
-        self.prob['query_x'] = 
-        self.prob['query_v'] = 
+        # self.prob['query_x'] = 
+        # self.prob['query_v'] = 
         self.prob.run_model()
         pitch_calc_2 = self.prob['cmd_pitch'][0]
         heading_calc_2 = self.prob['cmd_heading'][0]
@@ -94,8 +94,8 @@ class TestPitchQuery(unittest.TestCase):
         pitch_expected_2 = 0.41136374957895405
         heading_expected_2 = np.deg2rad(90)
         self.prob['query_t'] = 229.803
-        self.prob['query_x'] = 
-        self.prob['query_v'] = 
+        # self.prob['query_x'] = 
+        # self.prob['query_v'] = 
         self.prob.run_model()
         pitch_calc_2 = self.prob['cmd_pitch'][0]
         heading_calc_2 = self.prob['cmd_heading'][0]

@@ -17,9 +17,14 @@ class GuidanceInterfaceBase(ABC):
     @abstractmethod
     def estimated_final_time(self): pass
 
-class OrbitTargetingGuidance(om.Group):
+class OrbitTargetingAscentGroup(om.Group):
     def setup(self):
         self.add_subsystem('outer_loop', OrbitGuidanceComponent(), promotes=['*'])
+        self.add_subsystem('pitch_heading_query', PitchHeadingQuery(), promotes=['*'])
+
+class DebugAscent1Group(om.Group):
+    def setup(self):
+        self.add_subsystem('outer_loop', VThetaSolverOuterLoop(), promotes=['*'])
         self.add_subsystem('pitch_heading_query', PitchHeadingQuery(), promotes=['*'])
 
 class GCherryGuidanceInterface(GuidanceInterfaceBase):
@@ -27,7 +32,14 @@ class GCherryGuidanceInterface(GuidanceInterfaceBase):
     log: GuidanceInterfaceLog
 
     def __init__(self, config: cfg.Config, log_interface: LogInterfaceRefactor):
-        model = OrbitTargetingGuidance()
+    # TODO: replace this with something else
+        if config.orbit_targeting_ascent:
+            model = OrbitTargetingAscentGroup()
+        elif config.debug_ascent_1:
+            model = DebugAscent1Group()
+        else:
+            raise NotImplementedError("No recognized guidance method" +
+                                      "found in config.")
         self._openmdao_problem = om.Problem(model)
         self._openmdao_problem.setup()
         self._parse_input(config)
@@ -37,6 +49,7 @@ class GCherryGuidanceInterface(GuidanceInterfaceBase):
 
     # NOTE: calling outer_loop after estimated_T is arrived at is 
     # undefined behavior
+    # TODO: Consider using a factory design pattern
     def get_command(self, t, state, outer_loop=True, log=True):
         # TODO: replace this with a state or a state factory, like in Poliastro.
         # or maybe not, might be too complicated
@@ -74,27 +87,53 @@ class GCherryGuidanceInterface(GuidanceInterfaceBase):
     def estimated_final_time(self):
         return self._openmdao_problem['T'][0]
 
+    # TODO: consider making this into a separate class interface
     def _parse_input(self, config):
-        v_e, m_dot = _convert_engine_data(config.spacecraft.specific_impulse,
-                                          config.spacecraft.thrust)
-        mdao_vals = [
-         ('target_pe', config.mission.periapsis),
-         ('target_ap', config.mission.apoapsis),
-         ('target_argp', config.mission.argument_of_periapsis),
-         ('target_lan', config.mission.longitude_of_ascending_node),
-         ('target_inc', config.mission.inclination),
-         ('mu', config.body.gravitational_parameter),
-         ('v_e', v_e),
-         ('m_dot', m_dot),
-         ('m0', config.spacecraft.wet_mass)]
-        for key, value in mdao_vals:
-            self._openmdao_problem.set_val(key, value)
+        if config.orbit_targeting_ascent:
+            _parse_input_orbit_targeting_ascent(self._openmdao_problem, config)
+        elif config.debug_ascent_1:
+            _parse_input_debug_ascent_1(self._openmdao_problem, config)
+        else:
+            raise NotImplementedError("No recognized guidance method" +
+                                      "found in config.")
 
 def _convert_engine_data(specific_impulse, thrust):
     g0 = 9.80665
     exhaust_velocity = specific_impulse * g0
     mass_flow = thrust/exhaust_velocity
     return exhaust_velocity, mass_flow
+
+def _parse_input_orbit_targeting_ascent(openmdao_problem, config):
+    v_e, m_dot = _convert_engine_data(config.spacecraft.specific_impulse,
+                                      config.spacecraft.thrust)
+    mdao_vals = [
+        ('target_pe', config.orbit_targeting_ascent.periapsis),
+        ('target_ap', config.orbit_targeting_ascent.apoapsis),
+        ('target_argp', config.orbit_targeting_ascent.argument_of_periapsis),
+        ('target_lan', config.orbit_targeting_ascent.longitude_of_ascending_node),
+        ('target_inc', config.orbit_targeting_ascent.inclination),
+        ('mu', config.body.gravitational_parameter),
+        ('v_e', v_e),
+        ('m_dot', m_dot),
+        ('m0', config.spacecraft.wet_mass)]
+    for key, value in mdao_vals:
+        openmdao_problem.set_val(key, value)
+
+def _parse_input_debug_ascent_1(openmdao_problem, config):
+    v_e, m_dot = _convert_engine_data(config.spacecraft.specific_impulse,
+                                      config.spacecraft.thrust)
+    mdao_vals = [
+        ('T', config.debug_ascent_1.terminal_time),
+        ('target_r_T', config.debug_ascent_1.radius),
+        ('target_r_dot_T', config.debug_ascent_1.radial_velocity),
+        ('target_lan', config.debug_ascent_1.longitude_of_ascending_node),
+        ('target_inc', config.debug_ascent_1.inclination),
+        ('mu', config.body.gravitational_parameter),
+        ('v_e', v_e),
+        ('m_dot', m_dot),
+        ('m0', config.spacecraft.wet_mass)]
+    for key, value in mdao_vals:
+        openmdao_problem.set_val(key, value)
 
 
 class TestVThetaSolver(om.Group):
@@ -158,11 +197,11 @@ class VThetaSolverTestInterface(GuidanceInterfaceBase):
         v_e, m_dot = _convert_engine_data(config.spacecraft.specific_impulse,
                                           config.spacecraft.thrust)
         mdao_vals = [
-         ('target_pe', config.mission.periapsis),
-         ('target_ap', config.mission.apoapsis),
-         ('target_argp', config.mission.argument_of_periapsis),
-         ('target_lan', config.mission.longitude_of_ascending_node),
-         ('target_inc', config.mission.inclination),
+         ('T', config.debug_guidance_1.terminal_time),
+         ('target_r', config.debug_guidance_1.target_r_T),
+         ('target_r_dot_T', config.debug_guidance_1.target_r_dot_T),
+         ('target_lan', config.debug_guidance_1.longitude_of_ascending_node),
+         ('target_inc', config.debug_guidance_1.inclination),
          ('mu', config.body.gravitational_parameter),
          ('v_e', v_e),
          ('m_dot', m_dot),

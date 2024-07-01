@@ -8,8 +8,9 @@ from gcherry.log_interface import LogInterfaceRefactor
 
 class TestGuidanceInterface(unittest.TestCase):
     # Very basic test to make sure heading output makes sense.
-    def test_funct__guidance_interface__heading(self):
-        config_files = ["gcherry/tests/input/test_guidance_interface.yaml"]
+    def test_funct__guidance_interface__heading_1(self):
+        config_files = ["gcherry/tests/input/test_orbit_targeting_ascent_scenario_1.yaml"]
+        # config_files = ["gcherry/tests/input/test_debug_guidance_1_scenario_1.yaml"]
         config = cfg.load_config(config_files)
 
         x0 = np.array([1737.4E+3, 0.0, 0.0E+3])
@@ -22,7 +23,8 @@ class TestGuidanceInterface(unittest.TestCase):
         guidance_interface.get_command(0, np.concatenate((x0, v0, [m0]))))
         self.assertAlmostEqual(thrust_heading, np.deg2rad(90))
 
-        config.mission.inclination = np.deg2rad(90)
+        config.orbit_targeting_ascent.inclination = np.deg2rad(90)
+        # config.debug_ascent_1.inclination = np.deg2rad(90)
         guidance_interface = GCherryGuidanceInterface(config, log_interface)
         thrust_mag, thrust_pitch, thrust_heading = (
         guidance_interface.get_command(0, np.concatenate((x0, v0, [m0]))))

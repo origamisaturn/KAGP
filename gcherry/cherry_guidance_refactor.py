@@ -951,7 +951,7 @@ class OrbitGuidanceComponent(om.ExplicitComponent):
             outputs[name] = self.prob[name]
 
 
-class VThetaSolverTest(om.Group):
+class VThetaSolverTestGroup(om.Group):
     """ Group for debugging guidance without iterative solver components.
     """
     def setup(self):
@@ -963,7 +963,7 @@ class VThetaSolverOuterLoop(om.ExplicitComponent):
     """ Component for debugging guidance without iterative solver components.
     """
     def setup(self):
-        model = VThetaSolverTest()
+        model = VThetaSolverTestGroup()
         self.prob = om.Problem(model)
         self.prob.setup()
 
@@ -985,9 +985,12 @@ class VThetaSolverOuterLoop(om.ExplicitComponent):
         for name in self._scalar_output_names:
             self.add_output(name, val=0.0)
 
-    def compute(self, inputs, outputs):
+        self.add_discrete_input("run_outer_loop", val=True)
+
+    def compute(self, inputs, outputs, discrete_inputs, discrete_outputs):
         self.pass_prob_inputs(inputs)
-        self.prob.run_model()
+        if discrete_inputs["run_outer_loop"]:
+            self.prob.run_model()
         self.pass_prob_outputs(outputs)
 
     def pass_prob_inputs(self, inputs):
