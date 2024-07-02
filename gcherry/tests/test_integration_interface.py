@@ -35,7 +35,7 @@ class TestIntegrationInterface(unittest.TestCase):
         self.assertTrue(almost_equal(calc_lan, 4.363323129985824, 1e-6))
         self.assertTrue(almost_equal(calc_argp, 0.3, 1e-5))
     def test_case_2(self):
-        filenames = ["gcherry/tests/input/orbit_targeting_test_scenario2.yaml"]
+        filenames = ["gcherry/tests/input/test_orbit_targeting_ascent_scenario_2.yaml"]
         config = cfg.load_config(filenames)
         log_interface = LogInterfaceRefactor(config)
         guidance_interface = GCherryGuidanceInterface(config, log_interface)

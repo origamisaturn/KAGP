@@ -31,6 +31,9 @@ class SpacecraftState():
 
 
 class IntegrationInterface():
+    guidance_interface: GuidanceInterfaceBase
+    log: IntegrationInterfaceLog
+
     # These are updated by every callback call.
     _thrust_cmd_store: float
     _pitch_cmd_store: float
@@ -48,22 +51,18 @@ class IntegrationInterface():
     _initial_velocity: list[float]
     _wet_mass: float
 
-    guidance_interface: GuidanceInterfaceBase
-    log: IntegrationInterfaceLog
-
     _last_outer_loop_time: float
 
 
     def __init__(self, config: cfg.Config, 
-                       guidance_interface: GuidanceInterfaceBase,
-                       log: LogInterfaceRefactor):
+                       guidance_interface: GuidanceInterfaceBase):
         self._thrust_cmd_store = 0.0
         self._pitch_cmd_store = np.deg2rad(90)
         self._heading_cmd_store = np.deg2rad(0)
         self._max_time_step = 1.0
         self._last_outer_loop_time = 0.0
         self.guidance_interface = guidance_interface
-        self.log = log.integration_interface
+        self.log = IntegrationInterfaceLog()
         self._parse_input(config)
 
     def _parse_input(self, config: cfg.Config):

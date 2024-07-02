@@ -1,52 +1,52 @@
 import pickle as pkl
 from copy import deepcopy
-from dataclasses import dataclass
 import pandas as pd
 import numpy as np
 import os
+from config import Config
+import typing
 
 import gcherry.log_utils_refactor as log_utils
 from gcherry.log_utils_refactor import plot_vars
 
-
-@dataclass
+# TODO: Write documentation for this
 class StateLog:
-    # position: list
-    # velocity: list
-    # mass: list
-    state_vector: list
-    time: list
+    """ Log for recording rocket state in simulations.
+    
+    Attributes:
+        state_vectors: list of 7-element lists. The seven elements are
+            [x[m], y[m], z[m], vx[m], vy[m], vz[m], m[kg]]
+            measured in the global frame.
+        times: The time [s] corresponding to each state vector.
+
+    """
+    state_vectors: list
+    times: list
 
     def __init__(self):
-        # self.position = {}
-        # self.velocity = {}
-        # self.mass = {}
-        self.time = []
-        self.state_vector = []
+        self.times = []
+        self.state_vectors = []
 
     def log_state(self, t, state):
         if len(state) != 7:
             ValueError("State has incorrect length.")
-        # self.position.append(state[:3])
-        # self.velocity.append(state[3:6])
-        # self.mass.append(state[7])
-        self.state_vector.append(state)
-        self.time.append(t)
+        self.state_vectors.append(state)
+        self.times.append(t)
 
     def get_position(self):
-        np_state_vector = np.array(self.state_vector)
-        return np_state_vector[:, :3].T
+        np_state_vectors = np.array(self.state_vectors)
+        return np_state_vectors[:, :3].T
 
     def get_velocity(self):
-        np_state_vector = np.array(self.state_vector)
-        return np_state_vector[:, 3:6].T
+        np_state_vectors = np.array(self.state_vectors)
+        return np_state_vectors[:, 3:6].T
     
     def get_mass(self):
-        np_state_vector = np.array(self.state_vector)
-        return np_state_vector[:, 6].T
+        np_state_vectors = np.array(self.state_vectors)
+        return np_state_vectors[:, 6].T
 
     def get_time(self):
-        return np.array(self.time).T
+        return np.array(self.times).T
     
     def dataframe_log(self):
         t = self.get_time()
@@ -81,25 +81,30 @@ class StateLog:
         }
         plot_vars(plot_dict, t, columns=4)
 
-    def _flatten_dict():
-        ...
 
-
-
-@dataclass
 class IntegrationInterfaceLog:
     state: StateLog
     
     def __init__(self):
         self.state = StateLog()
 
-@dataclass
+
+# class KSPInterfaceLog:
+#     state: StateLog
+
+#     def __init__(self):
+#         self.state = StateLog()
+
+
 class OpenMDAOProblemLog:
     """ 
     Attributes:
-        inputs and outputs must be a dict of lists. The lists may 
-        contain elements of arbitrary type, but each element must 
-        have the same shape if it is an array. """
+        inputs and outputs are dicts where each value is a list. The 
+        list may contain elements of arbitrary type, but if the type of
+        each element is an array then each element must have the same 
+        shape. 
+        
+    """
     inputs: dict
     outputs: dict
 
@@ -296,7 +301,6 @@ class OpenMDAOProblemLog:
         return new_table
 
 
-@dataclass   
 class GuidanceInterfaceLog:
     problem: OpenMDAOProblemLog
     def __init__(self):
@@ -308,40 +312,39 @@ class GuidanceInterfaceLog:
     def log_problem(self, openmdao_problem):
         self.problem.log_problem(openmdao_problem)
 
-@dataclass
+# guidance interface and integration interface creators rely on config to
+# choose a subclass. Here the superclass is dict, so "subclasses" will be
+# methods which returns dicts
 class LogInterfaceRefactor:
     guidance_interface: GuidanceInterfaceLog
     integration_interface: IntegrationInterfaceLog
-    def __init__(self, config):
-        # NOTE: Consider having the interfaces initialize their own
-        # logs and have this class take those as arguments.
-        self.guidance_interface = GuidanceInterfaceLog()
-        self.integration_interface = IntegrationInterfaceLog()
+    config: Config
 
-    def save(self, save_path):
-        with open(save_path, 'wb') as fh:
-            pkl.dump(self, fh)
+    # for get_derived_values() and get_errors()
+    _target_lan: float
+    _target_inc: float
+    # TODO: Standardize inputs. Figure out what to do with t_interp.
+    _derived_values_function: typing.Callable
 
-    def save_csv(self, save_path):
-        if not os.path.exists(save_path):
-            os.makedirs(save_path)
-        
-        inputs_name = "inputs.csv"
-        outputs_name = "outputs.csv"
-        state_name = "state.csv"
-        derived_name = "derived.csv"
-        err_name = "err.csv"
 
-        df_log = self.guidance_interface.problem.dataframe_log()
-        df_state = self.integration_interface.state.dataframe_log()
-        df_derived = self.get_derived_values()
-        df_err = self.dataframe_error()
+    def __init__(self, config, guidance_log, sim_log):
+        self.guidance_interface = guidance_log
+        self.integration_interface = sim_log
+        self.config = config
 
-        df_log['inputs'].to_csv(os.path.join(save_path, inputs_name))
-        df_log['outputs'].to_csv(os.path.join(save_path, outputs_name))
-        df_state.to_csv(os.path.join(save_path, state_name))
-        df_derived.to_csv(os.path.join(save_path, derived_name))
-        df_err.to_csv(os.path.join(save_path, err_name))
+        # Currently only expect guidance method to change possible log
+        # outputs.
+        if config.orbit_targeting_ascent:
+            _target_lan = config.orbit_targeting_ascent.target_lan
+            _target_inc = config.orbit_targeting_ascent.target_inc
+            _derived_values_function = self._orbit_targeting_ascent_derived_values
+        elif config.debug_ascent_1:
+            _target_lan = config.debug_ascent_1.target_lan
+            _target_inc = config.debug_ascent_1.target_inc
+            _derived_values_function = self._common_derived_values
+        else:
+            raise NotImplementedError("No recognized guidance method" +
+                "found in config.")
 
     def get_derived_values(self, t_interp=None):
         """ Obtains values calculated from state history. 
@@ -356,89 +359,9 @@ class LogInterfaceRefactor:
             values are arrays of data.
 
         """
-        t = self.integration_interface.state.get_time()
-        pos = self.integration_interface.state.get_position()
-        vel = self.integration_interface.state.get_velocity()
-        mass = self.integration_interface.state.get_mass()
+        return self._derived_values_function(t_interp)
 
-        # TODO: take a closer look at t_interp. Does this function make
-        # sense without it? like we are indexing the df_prob directly
-        # but interpolating only the state values.
-        if t_interp is not None:
-            t_orig = t
-            t = t_interp
-            pos = np.array([np.interp(t_interp, t_orig, pos[i, :]) for i in range(pos.shape[0])])
-            vel = np.array([np.interp(t_interp, t_orig, vel[i, :]) for i in range(vel.shape[0])])
-            mass = np.interp(t_interp, t_orig, mass)
-        # NOTE: Assumes that mu, target_lan, target_inc are constant.
-        # May not be true for guidance that updates target values
-        # during launch.
-        # TODO: dataframe_log() is useful, but this method of accessing
-        # constants and targeting info is very sensitive to changes
-        # in subsystem names. Consider having a dataframe of promoted
-        # variable names, or built-in log methods that access constants
-        # and targeting info.
-        df_state = self.integration_interface.state.dataframe_log()
-        df_prob = self.guidance_interface.problem.dataframe_log()
-        mu = df_prob['inputs']['pitch_heading_query.mu'][0]
-        target_lan = df_prob['inputs']['outer_loop.target_lan'][0]
-        target_inc = df_prob['inputs']['outer_loop.target_inc'][0]
-
-        derived = {}
-        derived['t'] = t
-        derived['dt'] = log_utils.get_time_steps(t)
-
-        derived['radius'] = log_utils.get_radius(pos)
-        derived['r_dot'] = log_utils.get_r_dot(pos, vel)
-        derived['r_dot_dot'] = log_utils.get_r_dot_dot(t, pos, vel)
-
-        derived['y1'] = log_utils.get_target_normal_position(pos, target_lan, target_inc)
-        derived['y1_dot'] = log_utils.get_target_normal_velocity(vel, target_lan, target_inc)
-        derived['y1_dot_dot'] = log_utils.get_target_normal_acceleration(t, vel, target_lan, target_inc)
-
-        derived['v_theta'] = log_utils.get_v_theta(pos, vel)
-        derived['a_theta'] = log_utils.get_a_theta(t, pos, vel)
-        derived['non_gravity_acc_mag'] = log_utils.get_non_gravity_acc_mag(t, pos, vel, mu)
-        derived['thrust_pitch'] = log_utils.get_thrust_pitch(t, pos, vel, mu)
-
-        target_lan = df_prob['inputs']['outer_loop.target_lan']
-        target_inc = df_prob['inputs']['outer_loop.target_inc']
-        target_argp = df_prob['inputs']['outer_loop.target_argp']
-        derived['projected_nu'] = log_utils.get_projected_true_anomaly(
-            pos, target_lan, target_inc, target_argp)
-        
-        cmd_thrust_pitch = df_prob['outputs']['pitch_heading_query.cmd_pitch']
-        cmd_thrust_yaw = df_prob['outputs']['pitch_heading_query.cmd_heading']
-        F_thrust_max = df_prob['inputs']['outer_loop.v_e'][0] * df_prob['inputs']['outer_loop.m_dot'][0]
-        thrust_acc_pcf = log_utils.get_thrust_acc_PCF(
-            pos, 
-            cmd_thrust_pitch, 
-            cmd_thrust_yaw,
-            mass,
-            target_lan,
-            target_inc, F_thrust_max)
-        derived['a_thrust_i_pcf'] = thrust_acc_pcf[0]
-        derived['a_thrust_j_pcf'] = thrust_acc_pcf[1]
-        derived['a_thrust_k_pcf'] = thrust_acc_pcf[2]
-
-        theta_hat_pcf = log_utils.get_theta_hat_PCF(
-            pos, vel, target_lan, target_inc
-        )
-        derived['theta_hat_i_pcf'] = theta_hat_pcf[0]
-        derived['theta_hat_j_pcf'] = theta_hat_pcf[1]
-        derived['theta_hat_k_pcf'] = theta_hat_pcf[2]
-
-        oe = log_utils.get_orbital_elements(pos, vel, mu)
-        derived['semi_major_axis'] = oe[0, :]
-        derived['ecc'] = oe[1, :]
-        derived['inc'] = oe[2, :]
-        derived['lan'] = oe[3, :]
-        derived['argp'] = oe[4, :]
-        derived['nu'] = oe[5, :]
-
-        return pd.DataFrame(derived)
-
-    def dataframe_error(self):
+    def get_errors(self):
         """ Dataframe of error between predicted and actual values. 
         
         Extracts data from guidance, and derives values based on stored
@@ -516,3 +439,130 @@ class LogInterfaceRefactor:
 
     def plot_state(self):
         self.integration_interface.state.plot_state()
+
+    def save(self, save_path):
+        with open(save_path, 'wb') as fh:
+            pkl.dump(self, fh)
+
+    def save_csv(self, save_path):
+        if not os.path.exists(save_path):
+            os.makedirs(save_path)
+        
+        inputs_name = "inputs.csv"
+        outputs_name = "outputs.csv"
+        state_name = "state.csv"
+        derived_name = "derived.csv"
+        err_name = "err.csv"
+
+        df_log = self.guidance_interface.problem.dataframe_log()
+        df_state = self.integration_interface.state.dataframe_log()
+        df_derived = self.get_derived_values()
+        df_err = self.get_errors()
+
+        df_log['inputs'].to_csv(os.path.join(save_path, inputs_name))
+        df_log['outputs'].to_csv(os.path.join(save_path, outputs_name))
+        df_state.to_csv(os.path.join(save_path, state_name))
+        df_derived.to_csv(os.path.join(save_path, derived_name))
+        df_err.to_csv(os.path.join(save_path, err_name))
+
+
+    def _common_derived_values(self, t_interp=None):
+        t, pos, vel, mass = self._get_interpolated_state(t_interp)
+
+        # NOTE: Assumes that mu, target_lan, target_inc are constant.
+        # May not be true for guidance that updates target values
+        # during launch.
+        # TODO: dataframe_log() is useful, but this method of accessing
+        # constants and targeting info is very sensitive to changes
+        # in subsystem names. Consider having a dataframe of promoted
+        # variable names, or built-in log methods that access constants
+        # and targeting info.
+        df_prob = self.guidance_interface.problem.dataframe_log()
+        mu = self.config.body.mu
+        target_lan = self._target_lan
+        target_inc = self._target_inc
+
+        derived = {}
+        derived['t'] = t
+        derived['dt'] = log_utils.get_time_steps(t)
+
+        derived['radius'] = log_utils.get_radius(pos)
+        derived['r_dot'] = log_utils.get_r_dot(pos, vel)
+        derived['r_dot_dot'] = log_utils.get_r_dot_dot(t, pos, vel)
+
+        derived['y1'] = log_utils.get_target_normal_position(pos, target_lan, target_inc)
+        derived['y1_dot'] = log_utils.get_target_normal_velocity(vel, target_lan, target_inc)
+        derived['y1_dot_dot'] = log_utils.get_target_normal_acceleration(t, vel, target_lan, target_inc)
+
+        derived['v_theta'] = log_utils.get_v_theta(pos, vel)
+        derived['a_theta'] = log_utils.get_a_theta(t, pos, vel)
+        derived['non_gravity_acc_mag'] = log_utils.get_non_gravity_acc_mag(t, pos, vel, mu)
+        derived['thrust_pitch'] = log_utils.get_thrust_pitch(t, pos, vel, mu)
+
+        target_lan_list = df_prob['inputs']['outer_loop.target_lan']
+        target_inc_list = df_prob['inputs']['outer_loop.target_inc']
+        
+        cmd_thrust_pitch = df_prob['outputs']['pitch_heading_query.cmd_pitch']
+        cmd_thrust_yaw = df_prob['outputs']['pitch_heading_query.cmd_heading']
+        F_thrust_max = df_prob['inputs']['outer_loop.v_e'][0] * df_prob['inputs']['outer_loop.m_dot'][0]
+        thrust_acc_pcf = log_utils.get_thrust_acc_PCF(
+            pos, 
+            cmd_thrust_pitch, 
+            cmd_thrust_yaw,
+            mass,
+            target_lan_list,
+            target_inc_list, F_thrust_max)
+        derived['a_thrust_i_pcf'] = thrust_acc_pcf[0]
+        derived['a_thrust_j_pcf'] = thrust_acc_pcf[1]
+        derived['a_thrust_k_pcf'] = thrust_acc_pcf[2]
+
+        theta_hat_pcf = log_utils.get_theta_hat_PCF(
+            pos, vel, target_lan_list, target_inc_list
+        )
+        derived['theta_hat_i_pcf'] = theta_hat_pcf[0]
+        derived['theta_hat_j_pcf'] = theta_hat_pcf[1]
+        derived['theta_hat_k_pcf'] = theta_hat_pcf[2]
+
+        oe = log_utils.get_orbital_elements(pos, vel, mu)
+        derived['semi_major_axis'] = oe[0, :]
+        derived['ecc'] = oe[1, :]
+        derived['inc'] = oe[2, :]
+        derived['lan'] = oe[3, :]
+        derived['argp'] = oe[4, :]
+        derived['nu'] = oe[5, :]
+
+        return pd.DataFrame(derived)
+    
+    def _orbit_targeting_ascent_derived_values(self, t_interp=None):
+        common_derived_values = self._common_derived_values(t_interp)
+
+        t, pos, vel, mass = self._get_interpolated_state(t_interp)
+        df_prob = self.guidance_interface.problem.dataframe_log()
+        target_lan_list = df_prob['inputs']['outer_loop.target_lan']
+        target_inc_list = df_prob['inputs']['outer_loop.target_inc']
+        target_argp = df_prob['inputs']['outer_loop.target_argp']
+
+        derived = {}
+        derived['projected_nu'] = log_utils.get_projected_true_anomaly(
+            pos, target_lan_list, target_inc_list, target_argp)
+        
+        return None
+
+        
+    def _get_interpolated_state(self, t_interp=None):
+        t = self.integration_interface.state.get_time()
+        pos = self.integration_interface.state.get_position()
+        vel = self.integration_interface.state.get_velocity()
+        mass = self.integration_interface.state.get_mass()
+
+        # TODO: take a closer look at t_interp. Does this function make
+        # sense without it? like we are indexing the df_prob directly
+        # but interpolating only the state values.
+        if t_interp is not None:
+            t_orig = t
+            t = t_interp
+            pos = np.array([np.interp(t_interp, t_orig, pos[i, :]) for i in range(pos.shape[0])])
+            vel = np.array([np.interp(t_interp, t_orig, vel[i, :]) for i in range(vel.shape[0])])
+            mass = np.interp(t_interp, t_orig, mass)
+
+        return t, pos, vel, mass

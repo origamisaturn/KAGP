@@ -31,7 +31,7 @@ class GCherryGuidanceInterface(GuidanceInterfaceBase):
     _openmdao_problem: om.Problem
     log: GuidanceInterfaceLog
 
-    def __init__(self, config: cfg.Config, log_interface: LogInterfaceRefactor):
+    def __init__(self, config: cfg.Config):
     # TODO: replace this with something else
         if config.orbit_targeting_ascent:
             model = OrbitTargetingAscentGroup()
@@ -44,7 +44,7 @@ class GCherryGuidanceInterface(GuidanceInterfaceBase):
         self._openmdao_problem.setup()
         self._parse_input(config)
 
-        self.log = log_interface.guidance_interface
+        self.log = GuidanceInterfaceLog()
         self.log.init_problem(self._openmdao_problem)
 
     # NOTE: calling outer_loop after estimated_T is arrived at is 
