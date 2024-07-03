@@ -8,7 +8,7 @@ body:
 
 debug_ascent_1:
   # actually r_T = 1785e3 and r_dot_T = 20
-  terminal_time: 438
+  terminal_time: 470
   radius: 1785.00e+3
   radial_velocity: 20.0
   longitude_of_ascending_node: 4.363323129985824

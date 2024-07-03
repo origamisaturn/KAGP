@@ -11,13 +11,14 @@ from gcherry.transform import (
     global2perifocal_rot)
 
 # TODO: Would be nice to get rid of this, poliastro is holding the python
-# version back
+# version back to 3.10.x.
 from poliastro.core.elements import rv2coe
 
 
 """ All args and returns are assumed to be in the global frame. The global frame
 is an inertial frame whose origin is fixed at the center of the major
 body.
+
 """
 
 def col_mult(mat1, mat2):
@@ -304,8 +305,9 @@ def get_projected_true_anomaly(pos, target_lan, target_inc, target_argp):
     return nu_proj
 
 def get_thrust_acc_PCF(pos, thrust_pitch, thrust_yaw, m, target_lan, target_inc, F_thrust_max):
-    """ Get thrust acceleration in Plane Control Frame, as calculated by 
-    rocket_ode().
+    """ Get thrust acceleration in Plane Control Frame.
+     
+    Calculates using method in rocket_ode().
 
     Args:
         pos: [m] 3xN array of global position.
@@ -316,8 +318,6 @@ def get_thrust_acc_PCF(pos, thrust_pitch, thrust_yaw, m, target_lan, target_inc,
           ascending node.
         target_inc: [rad.] N-length 1-D array of target inclination.
         F_thrust_max: [N] Maximum thrust
-
-
 
     Returns:
         3xN array of acceleration [m/s**2] due to thrust in Plane 
