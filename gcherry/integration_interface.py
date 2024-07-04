@@ -175,7 +175,7 @@ def rocket_ode(t, state, mu, Isp, F_thrust_max, guidance_func):
                     thrust_pitch    double  [rad.]  In interval [-pi,
                                     pi]. 0 degrees indicates eastward, incre                                    
                                     asing angle counter clockwise.
-                    thrust_yaw      double  [rad.] TBD.
+                    thrust_yaw      double  [rad.] TBD. TODO.
         Outputs:
             statedot    list    [m/s, m/s, m/s, m/s^2, m/s^2, m/s^2, kg/s]
                                 Elements are [xdot, ydot, zdot, xdotdot, 

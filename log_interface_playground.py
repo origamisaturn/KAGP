@@ -6,18 +6,17 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 if __name__ == '__main__':
-    filename = "test_500"
+    filename = "test_integration_interface_test1"
     with open(filename + ".pkl", "rb") as fh:
         log_interface = pkl.load(fh)
     df_log = log_interface.guidance_interface.problem.dataframe_log()
     derived_values = pd.DataFrame(log_interface.get_derived_values())
     tp_derived = derived_values['thrust_pitch']
     tp_cmd = df_log['outputs']['pitch_heading_query.cmd_pitch']
-    df_err = log_interface.dataframe_error()
-    log_interface.save_csv(filename)
+    df_err = log_interface.get_error_values()
+    # log_interface.save_csv(filename)
     log_interface.plot_error()
     log_interface.plot_derived()
     log_interface.plot_inputs()
     log_interface.plot_outputs()
     plt.show()
-    print("here")
