@@ -120,11 +120,11 @@ class DebugAscent1Group(om.Group):
         self.add_subsystem('outer_loop', VThetaSolverOuterLoop(), promotes=['*'])
         self.add_subsystem('pitch_heading_query', PitchHeadingQuery(), promotes=['*'])
 
-class DebugAscent1(GuidanceBase):
+class DebugAscent1(OpenMDAOGuidanceBase):
     # _openmdao_problem: om.Problem
     # log: GuidanceLog
     def __init__(self, config: cfg.Config):
-        model = OrbitTargetingAscentGroup()
+        model = DebugAscent1Group()
         self._openmdao_problem = om.Problem(model)
         self._openmdao_problem.setup()
         self._parse_input(config)
