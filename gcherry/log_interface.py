@@ -340,13 +340,15 @@ class LogInterfaceRefactor:
             self._set_analysis_attributes({
                 'target_lan': config.orbit_targeting_ascent.longitude_of_ascending_node,
                 'target_inc': config.orbit_targeting_ascent.inclination,
-                'derived_values_function': self._orbit_targeting_ascent_derived_values
+                'derived_values_function': self._derived_values_orbit_targeting_ascent,
+                'error_function': self._error_values_orbit_targeting_ascent
             })
         elif config.debug_ascent_1:
             self._set_analysis_attributes({
                 'target_lan': config.debug_ascent_1.longitude_of_ascending_node,
                 'target_inc': config.debug_ascent_1.inclination,
-                'derived_values_function': self._common_derived_values
+                'derived_values_function': self._derived_values_debug_ascent_1,
+                'error_function': self._error_values_debug_ascent_1
             })
         else:
             raise NotImplementedError("No recognized guidance method" +
@@ -355,7 +357,7 @@ class LogInterfaceRefactor:
     def _set_analysis_attributes(self, input_dict):
         """ Sets attributes that depend on guidance method. 
         
-        Using this function ensures that every desired attribute is set
+        Using this function ensures that every required attribute is set
         for each guidance method. 
 
         Args:
@@ -552,10 +554,10 @@ class LogInterfaceRefactor:
         derived['argp'] = oe[4, :]
         derived['nu'] = oe[5, :]
 
-        return pd.DataFrame(derived)
+        return derived
     
-    def _orbit_targeting_ascent_derived_values(self, t_interp=None):
-        common_derived_values = self._common_derived_values(t_interp)
+    def _derived_values_orbit_targeting_ascent(self, t_interp=None):
+        derived = self._common_derived_values(t_interp)
 
         t, pos, vel, mass = self._get_interpolated_state(t_interp)
         df_prob = self.guidance_interface.problem.dataframe_log()
@@ -563,12 +565,39 @@ class LogInterfaceRefactor:
         target_inc_list = df_prob['inputs']['outer_loop.target_inc']
         target_argp = df_prob['inputs']['outer_loop.target_argp']
 
-        derived = {}
-        derived['projected_nu'] = log_utils.get_projected_true_anomaly(
+        ota_derived = {}
+        ota_derived['projected_nu'] = log_utils.get_projected_true_anomaly(
             pos, target_lan_list, target_inc_list, target_argp)
         
+        derived.update(ota_derived)
         return pd.DataFrame(derived)
     
+    def _derived_values_debug_ascent_1(self, t_interp=None):
+        derived = self._common_derived_values(t_interp)
+        return pd.DataFrame(derived)
+    
+    def _error_values_debug_ascent_1(self):
+        df_prob = self.guidance_interface.problem.dataframe_log()
+        query_t = df_prob['inputs']['pitch_heading_query.query_t']
+        df_deriv = self.get_derived_values(t_interp=query_t)
+        input_prob_dict = {
+            't': df_prob['inputs']['pitch_heading_query.query_t'],
+            'dt': df_deriv['dt'],
+            'r': df_prob['outputs']['pitch_heading_query._debug.r'],
+            'r_dot': df_prob['outputs']['pitch_heading_query._debug.r_dot'],
+            'r_dot_dot': df_prob['outputs']['pitch_heading_query._debug.r_dot_dot'],
+            'y': df_prob['outputs']['pitch_heading_query._debug.y'],
+            'y_dot': df_prob['outputs']['pitch_heading_query._debug.y_dot'],
+            'y_dot_dot': df_prob['outputs']['pitch_heading_query._debug.y_dot_dot'],
+            'a_thrust_mag': df_prob['outputs']['pitch_heading_query._debug.a_thrust_mag'],
+            'cmd_pitch': df_prob['outputs']['pitch_heading_query.cmd_pitch']
+        }
+        err_dict = self._common_error_values(input_prob_dict)
+        return pd.DataFrame(err_dict)
+        
+    def _error_values_orbit_targeting_ascent(self):
+        raise NotImplementedError()
+
     def _common_error_values_OLD(self):
         # TODO: add error for delta_theta_T
         df_prob = self.guidance_interface.problem.dataframe_log()
@@ -614,15 +643,9 @@ class LogInterfaceRefactor:
                 'final_target_inc': df_deriv['inc'] - target_inc
             }
         return pd.DataFrame(err_dict)
+
     
-    def _debug_ascent_1_error_values(self):
-        df_prob = self.guidance_interface.problem.dataframe_log()
-        input_prob_dict = {
-            't': df_prob['inputs']['pitch_heading_query.query_t'],
-            'target_r_T': self.config.debug_ascent_1.radius
-        }
-    
-    def _common_error_dict(self, input_prob_dict):
+    def _common_error_values(self, input_prob_dict):
         # NOTE: Should be dataframe, but currently oe is stored as array.
         t = input_prob_dict['t']
         df_deriv = self.get_derived_values(
@@ -645,18 +668,15 @@ class LogInterfaceRefactor:
                 'thrust_acc_err': (input_prob_dict['a_thrust_mag'] - 
                     df_deriv['non_gravity_acc_mag']),
                 'thrust_alpha_err': (input_prob_dict['cmd_pitch'] - 
-                    df_deriv['thrust_pitch']),
-
-                # 'final_v_theta_err': df_deriv['v_theta'] - target_v_theta_T
-                'final_r_err': df_deriv['radius'] - input_prob_dict['target_r_T'],
-                'final_r_dot_err': df_deriv['r_dot'] - input_prob_dict['target_r_dot_T'],
-                'final_y1_err': df_deriv['y1'] - input_prob_dict['target_y1_T'],
-                'final_y1_dot_err': df_deriv['y1_dot'] - input_prob_dict['target_y1_dot_T'],
-                'final_target_lan': df_deriv['lan'] - input_prob_dict['target_lan'],
-                'final_target_inc': df_deriv['inc'] - input_prob_dict['target_inc']
+                    df_deriv['thrust_pitch'])
             }
         return err_dict
 
+    # TODO: Be able to get final error values based on estimated final time.
+    def _common_final_error_dict():
+        final_time = ...
+        final_derived_values = _common_derived_values(t_interp=[final_time])
+        ...
         
     def _get_interpolated_state(self, t_interp=None):
         t = self.integration_interface.state.get_time()
