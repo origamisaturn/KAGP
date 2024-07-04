@@ -82,7 +82,7 @@ class StateLog:
         plot_vars(plot_dict, t, columns=4)
 
 
-class IntegrationInterfaceLog:
+class SimulationLog:
     state: StateLog
     
     def __init__(self):
@@ -320,7 +320,7 @@ class OpenMDAOProblemLog:
         return new_table
 
 
-class GuidanceInterfaceLog:
+class GuidanceLog:
     problem: OpenMDAOProblemLog
     def __init__(self):
         self.problem = OpenMDAOProblemLog()
@@ -334,9 +334,9 @@ class GuidanceInterfaceLog:
 # guidance interface and integration interface creators rely on config to
 # choose a subclass. Here the superclass is dict, so "subclasses" will be
 # methods which returns dicts
-class LogInterfaceRefactor:
-    guidance_interface: GuidanceInterfaceLog
-    integration_interface: IntegrationInterfaceLog
+class LogAnalyzer:
+    guidance_log: GuidanceLog
+    sim_log: SimulationLog
     config: Config
 
     # for get_derived_values() and get_error_values()
@@ -350,8 +350,8 @@ class LogInterfaceRefactor:
 
 
     def __init__(self, config, guidance_log, sim_log):
-        self.guidance_interface = guidance_log
-        self.integration_interface = sim_log
+        self.guidance_log = guidance_log
+        self.sim_log = sim_log
         self.config = config
 
         # Change log function depending on guidance method.
@@ -431,13 +431,13 @@ class LogInterfaceRefactor:
         plot_vars(df_derived, t, columns=4, keys=y_vars)
 
     def plot_inputs(self):
-        self.guidance_interface.problem.plot_inputs('pitch_heading_query.query_t')
+        self.guidance_log.problem.plot_inputs('pitch_heading_query.query_t')
 
     def plot_outputs(self):
-        self.guidance_interface.problem.plot_outputs('pitch_heading_query.query_t')
+        self.guidance_log.problem.plot_outputs('pitch_heading_query.query_t')
 
     def plot_state(self):
-        self.integration_interface.state.plot_state()
+        self.sim_log.state.plot_state()
 
     def save(self, save_path):
         with open(save_path, 'wb') as fh:
@@ -453,8 +453,8 @@ class LogInterfaceRefactor:
         derived_name = "derived.csv"
         err_name = "err.csv"
 
-        df_log = self.guidance_interface.problem.dataframe_log()
-        df_state = self.integration_interface.state.dataframe_log()
+        df_log = self.guidance_log.problem.dataframe_log()
+        df_state = self.sim_log.state.dataframe_log()
         df_derived = self.get_derived_values()
         df_err = self.get_error_values()
 
@@ -477,7 +477,7 @@ class LogInterfaceRefactor:
         # in subsystem names. Consider having a dataframe of promoted
         # variable names, or built-in log methods that access constants
         # and targeting info.
-        df_prob = self.guidance_interface.problem.dataframe_log()
+        df_prob = self.guidance_log.problem.dataframe_log()
         mu = self.config.body.gravitational_parameter
         target_lan = self._target_lan
         target_inc = self._target_inc
@@ -536,7 +536,7 @@ class LogInterfaceRefactor:
         derived = self._common_derived_values(t_interp)
 
         t, pos, vel, mass = self._get_interpolated_state(t_interp)
-        df_prob = self.guidance_interface.problem.dataframe_log()
+        df_prob = self.guidance_log.problem.dataframe_log()
         target_lan_list = df_prob['inputs']['outer_loop.target_lan']
         target_inc_list = df_prob['inputs']['outer_loop.target_inc']
         target_argp = df_prob['inputs']['outer_loop.target_argp']
@@ -562,7 +562,7 @@ class LogInterfaceRefactor:
     
     def _common_error_values(self):
         # NOTE: Should be dataframe, but currently oe is stored as array.
-        df_prob = self.guidance_interface.problem.dataframe_log()
+        df_prob = self.guidance_log.problem.dataframe_log()
         query_t = df_prob['inputs']['pitch_heading_query.query_t']
         df_deriv = self.get_derived_values(
             t_interp=query_t)
@@ -608,10 +608,10 @@ class LogInterfaceRefactor:
         ...
         
     def _get_interpolated_state(self, t_interp=None):
-        t = self.integration_interface.state.get_time()
-        pos = self.integration_interface.state.get_position()
-        vel = self.integration_interface.state.get_velocity()
-        mass = self.integration_interface.state.get_mass()
+        t = self.sim_log.state.get_time()
+        pos = self.sim_log.state.get_position()
+        vel = self.sim_log.state.get_velocity()
+        mass = self.sim_log.state.get_mass()
 
         # TODO: take a closer look at t_interp. Does this function make
         # sense without it? like we are indexing the df_prob directly
