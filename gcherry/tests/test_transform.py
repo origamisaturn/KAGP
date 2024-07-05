@@ -5,6 +5,7 @@ from gcherry.transform import (
     body2global_rot, global2body_rot,
     perifocal2global_rot, global2perifocal_rot,
     pcf2global_rot, global2pcf_rot,
+    rcn2global_rot, global2rcn_rot,
     Rx
 )
 from gcherry.log_utils_refactor import almost_equal
@@ -92,7 +93,7 @@ class TestRot(unittest.TestCase):
         self.assertTrue(almost_equal(expected_body_axes_2, calculated_body_axes_2, tol=1e-8))
 
 
-    def test_funct___pcf2global_rot__2(self):
+    def test_funct__pcf2global_rot__2(self):
         pos_global_1 = [1, 0, 0]
         pos_global_2 = [0, 0, 1]
         lan = np.deg2rad(10)
@@ -115,7 +116,31 @@ class TestRot(unittest.TestCase):
         expected_body_axes_2 = np.identity(3)
         calculated_body_axes_2 = global2pcf_rot(pos_global_2, lan, inc) @ calculated_global_axes_2
         self.assertTrue(almost_equal(expected_body_axes_2, calculated_body_axes_2, tol=1e-8))
-    
+
+    def test_funct__rcn2global_rot(self):
+        pos_global = [0, 1, 0]
+        vel_global_1 = [-2, 2, 0]
+        vel_global_2 = [0, 1, 0]
+        vel_global_3 = [0, 0, 0]
+
+        expected_global_axes_1 = np.array([[0, -1, 0],
+                                          [1, 0, 0],
+                                          [0, 0, 1]])
+        calculated_global_axes_1 = rcn2global_rot(pos_global, vel_global_1)
+        self.assertTrue(almost_equal(expected_global_axes_1, calculated_global_axes_1, tol=1e-8))
+        calculated_global_axes_2 = rcn2global_rot(pos_global, vel_global_2)
+        self.assertTrue(np.isnan(calculated_global_axes_2).all())
+        calculated_global_axes_3 = rcn2global_rot(pos_global, vel_global_3)
+        self.assertTrue(np.isnan(calculated_global_axes_3).all())
+
+        expected_body_axes_1 = np.identity(3)
+        calculated_body_axes_1 = global2rcn_rot(pos_global, vel_global_1) @ calculated_global_axes_1
+        self.assertTrue(almost_equal(expected_body_axes_1, calculated_body_axes_1, tol=1e-8))
+        calculated_global_axes_2 = global2rcn_rot(pos_global, vel_global_2)
+        self.assertTrue(np.isnan(calculated_global_axes_2).all())
+        calculated_global_axes_3 = global2rcn_rot(pos_global, vel_global_3)
+        self.assertTrue(np.isnan(calculated_global_axes_3).all())
+
 
 if __name__ == '__main__':
     unittest.main()

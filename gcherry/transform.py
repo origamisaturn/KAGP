@@ -163,13 +163,33 @@ def global2body_rot(roll, pitch, yaw, pos_global):
     return body2global_rot(roll, pitch, yaw, pos_global).T
 
 def global2rcn_rot(pos_global, vel_global):
+    """ Rotation from global to Radial-Circumferential-Normal axes.
+    See rcn2global_rot().
+    
+    """
     return rcn2global_rot(pos_global, vel_global).T
 
-# TODO: add unit test for this.
-# NOTE: Check if this works with collinear or 0 value vel
 def rcn2global_rot(pos_global, vel_global):
-    i = unit_vector(pos_global)
-    k = unit_vector(np.cross(pos_global, vel_global))
-    j = unit_vector(np.cross(k, i))
-    rot_mat = np.stack((i, j, k), axis=-1)
+    """ Rotation from Radial-Circumferential-Normal axes to global axes.
+    Args:
+        pos_global: [m] 3-element vector, position in global frame.
+        vel_global: [m/s] 3-element vector, velocity in global frame.
+
+    Returns:
+        3x3 rotation matrix. Will be NaN if vel_global is
+        1) zero, or
+        2) collinear with pos_global.
+
+    """
+    if (not np.linalg.norm(vel_global) < 1e-8 and 
+        not is_parallel(pos_global, vel_global)):
+        i = unit_vector(pos_global)
+        k = unit_vector(np.cross(pos_global, vel_global))
+        j = unit_vector(np.cross(k, i))
+        rot_mat = np.stack((i, j, k), axis=-1)
+    else:
+        rot_mat = np.empty((3, 3)) * np.NaN
     return rot_mat
+
+def is_parallel(vec1, vec2, tol=1e-12):
+    return np.linalg.norm(unit_vector(vec1) - unit_vector(vec2)) < tol

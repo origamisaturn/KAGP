@@ -8,7 +8,7 @@ from gcherry.cherry_guidance_refactor import (
     VThetaSolver)
 from gcherry.log_utils_refactor import almost_equal
     
-    
+# TODO: add "SEE V_THETA SCENARIO"
 # Takeoff from lunar surface along equator to a position with 0 r_dot.
 # Only radial guidance, no yaw.    
 def set_time_to_go_scenario1(prob):
@@ -63,7 +63,7 @@ class TimeToGoGroup(om.Group):
         self.nonlinear_solver.options['maxiter'] = 100
         self.nonlinear_solver.options['atol'] = 1e-3
 
-class TestVThetaSolver(unittest.TestCase):
+class TestTimeToGo(unittest.TestCase):
     # See set_time_to_go_scenario1()
     def test_case_1(self):
         # self.prob.model.time_to_go.is_first_entry = True

@@ -1,8 +1,8 @@
 import numpy as np
 from gcherry.rk4 import rk4
 import gcherry.config as cfg
-from gcherry.guidance_interface_refactor import GuidanceInterfaceBase
-from gcherry.log_interface import LogInterfaceRefactor, IntegrationInterfaceLog
+from gcherry.guidance_interface_refactor import GuidanceBase
+from gcherry.log_interface import SimulationLog
 from gcherry.transform import body2global_rot
 
 
@@ -31,6 +31,9 @@ class SpacecraftState():
 
 
 class IntegrationInterface():
+    guidance_obj: GuidanceBase
+    log: SimulationLog
+
     # These are updated by every callback call.
     _thrust_cmd_store: float
     _pitch_cmd_store: float
@@ -48,33 +51,26 @@ class IntegrationInterface():
     _initial_velocity: list[float]
     _wet_mass: float
 
-    guidance_interface: GuidanceInterfaceBase
-    log: IntegrationInterfaceLog
-
     _last_outer_loop_time: float
 
-
-
     def __init__(self, config: cfg.Config, 
-                       guidance_interface: GuidanceInterfaceBase,
-                       log: LogInterfaceRefactor):
+                       guidance_obj: GuidanceBase):
         self._thrust_cmd_store = 0.0
         self._pitch_cmd_store = np.deg2rad(90)
         self._heading_cmd_store = np.deg2rad(0)
         self._max_time_step = 1.0
         self._last_outer_loop_time = 0.0
-        self.guidance_interface = guidance_interface
-        self.log = log.integration_interface
+        self.guidance_obj = guidance_obj
+        self.log = SimulationLog()
         self._parse_input(config)
-        ...
 
     def _parse_input(self, config: cfg.Config):
         self._isp = config.spacecraft.specific_impulse
         self._thrust_force_max = config.spacecraft.thrust
         self._wet_mass = config.spacecraft.wet_mass
 
-        self._outer_loop_interval = config.mission.outer_loop_interval
-        self._outer_loop_cutoff = config.mission.outer_loop_cutoff
+        self._outer_loop_interval = config.integrator.outer_loop_interval
+        self._outer_loop_cutoff = config.integrator.outer_loop_cutoff
 
         self._mu = config.body.gravitational_parameter
 
@@ -91,7 +87,7 @@ class IntegrationInterface():
         self.log.state.log_state(sim_start_time, initial_state)
 
         # Initialize outer loop solution
-        self.guidance_interface.get_command(0, initial_state, outer_loop=True, log=True)
+        self.guidance_obj.get_command(0, initial_state, outer_loop=True, log=True)
 
         ode_func = lambda t, state: rocket_ode(t, state, 
                                                self._mu, 
@@ -119,11 +115,11 @@ class IntegrationInterface():
         if (not self._is_outer_loop_cutoff(t) and 
             self._is_outer_loop_scheduled(t)):
             thrust_cmd, pitch_cmd, heading_cmd = (
-                self.guidance_interface.get_command(t, state, outer_loop=True, log=True))
+                self.guidance_obj.get_command(t, state, outer_loop=True, log=True))
             self._mark_outer_loop_calc(t)
         else:
             thrust_cmd, pitch_cmd, heading_cmd = (
-                self.guidance_interface.get_command(t, state, outer_loop=False, log=True))
+                self.guidance_obj.get_command(t, state, outer_loop=False, log=True))
 
         self._thrust_command_store = thrust_cmd
         self._pitch_command_store = pitch_cmd
@@ -131,7 +127,7 @@ class IntegrationInterface():
 
     # Is it less than outer_loop_cutoff seconds from guidance termination?
     def _is_outer_loop_cutoff(self, t):
-        T = self.guidance_interface.estimated_final_time()
+        T = self.guidance_obj.estimated_final_time()
         return (T - t) < self._outer_loop_cutoff
     
     # is it time to run outer loop
@@ -143,7 +139,7 @@ class IntegrationInterface():
         self._last_outer_loop_time = t
 
     def _guidance_func_continuous(self, t, state):
-        thrust_cmd, pitch_cmd, heading_cmd = self.guidance_interface.get_command(t, state, outer_loop=False, log=False)
+        thrust_cmd, pitch_cmd, heading_cmd = self.guidance_obj.get_command(t, state, outer_loop=False, log=False)
         return thrust_cmd, pitch_cmd, heading_cmd
 
     # this relies on the *_store variables being updated by the 
@@ -178,7 +174,7 @@ def rocket_ode(t, state, mu, Isp, F_thrust_max, guidance_func):
                     thrust_pitch    double  [rad.]  In interval [-pi,
                                     pi]. 0 degrees indicates eastward, incre                                    
                                     asing angle counter clockwise.
-                    thrust_yaw      double  [rad.] TBD.
+                    thrust_yaw      double  [rad.] TBD. TODO.
         Outputs:
             statedot    list    [m/s, m/s, m/s, m/s^2, m/s^2, m/s^2, kg/s]
                                 Elements are [xdot, ydot, zdot, xdotdot, 
