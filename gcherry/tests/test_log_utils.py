@@ -2,7 +2,7 @@ import unittest
 import numpy as np
 import math
 
-from gcherry.log_utils_refactor import (
+from gcherry.log_utils import (
     get_radius,
     get_acc, 
     get_r_dot, 

@@ -12,7 +12,7 @@ from gcherry.transform import (
 )
 from gcherry.rk4 import rk4
 from gcherry.transform import global2perifocal_rot
-from gcherry.log_utils_refactor import almost_equal
+from gcherry.log_utils import almost_equal
 
 # NOTE: Any reference to equation numbers is in reference to 
 #   "A general, explicit, optimizing guidance law for rocket-propelled spaceflight"
