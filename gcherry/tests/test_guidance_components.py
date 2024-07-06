@@ -23,20 +23,18 @@ def _set_radial_yaw_guidance_default(prob):
     
     """
     r0 = 1737.4e3
-
     input_dict = {
         'sample_x': [r0, 0, 0],
         'sample_v': [0, 0, 0],
         'sample_t': 0,
-        'target_r_T': r0 + 18.52e3,
+        'target_r_T': 1785.0e+3,
         'target_r_dot_T': 0,
         'target_lan': 0,
         'target_inc': 0,
-        'v_e': 3900,
-        'm_dot': 0.42,
+        'v_e': 3893.24005,
+        'm_dot': 0.420729258654369,
         'm0': 500,
         'T': 438}
-    
     for key, value in input_dict.items():
         prob[key] = value
 
@@ -86,7 +84,6 @@ def _calculate_final_radial_state(a0, a1, a2, c1_radial, c2_radial, Tgo, r0, r_d
 class RadialYawGuidanceGroup(om.Group):
     def setup(self):
         self.add_subsystem('radial_yaw_guidance', RadialYawGuidance(), promotes=['*'])
-
     
 class TestRadialYawGuidance(unittest.TestCase):
     def setUp(self):
@@ -102,10 +99,6 @@ class TestRadialYawGuidance(unittest.TestCase):
 
         """
         r0 = 1737.4e3
-        self.prob['sample_x'] = np.array([r0, 0, 0])
-        self.prob['sample_v'] = np.array([0, 0, 0])
-        self.prob['target_r_T'] = r0 + 18.52e3
-        self.prob['target_r_dot_T'] = 0
         self.prob['T'] = 438
         self.prob.run_model()
         a0, a1, a2, c1_radial, c2_radial = _get_radial_guidance_coefficients(self.prob)
@@ -198,6 +191,7 @@ def _set_pitch_query_scenario_1(prob):
     for key, value in input_dict.items():
         prob[key] = value
 
+# See test_debug_ascent_1_scenario_2.yaml
 def _set_pitch_query_scenario_2(prob):
     a0, a1, a2 = (
         5.4192248771367,
@@ -314,9 +308,7 @@ class TestPitchQuery(unittest.TestCase):
         self.assertTrue(almost_equal(pitch_calc_2, pitch_expected_2, tol))
         self.assertTrue(almost_equal(heading_calc_2, heading_expected_2))
 
-# TODO: add "SEE V_THETA SCENARIO"
-# Takeoff from lunar surface along equator to a position with 0 r_dot.
-# Only radial guidance, no yaw.    
+# See test_debug_ascent_1_scenario_1.yaml
 def set_time_to_go_scenario1(prob):
     r0 = 1737.4e3
     input_dict = {'sample_x': np.array([r0, 0, 0]),
@@ -335,8 +327,7 @@ def set_time_to_go_scenario1(prob):
     for key, value in input_dict.items():
         prob[key] = value
 
-# Takeoff from lunar surface at (ra, decl) == (-30deg, 10deg) to an 
-# inclined, elliptical orbit. Radial and yaw guidance.
+# See test_debug_ascent_1_scenario_2.yaml
 def set_time_to_go_scenario2(prob):
     r0 = 1737.4e3
     input_dict = {'sample_x': np.array([
@@ -358,7 +349,7 @@ def set_time_to_go_scenario2(prob):
     for key, value in input_dict.items():
         prob[key] = value
 
-# Testing TimeToGo with the other components makes sense as it is
+# Testing TimeToGo with the other components as it is
 # intended to iteratively find the terminal time T.
 class TimeToGoGroup(om.Group):
     def setup(self):
@@ -448,8 +439,7 @@ class TestTimeToGo(unittest.TestCase):
         self.assertTrue(almost_equal(T_residual, 0, tol))   
 
 
-# Takeoff from lunar surface along equator to a position with 0 r_dot.
-# Only radial guidance, no yaw.
+# See test_debug_ascent_1_scenario_1.yaml
 def set_v_theta_solver_scenario_1(prob):
     a0, a1, a2, c1_radial, c2_radial = (
         5.1881317827526,
@@ -480,8 +470,7 @@ def set_v_theta_solver_scenario_1(prob):
     for key, value in input_dict.items():
         prob[key] = value
 
-# Takeoff from lunar surface at (ra, decl) == (-30deg, 10deg) to an 
-# inclined, elliptical orbit. Radial and yaw guidance.
+# See test_debug_ascent_1_scenario_2.yaml
 def set_v_theta_solver_scenario_2(prob):
     a0, a1, a2 = (
         5.4192248771367,
@@ -604,8 +593,7 @@ class TestVThetaSolver(unittest.TestCase):
         self.assertTrue(almost_equal(v_theta_residual, 0, tol))
 
 
-# Takeoff from lunar surface along equator to a position with 0 r_dot.
-# Only radial guidance, no yaw.    
+# See test_debug_ascent_1_scenario_1.yaml  
 def _set_outer_loop_component_scenario1(prob):
     r0 = 1737.4e3
     input_dict = {'sample_x': np.array([r0, 0, 0]),
@@ -624,8 +612,7 @@ def _set_outer_loop_component_scenario1(prob):
     for key, value in input_dict.items():
         prob[key] = value
 
-# Takeoff from lunar surface at (ra, decl) == (-30deg, 10deg) to an 
-# inclined, elliptical orbit. Radial and yaw guidance.
+# See test_debug_ascent_1_scenario_2.yaml
 def _set_outer_loop_component_scenario2(prob):
     r0 = 1737.4e3
     input_dict = {'sample_x': np.array([
@@ -646,7 +633,6 @@ def _set_outer_loop_component_scenario2(prob):
     
     for key, value in input_dict.items():
         prob[key] = value
-
 
 
 class TestOuterLoopComponent(unittest.TestCase):
@@ -727,8 +713,7 @@ class TestOuterLoopComponent(unittest.TestCase):
         self.assertTrue(almost_equal(T_residual, 0, tol))   
 
 
-# Takeoff from lunar surface along equator to a position with 0 r_dot.
-# Only radial guidance, no yaw.    
+# See test_orbit_targeting_ascent_scenario_1.yaml
 def set_orbit_targeting_scenario_1(prob):
     r0 = 1737.4e3
     input_dict = {'sample_x': np.array([r0, 0, 0]),
@@ -747,6 +732,7 @@ def set_orbit_targeting_scenario_1(prob):
     for key, value in input_dict.items():
         prob[key] = value
 
+# See test_orbit_targeting_ascent_scenario_2.yaml
 def set_orbit_targeting_scenario_2(prob):
     input_dict = {'sample_x': np.array([1481773.78741417, -855502.4950417, 301696.34387852]),
                   'sample_v': np.array([0, 0, 0]),
