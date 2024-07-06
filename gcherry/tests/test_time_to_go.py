@@ -6,7 +6,7 @@ from gcherry.guidance_components import (
     TimeToGo,
     RadialYawGuidance,
     VThetaSolver)
-from gcherry.log_utils_refactor import almost_equal
+from gcherry.log_utils import almost_equal
     
 # TODO: add "SEE V_THETA SCENARIO"
 # Takeoff from lunar surface along equator to a position with 0 r_dot.

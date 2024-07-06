@@ -3,7 +3,7 @@ import numpy as np
 import openmdao.api as om
 
 from gcherry.guidance_components import VThetaSolver
-from gcherry.log_utils_refactor import almost_equal
+from gcherry.log_utils import almost_equal
 
     
 # Takeoff from lunar surface along equator to a position with 0 r_dot.

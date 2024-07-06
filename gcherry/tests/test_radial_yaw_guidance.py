@@ -3,7 +3,7 @@ import numpy as np
 import openmdao.api as om
 
 from gcherry.guidance_components import RadialYawGuidance
-from gcherry.log_utils_refactor import almost_equal 
+from gcherry.log_utils import almost_equal 
 
 
 def set_radial_yaw_guidance_default(prob):

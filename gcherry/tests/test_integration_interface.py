@@ -4,7 +4,7 @@ import gcherry.config as cfg
 from gcherry.guidance_interface import generateGuidanceObj
 from gcherry.integrator_sim import IntegratorSim
 from gcherry.log import LogAnalyzer
-from gcherry.log_utils_refactor import almost_equal
+from gcherry.log_utils import almost_equal
 
 
 class TestIntegratorSim(unittest.TestCase):

@@ -4,9 +4,9 @@ The PROGRAM requires yaml files to run guidance. The required keys can be in the
 - spacecraft
 - body
 - mission
-- integrator | krpc
+- integrator | krpc_client
 
-Either 'integrator' or 'krpc' may be defined, but not both. 'integrator' sets the guidance to run on an internal integrator. 'krpc' connects to a KRPC server in KSP and transmits guidance commands to the active spacecraft.
+Either 'integrator' or 'krpc_client' may be defined, but not both. 'integrator' sets the guidance to run on an internal integrator. 'krpc_client' connects to a KRPC server in KSP and transmits guidance commands to the active spacecraft.
 
 ## Spacecraft 
 Key                 | Units | Required  | Type   | Description
@@ -37,7 +37,7 @@ simulation_end_time | s     | Yes       | `float`   | Length of time the simulat
 initial_position    | m     | Yes       | 1x3 `vector` [`float`]    | Position at start of guidance.
 initial_velocity    | m/s   | Yes       | 1x3 `vector` [`float`]    | Velocity at start of guidance.
 
-## KRPC
+## KRPC Client
 Connects to KRPC server for guidance.
 Key         | Units | Required  | Type      | Description
 ---         | ---   | ---       | ---       | ---

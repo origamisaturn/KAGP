@@ -6,8 +6,8 @@ import os
 from gcherry.config import Config
 import typing
 
-import gcherry.log_utils_refactor as log_utils
-from gcherry.log_utils_refactor import plot_vars
+import gcherry.log_utils as log_utils
+from gcherry.log_utils import plot_vars
 
 # TODO: Write documentation for this
 class StateLog:

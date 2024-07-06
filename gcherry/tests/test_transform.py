@@ -8,7 +8,7 @@ from gcherry.transform import (
     rcn2global_rot, global2rcn_rot,
     Rx
 )
-from gcherry.log_utils_refactor import almost_equal
+from gcherry.log_utils import almost_equal
 
 
 class TestRot(unittest.TestCase):

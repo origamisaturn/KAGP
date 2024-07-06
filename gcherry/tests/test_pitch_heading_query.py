@@ -4,7 +4,7 @@ import openmdao.api as om
 from copy import deepcopy
 
 from gcherry.guidance_components import PitchHeadingQuery
-from gcherry.log_utils_refactor import almost_equal
+from gcherry.log_utils import almost_equal
 
 
 # See test_debug_ascent_1_scenario_1.yaml
