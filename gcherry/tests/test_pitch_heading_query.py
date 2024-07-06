@@ -8,7 +8,7 @@ from gcherry.log_utils import almost_equal
 
 
 # See test_debug_ascent_1_scenario_1.yaml
-def set_pitch_query_scenario_1(prob):
+def _set_pitch_query_scenario_1(prob):
     a0, a1, a2 = (
         5.1881317827526,
         -0.00691370453645869,
@@ -43,7 +43,7 @@ def set_pitch_query_scenario_1(prob):
     for key, value in input_dict.items():
         prob[key] = value
 
-def set_pitch_query_scenario_2(prob):
+def _set_pitch_query_scenario_2(prob):
     a0, a1, a2 = (
         5.4192248771367,
         -0.00754333097672137,
@@ -94,7 +94,7 @@ class TestPitchQuery(unittest.TestCase):
     def test_case_1(self):
         prob = om.Problem(PitchHeadingQueryGroup())
         prob.setup()
-        set_pitch_query_scenario_1(prob)
+        _set_pitch_query_scenario_1(prob)
         tol = 1e-8
 
         pitch_expected_1 = 1.18447886794603
@@ -128,7 +128,7 @@ class TestPitchQuery(unittest.TestCase):
     def test_case_2(self):
         prob = om.Problem(PitchHeadingQueryGroup())
         prob.setup()
-        set_pitch_query_scenario_2(prob)
+        _set_pitch_query_scenario_2(prob)
         tol = 1e-8
 
         pitch_expected_1 = 1.02193090008912

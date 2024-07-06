@@ -9,7 +9,7 @@ from gcherry.log_utils import almost_equal
 
 # Takeoff from lunar surface along equator to a position with 0 r_dot.
 # Only radial guidance, no yaw.    
-def set_outer_loop_component_scenario1(prob):
+def _set_outer_loop_component_scenario1(prob):
     r0 = 1737.4e3
     input_dict = {'sample_x': np.array([r0, 0, 0]),
                   'sample_v': np.array([0, 0, 0]),
@@ -29,7 +29,7 @@ def set_outer_loop_component_scenario1(prob):
 
 # Takeoff from lunar surface at (ra, decl) == (-30deg, 10deg) to an 
 # inclined, elliptical orbit. Radial and yaw guidance.
-def set_outer_loop_component_scenario2(prob):
+def _set_outer_loop_component_scenario2(prob):
     r0 = 1737.4e3
     input_dict = {'sample_x': np.array([
                                 1481773.78741417,
@@ -50,18 +50,15 @@ def set_outer_loop_component_scenario2(prob):
     for key, value in input_dict.items():
         prob[key] = value
 
-# class OuterLoopComponentGroup(om.Group):
-#     def setup(self):
-#         self.add_subsystem('outer_loop', OuterLoopComponent(), promotes=['*'])
 
 class TestOuterLoopComponent(unittest.TestCase):
-    # See set_outer_loop_component_scenario1()
+    # See _set_outer_loop_component_scenario1()
     def test_case_1(self):
         T_expected = 438
 
         self.prob = om.Problem(OuterLoopGroupRefactor())
         self.prob.setup()
-        set_outer_loop_component_scenario1(self.prob)
+        _set_outer_loop_component_scenario1(self.prob)
 
         # Test from stationary start
         self.prob.run_model()
@@ -91,7 +88,7 @@ class TestOuterLoopComponent(unittest.TestCase):
 
         self.prob = om.Problem(OuterLoopGroupRefactor())
         self.prob.setup()
-        set_outer_loop_component_scenario2(self.prob)
+        _set_outer_loop_component_scenario2(self.prob)
 
         # Test from stationary start
         self.prob.run_model()
