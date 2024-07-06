@@ -29,18 +29,19 @@ def gcherry_cmd():
     # like for initialization to occur after logs are populated.
     # TODO: Consider changing the "Interface" name, may be confused with
     #  the datastructure type.
-    log_interface = LogInterfaceRefactor(config)
-    guidance_interface = generateGuidanceObj(config)
+    log_obj = LogAnalyzer(config)
+    guidance_obj = generateGuidanceObj(config)
+    # TODO: create "generateSimObj"
     if config.integrator:
-        sim_interface = IntegrationInterface(config, guidance_interface)
-    elif config.ksp_interface:
-        sim_interface = KSPInterface(config, guidance_interface)
+        sim_obj = IntegratorSim(config, guidance_obj)
+    elif config.krpc_client:
+        sim_obj = KRPCClient(config, guidance_obj)
     else:
         raise(RuntimeError("No simulation defined in config."))
-    sim_interface.run()
+    sim_obj.run()
     # TODO: find cause of unit_vector() runtime warning.
-    log_interface.save("test.pkl")
-    log_interface.save_csv("test")
+    log_obj.save("test.pkl")
+    log_obj.save_csv("test")
 
 if __name__ == '__main__':
     gcherry_cmd()

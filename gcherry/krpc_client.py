@@ -113,7 +113,7 @@ class KRPCClient:
 
     def _log_state(self, state, t):
         # TODO implement this
-        self.log_interface.integration_interface.state.log_state(t, state)
+        self.log_interface.integrator_sim.state.log_state(t, state)
 
     def _connect(self):
         self._conn = krpc.connect(name=self.client_name)

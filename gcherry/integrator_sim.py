@@ -106,9 +106,9 @@ class IntegratorSim():
     but continuous as an option?
     The callback function is my method for determining the completion of 
     time steps and for setting outer loop calculation. 
-    Have two guidance funcs, one that reads from IntegrationInterface variables
+    Have two guidance funcs, one that reads from IntegratorSim variables
     that are updated every callback, and another that reads directly from
-    the GuidanceInterface.get_command(). """
+    the GuidanceBase.get_command(). """
     def _integration_callback(self, t, state):
         self.log.state.log_state(t, state)
 
