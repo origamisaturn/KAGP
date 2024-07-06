@@ -12,6 +12,7 @@ class GuidanceName(Enum):
     DEFAULT = "default"
 
 class SpacecraftConfig(BaseModel):
+    """ Spacecraft parameters for a single stage. """
     specific_impulse: PositiveFloat
     thrust: PositiveFloat
     wet_mass: PositiveFloat
