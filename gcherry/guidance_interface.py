@@ -2,8 +2,8 @@ import openmdao.api as om
 import gcherry.config as cfg
 
 from abc import ABC, abstractmethod
-from gcherry.log_interface import LogAnalyzer, GuidanceLog
-from gcherry.cherry_guidance_refactor import (
+from gcherry.log import LogAnalyzer, GuidanceLog
+from gcherry.guidance_components import (
     OrbitGuidanceComponent,
     PitchHeadingQuery,
     VThetaSolverOuterLoop

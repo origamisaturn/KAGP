@@ -5,9 +5,9 @@ import unittest
 import sys, os
 sys.path.append(os.path.abspath('core'))
 
-from gcherry.guidance_interface_refactor import GCherryGuidanceInterface
-from gcherry.KSP_interface import KSPInterface
-from gcherry.log_interface import LogInterfaceRefactor
+from gcherry.guidance_interface import GCherryGuidanceInterface
+from gcherry.krpc_client import KSPInterface
+from gcherry.log import LogInterfaceRefactor
 import gcherry.config as cfg
 
 filenames = ["gcherry/tests/input/ScriptKRPC.yaml",

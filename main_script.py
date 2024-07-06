@@ -6,10 +6,10 @@
 import argparse
 
 import gcherry.config as cfg
-from gcherry.guidance_interface_refactor import GCherryGuidanceInterface
-from gcherry.integration_interface import IntegrationInterface
-from gcherry.log_interface import LogInterfaceRefactor
-from gcherry.KSP_interface import KSPInterface
+from gcherry.guidance_interface import generateGuidanceObj
+from gcherry.integrator_sim import IntegratorSim
+from gcherry.log import LogAnalyzer
+from gcherry.krpc_client import KRPCClient
 
 
 def gcherry_cmd():
@@ -30,11 +30,11 @@ def gcherry_cmd():
     # TODO: Consider changing the "Interface" name, may be confused with
     #  the datastructure type.
     log_interface = LogInterfaceRefactor(config)
-    guidance_interface = GCherryGuidanceInterface(config, log_interface)
+    guidance_interface = generateGuidanceObj(config)
     if config.integrator:
-        sim_interface = IntegrationInterface(config, guidance_interface, log_interface)
+        sim_interface = IntegrationInterface(config, guidance_interface)
     elif config.ksp_interface:
-        sim_interface = KSPInterface(config, guidance_interface, log_interface)
+        sim_interface = KSPInterface(config, guidance_interface)
     else:
         raise(RuntimeError("No simulation defined in config."))
     sim_interface.run()

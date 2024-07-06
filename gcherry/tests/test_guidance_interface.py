@@ -2,7 +2,7 @@ import unittest
 import numpy as np
 
 import gcherry.config as cfg
-from gcherry.guidance_interface_refactor import generateGuidanceObj
+from gcherry.guidance_interface import generateGuidanceObj
 
 
 class TestGuidance(unittest.TestCase):

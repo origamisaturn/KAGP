@@ -331,7 +331,7 @@ class GuidanceLog:
     def log_problem(self, openmdao_problem):
         self.problem.log_problem(openmdao_problem)
 
-# guidance interface and integration interface creators rely on config to
+# guidance and simulation creators rely on config to
 # choose a subclass. Here the superclass is dict, so "subclasses" will be
 # methods which returns dicts
 class LogAnalyzer:

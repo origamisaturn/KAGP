@@ -48,7 +48,7 @@ class Integrator(BaseModel):
             raise ValueError("initial_position is zero.")
         return self
 
-class KSP_Interface(BaseModel):
+class KRPCClient(BaseModel):
     simulation_end_time: PositiveFloat
     # add check that directory exists
     log_path: str
@@ -69,11 +69,11 @@ class Config(BaseModel):
     debug_ascent_1: Optional[DebugAscent1] = None
     # Simulator options
     integrator: Optional[Integrator] = None
-    ksp_interface: Optional[KSP_Interface] = None
+    krpc_client: Optional[KRPCClient] = None
 
     @model_validator(mode='after')
     def check_one_simulation_defined(self) -> Self:
-        sim_attr = ['integrator', 'ksp_interface']        
+        sim_attr = ['integrator', 'krpc_client']        
         _assert_single_config_attr(self, sim_attr, "simulation")
         return self
         

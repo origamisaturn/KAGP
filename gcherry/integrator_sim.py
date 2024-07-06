@@ -1,8 +1,8 @@
 import numpy as np
 from gcherry.rk4 import rk4
 import gcherry.config as cfg
-from gcherry.guidance_interface_refactor import GuidanceBase
-from gcherry.log_interface import SimulationLog
+from gcherry.guidance_interface import GuidanceBase
+from gcherry.log import SimulationLog
 from gcherry.transform import body2global_rot
 
 
@@ -30,7 +30,7 @@ class SpacecraftState():
         return self._position + self._velocity + [self._mass]
 
 
-class IntegrationInterface():
+class IntegratorSim():
     guidance_obj: GuidanceBase
     log: SimulationLog
 
