@@ -11,29 +11,29 @@ import numpy as np
 class GuidanceName(Enum):
     DEFAULT = "default"
 
-class Spacecraft(BaseModel):
+class SpacecraftConfig(BaseModel):
     specific_impulse: PositiveFloat
     thrust: PositiveFloat
     wet_mass: PositiveFloat
 
-class CelestialBody(BaseModel):
+class CelestialBodyConfig(BaseModel):
     gravitational_parameter: PositiveFloat
 
-class OrbitTargetingAscent(BaseModel):
+class OrbitTargetingAscentConfig(BaseModel):
     apoapsis: PositiveFloat
     periapsis: PositiveFloat
     longitude_of_ascending_node: NonNegativeFloat
     inclination: NonNegativeFloat
     argument_of_periapsis: NonNegativeFloat
 
-class DebugAscent1(BaseModel):
+class DebugAscent1Config(BaseModel):
     terminal_time: PositiveFloat
     radius: PositiveFloat
     radial_velocity: float
     longitude_of_ascending_node: NonNegativeFloat
     inclination: NonNegativeFloat
 
-class Integrator(BaseModel):
+class IntegratorConfig(BaseModel):
     simulation_end_time: PositiveFloat
     initial_position: conlist(float, min_length=3, max_length=3)
     initial_velocity: conlist(float, min_length=3, max_length=3)
@@ -48,7 +48,7 @@ class Integrator(BaseModel):
             raise ValueError("initial_position is zero.")
         return self
 
-class KRPCClient(BaseModel):
+class KRPCClientConfig(BaseModel):
     simulation_end_time: PositiveFloat
     # add check that directory exists
     log_path: str
@@ -62,14 +62,14 @@ class Config(BaseModel):
     environment.
     
     """
-    spacecraft: Spacecraft
-    body: CelestialBody
+    spacecraft: SpacecraftConfig
+    body: CelestialBodyConfig
     # Guidance method options
-    orbit_targeting_ascent: Optional[OrbitTargetingAscent] = None
-    debug_ascent_1: Optional[DebugAscent1] = None
+    orbit_targeting_ascent: Optional[OrbitTargetingAscentConfig] = None
+    debug_ascent_1: Optional[DebugAscent1Config] = None
     # Simulator options
-    integrator: Optional[Integrator] = None
-    krpc_client: Optional[KRPCClient] = None
+    integrator: Optional[IntegratorConfig] = None
+    krpc_client: Optional[KRPCClientConfig] = None
 
     @model_validator(mode='after')
     def check_one_simulation_defined(self) -> Self:
