@@ -2,7 +2,7 @@ import unittest
 import numpy as np
 import openmdao.api as om
 
-from gcherry.cherry_guidance_refactor import (
+from gcherry.guidance_components import (
     TimeToGo,
     RadialYawGuidance,
     VThetaSolver)

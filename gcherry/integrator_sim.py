@@ -1,8 +1,8 @@
 import numpy as np
 from gcherry.rk4 import rk4
 import gcherry.config as cfg
-from gcherry.guidance_interface_refactor import GuidanceBase
-from gcherry.log_interface import SimulationLog
+from gcherry.guidance_interface import GuidanceBase
+from gcherry.log import SimulationLog
 from gcherry.transform import body2global_rot
 
 
@@ -30,7 +30,7 @@ class SpacecraftState():
         return self._position + self._velocity + [self._mass]
 
 
-class IntegrationInterface():
+class IntegratorSim():
     guidance_obj: GuidanceBase
     log: SimulationLog
 
@@ -106,9 +106,9 @@ class IntegrationInterface():
     but continuous as an option?
     The callback function is my method for determining the completion of 
     time steps and for setting outer loop calculation. 
-    Have two guidance funcs, one that reads from IntegrationInterface variables
+    Have two guidance funcs, one that reads from IntegratorSim variables
     that are updated every callback, and another that reads directly from
-    the GuidanceInterface.get_command(). """
+    the GuidanceBase.get_command(). """
     def _integration_callback(self, t, state):
         self.log.state.log_state(t, state)
 

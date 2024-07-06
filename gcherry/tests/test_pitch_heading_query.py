@@ -3,7 +3,7 @@ import numpy as np
 import openmdao.api as om
 from copy import deepcopy
 
-from gcherry.cherry_guidance_refactor import PitchHeadingQuery
+from gcherry.guidance_components import PitchHeadingQuery
 from gcherry.log_utils_refactor import almost_equal
 
 

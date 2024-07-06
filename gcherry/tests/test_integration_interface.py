@@ -1,27 +1,27 @@
 import unittest
 
 import gcherry.config as cfg
-from gcherry.guidance_interface_refactor import generateGuidanceObj
-from gcherry.integration_interface import IntegrationInterface
-from gcherry.log_interface import LogAnalyzer
+from gcherry.guidance_interface import generateGuidanceObj
+from gcherry.integrator_sim import IntegratorSim
+from gcherry.log import LogAnalyzer
 from gcherry.log_utils_refactor import almost_equal
 
 
-class TestIntegrationInterface(unittest.TestCase):
+class TestIntegratorSim(unittest.TestCase):
     def test_case_1(self):
         filenames = ["gcherry/tests/input/test_debug_ascent_1_scenario_1.yaml"]
         config = cfg.load_config(filenames)
         guidance_obj = generateGuidanceObj(config)
-        integration_interface = IntegrationInterface(config, guidance_obj)
+        sim_obj = IntegratorSim(config, guidance_obj)
 
-        integration_interface.run()
+        sim_obj.run()
 
-        log_interface = LogAnalyzer(config, 
-                guidance_obj.log, integration_interface.log)
-        log_interface.save("ti1.pkl")
-        log_interface.save_csv("ti1")
+        log_obj = LogAnalyzer(config, 
+                guidance_obj.log, sim_obj.log)
+        log_obj.save("ti1.pkl")
+        log_obj.save_csv("ti1")
 
-        df_deriv = log_interface.get_derived_values()
+        df_deriv = log_obj.get_derived_values()
         calc_r_T = df_deriv['radius'].iloc[-1]
         calc_r_dot_T = df_deriv['r_dot'].iloc[-1]
         calc_lan = df_deriv['lan'].iloc[-1]
@@ -35,16 +35,16 @@ class TestIntegrationInterface(unittest.TestCase):
         filenames = ["gcherry/tests/input/test_debug_ascent_1_scenario_2.yaml"]
         config = cfg.load_config(filenames)
         guidance_obj = generateGuidanceObj(config)
-        integration_interface = IntegrationInterface(config, guidance_obj)
+        sim_obj = IntegratorSim(config, guidance_obj)
 
-        integration_interface.run()
+        sim_obj.run()
 
-        log_interface = LogAnalyzer(config, 
-                guidance_obj.log, integration_interface.log)
-        log_interface.save("ti2.pkl")
-        log_interface.save_csv("ti2")
+        log_obj = LogAnalyzer(config, 
+                guidance_obj.log, sim_obj.log)
+        log_obj.save("ti2.pkl")
+        log_obj.save_csv("ti2")
 
-        df_deriv = log_interface.get_derived_values()
+        df_deriv = log_obj.get_derived_values()
         calc_r_T = df_deriv['radius'].iloc[-1]
         calc_r_dot_T = df_deriv['r_dot'].iloc[-1]
         calc_lan = df_deriv['lan'].iloc[-1]
@@ -58,13 +58,13 @@ class TestIntegrationInterface(unittest.TestCase):
         filenames = ["gcherry/tests/input/test_orbit_targeting_ascent_scenario_1.yaml"]
         config = cfg.load_config(filenames)
         guidance_obj = generateGuidanceObj(config)
-        integration_interface = IntegrationInterface(config, guidance_obj)
+        sim_obj = IntegratorSim(config, guidance_obj)
 
-        integration_interface.run()
+        sim_obj.run()
 
-        log_interface = LogAnalyzer(config, 
-                guidance_obj.log, integration_interface.log)
-        df_deriv = log_interface.get_derived_values()
+        log_obj = LogAnalyzer(config, 
+                guidance_obj.log, sim_obj.log)
+        df_deriv = log_obj.get_derived_values()
 
         # TODO: add integration step option
         # TODO: Make more robust to change in terminal time T.
@@ -83,13 +83,13 @@ class TestIntegrationInterface(unittest.TestCase):
         filenames = ["gcherry/tests/input/test_orbit_targeting_ascent_scenario_2.yaml"]
         config = cfg.load_config(filenames)
         guidance_obj = generateGuidanceObj(config)
-        integration_interface = IntegrationInterface(config, guidance_obj)
+        sim_obj = IntegratorSim(config, guidance_obj)
 
-        integration_interface.run()
+        sim_obj.run()
 
-        log_interface = LogAnalyzer(config, 
-                guidance_obj.log, integration_interface.log)
-        df_deriv = log_interface.get_derived_values()
+        log_obj = LogAnalyzer(config, 
+                guidance_obj.log, sim_obj.log)
+        df_deriv = log_obj.get_derived_values()
 
         # TODO: add integration step option
         # TODO: Make more robust to change in terminal time T.

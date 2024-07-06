@@ -2,11 +2,11 @@ import krpc
 import numpy as np
 
 
-# TODO: Consider moving into same file as integration interface.
-class KSPInterface:
-    def __init__(self, config, guidance_interface, log_interface):
+# TODO: Consider moving into same file as integrator sim.
+class KRPCClient:
+    def __init__(self, config, guidance_obj, log_interface):
         self.log_interface = log_interface
-        self.guidance_interface = guidance_interface
+        self.guidance_obj = guidance_obj
         # TODO: These should be set by config.
         self._last_outer_loop_time = 0
         self._outer_loop_cutoff = 5
@@ -31,7 +31,7 @@ class KSPInterface:
         estimated_T = 10
 
         state = self._get_state()
-        self.guidance_interface.get_command(
+        self.guidance_obj.get_command(
                         0, state, outer_loop=True, log=True)
         self._mark_outer_loop_calc(guidance_time)
         
@@ -44,12 +44,12 @@ class KSPInterface:
             if (not self._is_outer_loop_cutoff(guidance_time) and 
                 self._is_outer_loop_scheduled(guidance_time)):
                 thrust_cmd, pitch_cmd, heading_cmd = (
-                    self.guidance_interface.get_command(
+                    self.guidance_obj.get_command(
                         guidance_time, state, outer_loop=True, log=True))
                 self._mark_outer_loop_calc(guidance_time)
             else:
                 thrust_cmd, pitch_cmd, heading_cmd = (
-                    self.guidance_interface.get_command(
+                    self.guidance_obj.get_command(
                         guidance_time, state, outer_loop=False, log=True))
 
             self._vessel.control.throttle = thrust_cmd
@@ -60,7 +60,7 @@ class KSPInterface:
                 self._streams['time'].wait()
 
             guidance_time = self._streams['time']() - init_time
-            estimated_T = self.guidance_interface.estimated_final_time()
+            estimated_T = self.guidance_obj.estimated_final_time()
 
             print("{:.2f}%\t{:.2f} deg\t{:.2f} deg\t{:.1f}s\t{:.1f}s".format(
                 thrust_cmd*100,
@@ -69,7 +69,7 @@ class KSPInterface:
                 guidance_time,
                 estimated_T))
             # Implement this
-            # estimated_T = self.guidance_interface.get_predicted_final_time()
+            # estimated_T = self.guidance_obj.get_predicted_final_time()
         
         self._vessel.control.throttle = 0
         self._vessel.auto_pilot.disengage()
@@ -78,7 +78,7 @@ class KSPInterface:
 
     # Is it less than outer_loop_cutoff seconds from guidance termination?
     def _is_outer_loop_cutoff(self, t):
-        T = self.guidance_interface.estimated_final_time()
+        T = self.guidance_obj.estimated_final_time()
         return (T - t) < self._outer_loop_cutoff
     
     # is it time to run outer loop
@@ -113,7 +113,7 @@ class KSPInterface:
 
     def _log_state(self, state, t):
         # TODO implement this
-        self.log_interface.integration_interface.state.log_state(t, state)
+        self.log_interface.integrator_sim.state.log_state(t, state)
 
     def _connect(self):
         self._conn = krpc.connect(name=self.client_name)
