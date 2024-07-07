@@ -110,7 +110,7 @@ def body2topo_rot(roll, pitch, yaw):
     Args:
         roll: [rad.]
         pitch: [rad.]
-        yaw: [rad.]
+        yaw: [rad.] 0 rad. pointing North, pi/2 rad. pointing East.
 
     """
     return Rz(yaw)@Ry(pitch)@Rx(roll)

@@ -50,9 +50,10 @@ class IntegratorConfig(BaseModel):
         return self
 
 class KRPCClientConfig(BaseModel):
-    simulation_end_time: PositiveFloat
+    name: str = "PLACEHOLDER"
+    # simulation_end_time: PositiveFloat
     # add check that directory exists
-    log_path: str
+    # log_path: str
     outer_loop_interval: PositiveFloat
     outer_loop_cutoff: PositiveFloat
 

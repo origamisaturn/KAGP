@@ -1,40 +1,45 @@
 import krpc
 import numpy as np
+from gcherry.guidance_interface import GuidanceBase
+from gcherry.log import SimulationLog
+from gcherry.config import Config
 
 
 # TODO: Consider moving into same file as integrator sim.
 class KRPCClient:
-    def __init__(self, config, guidance_obj, log_interface):
-        self.log_interface = log_interface
+    guidance_obj: GuidanceBase
+    log: SimulationLog
+    _last_outer_loop_time: float
+    _outer_loop_cutoff: float
+    _outer_loop_interval: float
+
+    def __init__(self, config: Config, guidance_obj: GuidanceBase):
+        self.log = SimulationLog()
         self.guidance_obj = guidance_obj
         # TODO: These should be set by config.
         self._last_outer_loop_time = 0
-        self._outer_loop_cutoff = 5
-        self._outer_loop_interval = 3
         self._parse_input(config)
         self._connect()
         self._init_streams()
-        ...
+
     def run(self):
         init_time = self._conn.space_center.ut
         # guidance must start at time 0
-        guidance_time = self._streams['time']() - init_time
-
-        default_heading = 90 #deg
-        self._vessel.auto_pilot.target_pitch_and_heading(90, default_heading)
-        self._vessel.auto_pilot.target_roll = 0
-        self._vessel.auto_pilot.engage()
-        print("att: {}".format(self._vessel.auto_pilot.attenuation_angle))
-        self._vessel.auto_pilot.attenuation_angle = (0.01, 0.01, 0.01)
-        self._vessel.control.throttle = 1
-
-        estimated_T = 10
-
+        guidance_time = 0
         state = self._get_state()
+        # Initialize outer loop solution
         self.guidance_obj.get_command(
                         0, state, outer_loop=True, log=True)
         self._mark_outer_loop_calc(guidance_time)
-        
+        estimated_T = self.guidance_obj.estimated_final_time()
+
+        # Default initial pitch and heading
+        self._vessel.auto_pilot.attenuation_angle = (0.01, 0.01, 0.01)
+        self._vessel.auto_pilot.target_pitch_and_heading(90, 90)
+        self._vessel.auto_pilot.target_roll = 0
+        self._vessel.auto_pilot.engage()
+        self._vessel.control.throttle = 1
+ 
         while guidance_time < estimated_T:
             state = self._get_state()
             self._log_state(state, guidance_time)
@@ -68,25 +73,22 @@ class KRPCClient:
                 np.rad2deg(heading_cmd),
                 guidance_time,
                 estimated_T))
-            # Implement this
-            # estimated_T = self.guidance_obj.get_predicted_final_time()
         
         self._vessel.control.throttle = 0
         self._vessel.auto_pilot.disengage()
-
         self.save_log()
 
-    # Is it less than outer_loop_cutoff seconds from guidance termination?
     def _is_outer_loop_cutoff(self, t):
+        """ True if less than outer_loop_cutoff seconds from guidance 
+        termination. """
         T = self.guidance_obj.estimated_final_time()
         return (T - t) < self._outer_loop_cutoff
     
-    # is it time to run outer loop
     def _is_outer_loop_scheduled(self, t):
         return (t - self._last_outer_loop_time) >= self._outer_loop_interval
     
-    # mark outer loop for _is_outer_loop* functions
     def _mark_outer_loop_calc(self, t):
+        """ Sets last time outer loop was calculated. """
         self._last_outer_loop_time = t
 
     def _get_thrust_acc(self):
@@ -111,15 +113,13 @@ class KRPCClient:
         state = [x, y, z, vx, vy, vz, m]
         return state
 
-    def _log_state(self, state, t):
-        # TODO implement this
-        self.log_interface.integrator_sim.state.log_state(t, state)
-
     def _connect(self):
+        """ Connect to local KRPC server. """
         self._conn = krpc.connect(name=self.client_name)
         self._vessel = self._conn.space_center.active_vessel
         
     def _init_streams(self):
+        """ Initiate data streams from KRPC server. """
         conn = self._conn
         vessel = self._vessel
 
@@ -136,13 +136,11 @@ class KRPCClient:
         # self.client_name = input_dict['simulator']['name']
         self.client_name = "PLACEHOLDER"
         # self.sim_end_time = input_dict['simulator']['simulation_end_time']
-        ...
+        self._outer_loop_cutoff = config.krpc_client.outer_loop_cutoff
+        self._outer_loop_interval = config.krpc_client.outer_loop_interval
 
-    def _log_res(self):
-        ...
-
-    def save_log(self):
-        self.log_interface.save("KSPTEST.pkl")
+    def _log_state(self, state, t):
+        self.log.log_state(t, state)
 
 def ksp_to_rhs(coord):
     # This assumes flight path along equator
