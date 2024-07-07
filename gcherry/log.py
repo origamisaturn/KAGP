@@ -88,6 +88,10 @@ class SimulationLog:
     def __init__(self):
         self.state = StateLog()
 
+    def save_pkl(self, save_path):
+        with open(save_path, 'wb') as fh:
+            pkl.dump(self, fh)
+
 
 # class KSPInterfaceLog:
 #     state: StateLog
@@ -331,6 +335,10 @@ class GuidanceLog:
     def log_problem(self, openmdao_problem):
         self.problem.log_problem(openmdao_problem)
 
+    def save_pkl(self, save_path):
+        with open(save_path, 'wb') as fh:
+            pkl.dump(self, fh)
+
 # guidance and simulation creators rely on config to
 # choose a subclass. Here the superclass is dict, so "subclasses" will be
 # methods which returns dicts
@@ -438,10 +446,6 @@ class LogAnalyzer:
 
     def plot_state(self):
         self.sim_log.state.plot_state()
-
-    def save(self, save_path):
-        with open(save_path, 'wb') as fh:
-            pkl.dump(self, fh)
 
     def save_csv(self, save_path):
         if not os.path.exists(save_path):

@@ -39,8 +39,8 @@ class IntegratorConfig(BaseModel):
     initial_position: conlist(float, min_length=3, max_length=3)
     initial_velocity: conlist(float, min_length=3, max_length=3)
     # TODO: Check what happens when outer_loop_interval is zero.
-    outer_loop_interval: NonNegativeFloat
-    outer_loop_cutoff: NonNegativeFloat
+    outer_loop_interval: NonNegativeFloat = 7
+    outer_loop_cutoff: NonNegativeFloat = 10
 
     @model_validator(mode='after')
     def check_init_position_nonzero(self) -> Self:
@@ -51,11 +51,8 @@ class IntegratorConfig(BaseModel):
 
 class KRPCClientConfig(BaseModel):
     name: str = "PLACEHOLDER"
-    # simulation_end_time: PositiveFloat
-    # add check that directory exists
-    # log_path: str
-    outer_loop_interval: PositiveFloat
-    outer_loop_cutoff: PositiveFloat
+    outer_loop_interval: PositiveFloat = 7
+    outer_loop_cutoff: PositiveFloat = 10
 
 class Config(BaseModel):
     """ Main settings class.

@@ -24,7 +24,8 @@ class KRPCClient:
 
     def run(self):
         init_time = self._conn.space_center.ut
-        # guidance must start at time 0
+        # guidance must start at time 0 for accurate calculation of 
+        # thrust
         guidance_time = 0
         state = self._get_state()
         # Initialize outer loop solution
@@ -45,13 +46,14 @@ class KRPCClient:
             self._log_state(state, guidance_time)
             
             # Likely incorrect
-            thrust_acc = self._get_thrust_acc()
+            measured_thrust_acc = self._get_thrust_acc()
             if (not self._is_outer_loop_cutoff(guidance_time) and 
                 self._is_outer_loop_scheduled(guidance_time)):
                 thrust_cmd, pitch_cmd, heading_cmd = (
                     self.guidance_obj.get_command(
                         guidance_time, state, outer_loop=True, log=True))
                 self._mark_outer_loop_calc(guidance_time)
+                print("Outer Loop Calculated")
             else:
                 thrust_cmd, pitch_cmd, heading_cmd = (
                     self.guidance_obj.get_command(
@@ -76,7 +78,6 @@ class KRPCClient:
         
         self._vessel.control.throttle = 0
         self._vessel.auto_pilot.disengage()
-        self.save_log()
 
     def _is_outer_loop_cutoff(self, t):
         """ True if less than outer_loop_cutoff seconds from guidance 
@@ -133,14 +134,12 @@ class KRPCClient:
         self._streams['thrust'] = conn.add_stream(getattr, vessel, 'thrust')
 
     def _parse_input(self, config):
-        # self.client_name = input_dict['simulator']['name']
-        self.client_name = "PLACEHOLDER"
-        # self.sim_end_time = input_dict['simulator']['simulation_end_time']
+        self.client_name = config.krpc_client.name
         self._outer_loop_cutoff = config.krpc_client.outer_loop_cutoff
         self._outer_loop_interval = config.krpc_client.outer_loop_interval
 
     def _log_state(self, state, t):
-        self.log.log_state(t, state)
+        self.log.state.log_state(t, state)
 
 def ksp_to_rhs(coord):
     # This assumes flight path along equator
