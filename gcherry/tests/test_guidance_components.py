@@ -14,6 +14,7 @@ from gcherry.transform import global2perifocal_rot
 from gcherry.log_utils import almost_equal 
 
 
+# See test_debug_ascent_1_scenario_1.yaml
 def _set_radial_yaw_guidance_default(prob):
     """ Sets default input values for RadialYawGuidance.
     
