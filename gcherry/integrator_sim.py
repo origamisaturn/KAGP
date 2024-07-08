@@ -6,9 +6,27 @@ from abc import ABC, abstractmethod
 from gcherry.guidance_interface import GuidanceBase
 from gcherry.log import SimulationLog
 from gcherry.transform import body2global_rot
+from gcherry.krpc_client import KRPCClient
 
 def generateSimObj(config: cfg.Config, guidance_obj: GuidanceBase):
-    ...
+    """ Create SimulatorBase object selected by config. 
+    
+    Args:
+        config: Config object. Contains desired simulator name.
+        guidance_obj: GuidanceBase object, to be passed to simulator
+            object.
+        
+    Returns:
+        Subclass of SimulatorBase.
+        
+    """
+    if config.integrator:
+        sim_obj = IntegratorSim(config, guidance_obj)
+    elif config.krpc_client:
+        sim_obj = KRPCClient(config, guidance_obj)
+    else:
+        raise(RuntimeError("No simulation defined in config."))
+    return sim_obj
 
 class SimulatorBase(ABC):
     @abstractmethod

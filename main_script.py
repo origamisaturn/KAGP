@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 
 import gcherry.config as cfg
 from gcherry.guidance_interface import generateGuidanceObj, GuidanceBase
-from gcherry.integrator_sim import IntegratorSim
+from gcherry.integrator_sim import generateSimObj
 from gcherry.log import LogAnalyzer
 from gcherry.krpc_client import KRPCClient
 
@@ -22,8 +22,6 @@ def gcherry_cmd():
     parser = argparse.ArgumentParser(prog='gcherry',
                                      description='PLACEHOLDER',
                                      )
-    # TODO: add optional argument for setting custom log directory
-    # parser.add_argument('--logpath')
     subparsers = parser.add_subparsers(help='sub-command help')
 
     parser_run = subparsers.add_parser('run', help='run help')
@@ -43,12 +41,7 @@ def _run_cmd(args):
     config = cfg.load_config(args.config_paths)
     guidance_obj = generateGuidanceObj(config)
     # TODO: create "generateSimObj"
-    if config.integrator:
-        sim_obj = IntegratorSim(config, guidance_obj)
-    elif config.krpc_client:
-        sim_obj = KRPCClient(config, guidance_obj)
-    else:
-        raise(RuntimeError("No simulation defined in config."))
+    sim_obj = generateSimObj(config, guidance_obj)
     sim_obj.run()
     # TODO: find cause of unit_vector() runtime warning.
     log_obj = LogAnalyzer(config, guidance_obj.log, sim_obj.log)
