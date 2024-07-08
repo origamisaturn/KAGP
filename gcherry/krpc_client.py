@@ -3,15 +3,13 @@ import numpy as np
 from gcherry.guidance_interface import GuidanceBase
 from gcherry.log import SimulationLog
 from gcherry.config import Config
+from gcherry.integrator_sim import SingleStageSimulatorBase
 
 
 # TODO: Consider moving into same file as integrator sim.
-class KRPCClient:
+class KRPCClient(SingleStageSimulatorBase):
     guidance_obj: GuidanceBase
     log: SimulationLog
-    _last_outer_loop_time: float
-    _outer_loop_cutoff: float
-    _outer_loop_interval: float
 
     def __init__(self, config: Config, guidance_obj: GuidanceBase):
         self.log = SimulationLog()
@@ -78,19 +76,6 @@ class KRPCClient:
         
         self._vessel.control.throttle = 0
         self._vessel.auto_pilot.disengage()
-
-    def _is_outer_loop_cutoff(self, t):
-        """ True if less than outer_loop_cutoff seconds from guidance 
-        termination. """
-        T = self.guidance_obj.estimated_final_time()
-        return (T - t) < self._outer_loop_cutoff
-    
-    def _is_outer_loop_scheduled(self, t):
-        return (t - self._last_outer_loop_time) >= self._outer_loop_interval
-    
-    def _mark_outer_loop_calc(self, t):
-        """ Sets last time outer loop was calculated. """
-        self._last_outer_loop_time = t
 
     def _get_thrust_acc(self):
         return self._streams['thrust']()/self._streams['mass']()

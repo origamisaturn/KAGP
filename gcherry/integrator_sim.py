@@ -8,7 +8,13 @@ from gcherry.log import SimulationLog
 from gcherry.transform import body2global_rot
 from gcherry.krpc_client import KRPCClient
 
-def generateSimObj(config: cfg.Config, guidance_obj: GuidanceBase):
+
+# TODO: add docs for this
+class SimulatorBase(ABC):
+    @abstractmethod
+    def run(self): pass
+
+def generateSimObj(config: cfg.Config, guidance_obj: GuidanceBase) -> SimulatorBase:
     """ Create SimulatorBase object selected by config. 
     
     Args:
@@ -28,9 +34,6 @@ def generateSimObj(config: cfg.Config, guidance_obj: GuidanceBase):
         raise(RuntimeError("No simulation defined in config."))
     return sim_obj
 
-class SimulatorBase(ABC):
-    @abstractmethod
-    def run(self): pass
 
 class SingleStageSimulatorBase(ABC):
     """ Abstract class for implementing methods common in simulation
