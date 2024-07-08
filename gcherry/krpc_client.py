@@ -142,7 +142,20 @@ class KRPCClient:
         self.log.state.log_state(t, state)
 
 def ksp_to_rhs(coord):
-    # This assumes flight path along equator
+    """ Converts from KSP's left-handed frame to our global right-handed
+    frame.
+    
+    KSP global frame has center fixed at major body, has X going through
+    prime-meridian and equator, Y going through north pole, and Z going
+    through equator at ra = 90deg.
+
+    Inputs:
+        coord: 3-length 1-D array of coordinates in KSP frame.
+
+    Returns:
+        3-length 1-D array of coordinates in right-handed global frame.
+
+    """
     rot_mat = np.array([[1, 0, 0],
                         [0, 0, 1],
                         [0, 1, 0]])

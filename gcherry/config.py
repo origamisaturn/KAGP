@@ -1,4 +1,5 @@
 import yaml
+import pickle as pkl
 from enum import Enum
 from pydantic import (
     BaseModel, conlist, PositiveFloat, NonNegativeFloat, model_validator)
@@ -81,6 +82,10 @@ class Config(BaseModel):
         guidance_attr = ['orbit_targeting_ascent', 'debug_ascent_1']
         _assert_single_config_attr(self, guidance_attr, "guidance")
         return self
+
+    def save_pkl(self, save_path):
+        with open(save_path, 'wb') as fh:
+            pkl.dump(self, fh)
 
 def _assert_single_config_attr(config_model, attr_list, attr_kind):
     defined_sum = 0
