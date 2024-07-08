@@ -1,3 +1,6 @@
+# Takeoff from lunar surface at (ra, decl) == (-30deg, 10deg) to an 
+# inclined, elliptical orbit. Radial and yaw guidance.
+
 spacecraft:
   specific_impulse: 397
   thrust: 1638
