@@ -1,12 +1,43 @@
 import numpy as np
 from gcherry.rk4 import rk4
 import gcherry.config as cfg
+
+from abc import ABC, abstractmethod
 from gcherry.guidance_interface import GuidanceBase
 from gcherry.log import SimulationLog
 from gcherry.transform import body2global_rot
 
+def generateSimObj(config: cfg.Config, guidance_obj: GuidanceBase):
+    ...
 
-class IntegratorSim():
+class SimulatorBase(ABC):
+    @abstractmethod
+    def run(self): pass
+
+class SingleStageSimulatorBase(ABC):
+    """ Abstract class for implementing methods common in simulation
+    objects using single stage guidance methods. """
+    guidance_obj: GuidanceBase
+    log: SimulationLog
+    _last_outer_loop_time: float
+    _outer_loop_interval: float
+    _outer_loop_cutoff: float
+
+    def _is_outer_loop_cutoff(self, t):
+        """ True if less than outer_loop_cutoff seconds from guidance 
+        termination. """
+        T = self.guidance_obj.estimated_final_time()
+        return (T - t) < self._outer_loop_cutoff
+    
+    def _is_outer_loop_scheduled(self, t):
+        return (t - self._last_outer_loop_time) >= self._outer_loop_interval
+    
+    def _mark_outer_loop_calc(self, t):
+        """ Sets last time outer loop was calculated. """
+        self._last_outer_loop_time = t
+
+
+class IntegratorSim(SingleStageSimulatorBase):
     guidance_obj: GuidanceBase
     log: SimulationLog
 
@@ -18,16 +49,12 @@ class IntegratorSim():
     _max_time_step: float
     # NOTE: outer loop interval will not be exact, will be slightly 
     # shifted forward by the integration timestep
-    _outer_loop_interval: float
-    _outer_loop_cutoff: float
     _sim_end_time: float
     _mu: float
 
     _initial_position: list[float]
     _initial_velocity: list[float]
     _wet_mass: float
-
-    _last_outer_loop_time: float
 
     def __init__(self, config: cfg.Config, 
                        guidance_obj: GuidanceBase):
@@ -90,19 +117,6 @@ class IntegratorSim():
         self._thrust_command_store = thrust_cmd
         self._pitch_command_store = pitch_cmd
         self._heading_command_store = heading_cmd
-
-    def _is_outer_loop_cutoff(self, t):
-        """ True if less than outer_loop_cutoff seconds from guidance 
-        termination. """
-        T = self.guidance_obj.estimated_final_time()
-        return (T - t) < self._outer_loop_cutoff
-    
-    def _is_outer_loop_scheduled(self, t):
-        return (t - self._last_outer_loop_time) >= self._outer_loop_interval
-    
-    def _mark_outer_loop_calc(self, t):
-        """ Sets last time outer loop was calculated. """
-        self._last_outer_loop_time = t
 
     def _guidance_func_continuous(self, t, state):
         thrust_cmd, pitch_cmd, heading_cmd = self.guidance_obj.get_command(t, state, outer_loop=False, log=False)
