@@ -62,9 +62,12 @@ def _plotlog_cmd(args):
     _plot_log(log_obj)
 
 def _load_obj(save_dir):
-    config = pkl.load(os.path.join(save_dir, "config.pkl"))
-    guidance_obj = pkl.load(os.path.join(save_dir, "guidance_obj_log.pkl"))
-    sim_obj = pkl.load(os.path.join(save_dir, "sim_obj_log.pkl"))
+    with open(os.path.join(save_dir, "config.pkl"), 'rb') as fh:
+        config = pkl.load(fh)
+    with open(os.path.join(save_dir, "guidance_obj_log.pkl"), 'rb') as fh:
+        guidance_obj = pkl.load(fh)
+    with open(os.path.join(save_dir, "sim_obj_log.pkl"), 'rb') as fh:
+        sim_obj = pkl.load(fh)
     log_obj = LogAnalyzer(config, guidance_obj, sim_obj)
     return guidance_obj, sim_obj, log_obj
 
@@ -87,14 +90,6 @@ def _plot_log(log_obj: LogAnalyzer):
     log_obj.plot_error()
     log_obj.plot_derived()
     plt.show()
-
-
-# def report_cmd():
-#     ...
-
-# gcherry run config_file.yaml --savelog OPTIONALFOLDER
-# gcherry logplot file_directory
-# gcherry logplot guidance_obj.pkl sim_obj.pkl
 
 if __name__ == '__main__':
     gcherry_cmd()
