@@ -88,6 +88,10 @@ class SimulationLog:
     def __init__(self):
         self.state = StateLog()
 
+    def save_pkl(self, save_path):
+        with open(save_path, 'wb') as fh:
+            pkl.dump(self, fh)
+
 
 # class KSPInterfaceLog:
 #     state: StateLog
@@ -173,12 +177,12 @@ class OpenMDAOProblemLog:
         t = inputs[x_axis_key]
         input_keys = list(inputs.columns)
         input_keys.remove(x_axis_key)
-        plot_vars(inputs, t, columns=4, keys=input_keys)
+        return plot_vars(inputs, t, columns=4, keys=input_keys)
 
     def plot_outputs(self, x_axis_key):
         df_log = self.dataframe_log()
         t = df_log['inputs'][x_axis_key]
-        plot_vars(df_log['outputs'], t, columns=4)
+        return plot_vars(df_log['outputs'], t, columns=4)
 
     def _flatten_log(self):
         """ Converts log to a flattened format suitable for dataframes. 
@@ -331,6 +335,10 @@ class GuidanceLog:
     def log_problem(self, openmdao_problem):
         self.problem.log_problem(openmdao_problem)
 
+    def save_pkl(self, save_path):
+        with open(save_path, 'wb') as fh:
+            pkl.dump(self, fh)
+
 # guidance and simulation creators rely on config to
 # choose a subclass. Here the superclass is dict, so "subclasses" will be
 # methods which returns dicts
@@ -421,27 +429,28 @@ class LogAnalyzer:
         t = df_err['t']
         y_vars = list(df_err.columns)
         y_vars.remove('t')
-        plot_vars(df_err, t, columns=4, keys=y_vars)
+        fig, axs = plot_vars(df_err, t, columns=4, keys=y_vars)
+        fig.suptitle("Guidance vs. Sim Error Values")
 
     def plot_derived(self):
         df_derived = pd.DataFrame(self.get_derived_values())
         t = df_derived['t']
         y_vars = list(df_derived.columns)
         y_vars.remove('t')
-        plot_vars(df_derived, t, columns=4, keys=y_vars)
+        fig, axs = plot_vars(df_derived, t, columns=4, keys=y_vars)
+        fig.suptitle("Derived State Values")
 
     def plot_inputs(self):
-        self.guidance_log.problem.plot_inputs('pitch_heading_query.query_t')
+        fig, axs = self.guidance_log.problem.plot_inputs('pitch_heading_query.query_t')
+        fig.suptitle("Guidance Inputs")
 
     def plot_outputs(self):
-        self.guidance_log.problem.plot_outputs('pitch_heading_query.query_t')
+        fig, axs = self.guidance_log.problem.plot_outputs('pitch_heading_query.query_t')
+        fig.suptitle("Guidance Outputs")
 
     def plot_state(self):
-        self.sim_log.state.plot_state()
-
-    def save(self, save_path):
-        with open(save_path, 'wb') as fh:
-            pkl.dump(self, fh)
+        fig, axs = self.sim_log.state.plot_state()
+        fig.suptitle("Guidance State")
 
     def save_csv(self, save_path):
         if not os.path.exists(save_path):

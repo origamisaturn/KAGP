@@ -9,10 +9,16 @@ from gcherry.guidance_components import (
     VThetaSolverOuterLoop
 )
 
+# TODO: Add docs for this
+class GuidanceBase(ABC):
+    @abstractmethod
+    def get_command(self, t, state, outer_loop=True, log=True): pass
 
-def generateGuidanceObj(config: cfg.Config):
-    """ Returns GuidanceBase subclass depending on desired
-    guidance method.
+    @abstractmethod
+    def estimated_final_time(self): pass
+
+def generateGuidanceObj(config: cfg.Config) -> GuidanceBase:
+    """ Returns GuidanceBase object selected by config
     
     Args:
         config: Config object. Contains desired guidance method.
@@ -29,14 +35,6 @@ def generateGuidanceObj(config: cfg.Config):
         raise NotImplementedError("No recognized guidance method" +
                                     "found in config.")
     return model
-
-# TODO: Add docs for this
-class GuidanceBase(ABC):
-    @abstractmethod
-    def get_command(self, t, state, outer_loop=True, log=True): pass
-
-    @abstractmethod
-    def estimated_final_time(self): pass
 
 class OpenMDAOGuidanceBase(GuidanceBase):
     """ Abstract class for implementing methods common in guidance
