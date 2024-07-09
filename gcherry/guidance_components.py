@@ -922,20 +922,21 @@ class OrbitGuidanceComponent(om.ExplicitComponent):
         self.prob = om.Problem(model)
         self.prob.setup()
 
-        self.add_input('sample_x', val=np.zeros((3)))
-        self.add_input('sample_v', val=np.zeros((3)))
-        input_names = ['sample_t', 
+        self._vector_input_names = ['sample_x', 'sample_v']
+        self._scalar_input_names = ['sample_t', 
                        'sample_thrust_acceleration',
                        'target_pe', 'target_ap', 'target_argp',
                        'target_lan', 'target_inc',
                        'mu', 'm0']
-        for name in input_names:
+        for name in self._scalar_input_names:
             self.add_input(name, val=0.0)
+        for name in self._vector_input_names:
+            self.add_input(name, val=np.zeros((3)))
         self.add_input('estimator_ignore_time', val=7.0)
         self.add_input('estimator_output_time', val=100.0)
 
         # consider making this a class attribute
-        output_names = ['a0', 'a1', 'a2',
+        self._scalar_output_names = ['a0', 'a1', 'a2',
                         'c1_radial', 'c2_radial',
                         'c1_yaw', 'c2_yaw',
                         'v_theta_T', 'delta_theta_T',
@@ -943,37 +944,30 @@ class OrbitGuidanceComponent(om.ExplicitComponent):
                         'target_r_T', 'target_r_dot_T',
                         'target_v_theta_T',
                         'v_e', 'm_dot']
-        for name in output_names:
+        for name in self._scalar_output_names:
             self.add_output(name, val=0.0)
 
         self.add_discrete_input("run_outer_loop", val=True)
         self.add_discrete_input("enable_estimator", val=True)
         
     def compute(self, inputs, outputs, discrete_inputs, discrete_outputs):
-        self.pass_prob_inputs(inputs)
+        self.pass_prob_inputs(inputs, discrete_inputs)
         if discrete_inputs["run_outer_loop"]:
             self.prob.run_model()
         self.pass_prob_outputs(outputs)
 
-    def pass_prob_inputs(self, inputs):
-        self.prob['sample_x'] = inputs['sample_x']
-        self.prob['sample_v'] = inputs['sample_v']
-        input_names = ['sample_t', 
-                       'target_pe', 'target_ap', 'target_argp',
-                       'target_lan', 'target_inc',
-                       'mu', 'v_e', 'm_dot', 'm0']
-        for name in input_names:
+    def pass_prob_inputs(self, inputs, discrete_inputs):
+        for name in self._scalar_input_names:
             self.prob[name] = inputs[name][0]
+        for name in self._vector_input_names:
+            self.prob[name] = inputs[name]
+
+        self.prob['enable_estimator'] = discrete_inputs['enable_estimator']
+        self.prob['estimator_ignore_time'] = inputs['estimator_ignore_time']
+        self.prob['estimator_output_time'] = inputs['estimator_output_time']
 
     def pass_prob_outputs(self, outputs):
-        output_names = ['a0', 'a1', 'a2',
-                        'c1_radial', 'c2_radial',
-                        'c1_yaw', 'c2_yaw',
-                        'v_theta_T', 'delta_theta_T',
-                        'T',
-                        'target_r_T', 'target_r_dot_T',
-                        'target_v_theta_T']
-        for name in output_names:
+        for name in self._scalar_output_names:
             outputs[name] = self.prob[name]
 
 
