@@ -2,7 +2,7 @@ import unittest
 
 import gcherry.config as cfg
 from gcherry.guidance_interface import generateGuidanceObj
-from gcherry.integrator_sim import IntegratorSim
+from gcherry.sim_interface import IntegratorSim
 from gcherry.log import LogAnalyzer
 from gcherry.log_utils import almost_equal
 
@@ -18,8 +18,6 @@ class TestIntegratorSim(unittest.TestCase):
 
         log_obj = LogAnalyzer(config, 
                 guidance_obj.log, sim_obj.log)
-        log_obj.save("ti1.pkl")
-        log_obj.save_csv("ti1")
 
         df_deriv = log_obj.get_derived_values()
         calc_r_T = df_deriv['radius'].iloc[-1]
@@ -41,8 +39,6 @@ class TestIntegratorSim(unittest.TestCase):
 
         log_obj = LogAnalyzer(config, 
                 guidance_obj.log, sim_obj.log)
-        log_obj.save("ti2.pkl")
-        log_obj.save_csv("ti2")
 
         df_deriv = log_obj.get_derived_values()
         calc_r_T = df_deriv['radius'].iloc[-1]
