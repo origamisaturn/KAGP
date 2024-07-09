@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 
 import gcherry.config as cfg
 from gcherry.guidance_interface import generateGuidanceObj, GuidanceBase
-from gcherry.integrator_sim import generateSimObj
+from gcherry.sim_interface import generateSimObj
 from gcherry.log import LogAnalyzer
 from gcherry.krpc_client import KRPCClient
 
