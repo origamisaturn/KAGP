@@ -25,8 +25,7 @@ class EnginePropertyEstimator(om.ExplicitComponent):
     
     Inputs:
         --- User Input ---
-        enable_estimator: (bool) If false, estimator will not output v_e 
-            or m_dot values.
+        run_estimator: (bool) If false, does not compute v_e and m_dot.
         sample_thrust_acceleration: [m/s^2]
         sample_t: [s] Time at which sample_thrust_acceleration, 
             sample_x, and sample_v were collected.
@@ -69,40 +68,40 @@ class EnginePropertyEstimator(om.ExplicitComponent):
         for name in output_names:
             self.add_output(name, val=0.0)
 
-        self.add_discrete_input('enable_estimator', val=True)
+        self.add_discrete_input('run_estimator', val=True)
 
     def compute(self, inputs, outputs, discrete_inputs, discrete_outputs):
-        enable_estimator = discrete_inputs['enable_estimator']
+        run_estimator = discrete_inputs['run_estimator']
         estimator_ignore_time = inputs['estimator_ignore_time']
         estimator_output_time = inputs['estimator_output_time']
         sample_t = inputs['sample_t']
 
-        if enable_estimator:
-            if sample_t < estimator_ignore_time:
-                return
-            else:
-                sample_t = inputs['sample_t'][0]
-                sample_thrust_acc = inputs['sample_thrust_acceleration'][0]
-                m0 = inputs['m0'][0]
+        if sample_t < estimator_ignore_time:
+            return
+        else:
+            sample_t = inputs['sample_t'][0]
+            sample_thrust_acc = inputs['sample_thrust_acceleration'][0]
+            m0 = inputs['m0'][0]
 
-                self.thrust_acc_history.append(sample_thrust_acc)
-                self.time_history.append(sample_t)
+            self.thrust_acc_history.append(sample_thrust_acc)
+            self.time_history.append(sample_t)
 
-                if sample_t > estimator_output_time:
-                    v_e_guess = outputs['v_e'][0]
-                    m_dot_guess = outputs['m_dot'][0]
-                    tau_guess = m0/m_dot_guess
+            if run_estimator and sample_t > estimator_output_time:
+                v_e_guess = outputs['v_e'][0]
+                m_dot_guess = outputs['m_dot'][0]
+                tau_guess = m0/m_dot_guess
 
-                    x0 = [v_e_guess, tau_guess]
-                    # Hardcoded bounds
-                    bounds = ([10, 1/2], [10000, m0/0.1])
-                    res = least_squares(self.minimize_function, x0, method='trf', bounds=bounds)
-                    estimated_v_e = res.x[0]
-                    estimated_tau = res.x[1]
-                    estimated_m_dot = m0/estimated_tau
+                x0 = [v_e_guess, tau_guess]
+                # TODO: recalculate hard-coded bounds
+                # Hardcoded bounds
+                bounds = ([10, 1/2], [10000, m0/0.1])
+                res = least_squares(self.minimize_function, x0, method='trf', bounds=bounds)
+                estimated_v_e = res.x[0]
+                estimated_tau = res.x[1]
+                estimated_m_dot = m0/estimated_tau
 
-                    outputs['v_e'] = estimated_v_e
-                    outputs['m_dot'] = estimated_m_dot 
+                outputs['v_e'] = estimated_v_e
+                outputs['m_dot'] = estimated_m_dot 
 
 class RadialYawGuidance(om.ExplicitComponent):
     """ Solves equation for pitch and yaw scheduling. 
@@ -855,13 +854,6 @@ class OrbitTargetingGroup(om.Group):
         self.nonlinear_solver.options['maxiter'] = 100
         self.nonlinear_solver.options['atol'] = 1e-3
 
-class OrbitTargetingAndEngineEstimatorGroup(om.Group):
-    """ Solves for ascent given target orbital parameters, with estimator
-    for engine parameters."""
-    def setup(self):
-        self.add_subsystem('engine_estimator', EnginePropertyEstimator(), promotes=['*'])
-        self.add_subsystem('orbit_targeting', OrbitTargetingGroup(), promotes=['*'])
-
 class OrbitGuidanceComponent(om.ExplicitComponent):
     """ Solves for ascent guidance equation given target orbital 
     parameters.
@@ -874,15 +866,6 @@ class OrbitGuidanceComponent(om.ExplicitComponent):
             frame.
         sample_t: [s] Time at which sample_x and sample_v were collected.
 
-        --- User Input (Estimator) ---
-        enable_estimator: (bool) If false, estimator will not output v_e 
-            or m_dot values.
-        sample_thrust_acceleration: [m/s^2]
-        estimator_ignore_time: [s] Will ignore 
-            sample_thrust_acceleration measurements until 
-            estimator_ignore_time seconds have occurred.
-        estimator_output_time: [s] Time when block will start output.
-
         --- Targeting ---
         target_lan: [rad.] Target longitude of ascending node.
         target_inc: [rad.] Target inclination.
@@ -892,8 +875,8 @@ class OrbitGuidanceComponent(om.ExplicitComponent):
 
         --- Constants ---
         mu: [m^3/s^2] Gravitational parameter.
-        v_e: (ESTIMATOR OUTPUT) [m/s] Effective exhaust velocity of thruster.
-        m_dot: (ESTIMATOR OUTPUT) [kg/s] Thruster mass flow.
+        v_e: [m/s] Effective exhaust velocity of thruster.
+        m_dot: [kg/s] Thruster mass flow.
         m0: [kg] Total mass of spacecraft at launch (sample_t == 0).
 
         --- Component Connections ---
@@ -918,56 +901,57 @@ class OrbitGuidanceComponent(om.ExplicitComponent):
         
     """
     def setup(self):
-        model = OrbitTargetingAndEngineEstimatorGroup()
+        model = OrbitTargetingGroup()
         self.prob = om.Problem(model)
         self.prob.setup()
 
-        self._vector_input_names = ['sample_x', 'sample_v']
-        self._scalar_input_names = ['sample_t', 
-                       'sample_thrust_acceleration',
+        self.add_input('sample_x', val=np.zeros((3)))
+        self.add_input('sample_v', val=np.zeros((3)))
+        input_names = ['sample_t', 
                        'target_pe', 'target_ap', 'target_argp',
                        'target_lan', 'target_inc',
-                       'mu', 'm0']
-        for name in self._scalar_input_names:
+                       'mu', 'v_e', 'm_dot', 'm0']
+        for name in input_names:
             self.add_input(name, val=0.0)
-        for name in self._vector_input_names:
-            self.add_input(name, val=np.zeros((3)))
-        self.add_input('estimator_ignore_time', val=7.0)
-        self.add_input('estimator_output_time', val=100.0)
 
         # consider making this a class attribute
-        self._scalar_output_names = ['a0', 'a1', 'a2',
+        output_names = ['a0', 'a1', 'a2',
                         'c1_radial', 'c2_radial',
                         'c1_yaw', 'c2_yaw',
                         'v_theta_T', 'delta_theta_T',
                         'T',
                         'target_r_T', 'target_r_dot_T',
-                        'target_v_theta_T',
-                        'v_e', 'm_dot']
-        for name in self._scalar_output_names:
+                        'target_v_theta_T']
+        for name in output_names:
             self.add_output(name, val=0.0)
 
         self.add_discrete_input("run_outer_loop", val=True)
-        self.add_discrete_input("enable_estimator", val=True)
         
     def compute(self, inputs, outputs, discrete_inputs, discrete_outputs):
-        self.pass_prob_inputs(inputs, discrete_inputs)
+        self.pass_prob_inputs(inputs)
         if discrete_inputs["run_outer_loop"]:
             self.prob.run_model()
         self.pass_prob_outputs(outputs)
 
-    def pass_prob_inputs(self, inputs, discrete_inputs):
-        for name in self._scalar_input_names:
+    def pass_prob_inputs(self, inputs):
+        self.prob['sample_x'] = inputs['sample_x']
+        self.prob['sample_v'] = inputs['sample_v']
+        input_names = ['sample_t', 
+                       'target_pe', 'target_ap', 'target_argp',
+                       'target_lan', 'target_inc',
+                       'mu', 'v_e', 'm_dot', 'm0']
+        for name in input_names:
             self.prob[name] = inputs[name][0]
-        for name in self._vector_input_names:
-            self.prob[name] = inputs[name]
-
-        self.prob['enable_estimator'] = discrete_inputs['enable_estimator']
-        self.prob['estimator_ignore_time'] = inputs['estimator_ignore_time']
-        self.prob['estimator_output_time'] = inputs['estimator_output_time']
 
     def pass_prob_outputs(self, outputs):
-        for name in self._scalar_output_names:
+        output_names = ['a0', 'a1', 'a2',
+                        'c1_radial', 'c2_radial',
+                        'c1_yaw', 'c2_yaw',
+                        'v_theta_T', 'delta_theta_T',
+                        'T',
+                        'target_r_T', 'target_r_dot_T',
+                        'target_v_theta_T']
+        for name in output_names:
             outputs[name] = self.prob[name]
 
 
