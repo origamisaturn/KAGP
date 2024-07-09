@@ -12,7 +12,7 @@ from gcherry.guidance_components import (
 # TODO: Add docs for this
 class GuidanceBase(ABC):
     @abstractmethod
-    def get_command(self, t, state, outer_loop=True, log=True): pass
+    def get_command(self, t, state, thrust_acc=None, outer_loop=True, log=True): pass
 
     @abstractmethod
     def estimated_final_time(self): pass
@@ -42,7 +42,7 @@ class OpenMDAOGuidanceBase(GuidanceBase):
     _openmdao_problem: om.Problem
     log: GuidanceLog
 
-    def get_command(self, t, state, outer_loop=True, log=True):
+    def get_command(self, t, state, thrust_acc=None, outer_loop=True, log=True):
         position = state[:3]
         velocity = state[3:6]
         mass = state[6]
@@ -93,8 +93,14 @@ class OrbitTargetingAscent(OpenMDAOGuidanceBase):
         self.log = GuidanceLog()
         self.log.init_problem(self._openmdao_problem)
 
+    def get_command(self, t, state, thrust_acc=None, outer_loop=True, log=True):
+        if thrust_acc:
+            self._openmdao_problem['sample_thrust_acceleration'] = thrust_acc
+        # TODO: tidy up with args and kwargs
+        return super().get_command(t, state, thrust_acc=thrust_acc, 
+                            outer_loop=outer_loop, log=log)
+
     # See OpenMDAOGuidanceBase
-    # def get_command(self, t, state, outer_loop=True, log=True)
     # def estimated_final_time(self)
 
     def _parse_input(self, config):
@@ -109,7 +115,10 @@ class OrbitTargetingAscent(OpenMDAOGuidanceBase):
             ('mu', config.body.gravitational_parameter),
             ('v_e', v_e),
             ('m_dot', m_dot),
-            ('m0', config.spacecraft.wet_mass)]
+            ('m0', config.spacecraft.wet_mass),
+            ('enable_estimator', config.orbit_targeting_ascent.enable_estimator),
+            ('estimator_ignore_time', config.orbit_targeting_ascent.estimator_ignore_time),
+            ('estimator_output_time', config.orbit_targeting_ascent.estimator_output_time)]
         for key, value in mdao_vals:
             self._openmdao_problem.set_val(key, value)
 

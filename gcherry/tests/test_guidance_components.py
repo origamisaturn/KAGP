@@ -7,8 +7,8 @@ from gcherry.guidance_components import (
     PitchHeadingQuery,
     TimeToGo,
     VThetaSolver,
-    OuterLoopGroupRefactor,
-    OrbitGuidanceGroup
+    OuterLoopGroup,
+    OrbitTargetingGroup
 )
 from gcherry.transform import global2perifocal_rot
 from gcherry.log_utils import almost_equal 
@@ -641,7 +641,7 @@ class TestOuterLoopComponent(unittest.TestCase):
     def test_case_1(self):
         T_expected = 438
 
-        self.prob = om.Problem(OuterLoopGroupRefactor())
+        self.prob = om.Problem(OuterLoopGroup())
         self.prob.setup()
         _set_outer_loop_component_scenario1(self.prob)
 
@@ -671,7 +671,7 @@ class TestOuterLoopComponent(unittest.TestCase):
     def test_case_2(self):
         T_expected = 470
 
-        self.prob = om.Problem(OuterLoopGroupRefactor())
+        self.prob = om.Problem(OuterLoopGroup())
         self.prob.setup()
         _set_outer_loop_component_scenario2(self.prob)
 
@@ -760,7 +760,7 @@ class TestOrbitTargetingGroup(unittest.TestCase):
         r_dot_T_expected = 0
         theta_T_expected = 0.179561310932418
 
-        self.prob = om.Problem(OrbitGuidanceGroup())
+        self.prob = om.Problem(OrbitTargetingGroup())
         self.prob.setup()
         set_orbit_targeting_scenario_1(self.prob)
 
@@ -819,7 +819,7 @@ class TestOrbitTargetingGroup(unittest.TestCase):
         r_dot_T_expected = 4.4464
         theta_T_expected = 1.2792
 
-        self.prob = om.Problem(OrbitGuidanceGroup())
+        self.prob = om.Problem(OrbitTargetingGroup())
         self.prob.setup()
         set_orbit_targeting_scenario_2(self.prob)
 
