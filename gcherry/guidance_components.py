@@ -27,7 +27,7 @@ class EnginePropertyEstimator(om.ExplicitComponent):
         --- User Input ---
         run_estimator: (bool) If false, does not compute v_e and m_dot.
         sample_thrust_acceleration: [m/s^2]
-        sample_t: [s] Time at which sample_thrust_acceleration, 
+        estimator_sample_t: [s] Time at which sample_thrust_acceleration, 
             sample_x, and sample_v were collected.
         estimator_ignore_time: [s] Will ignore 
             sample_thrust_acceleration measurements until 
@@ -55,10 +55,11 @@ class EnginePropertyEstimator(om.ExplicitComponent):
         return res_a_thrust
 
     def setup(self):
+        self._last_time = -1
         self.thrust_acc_history = []
         self.time_history = []
 
-        input_names = ['sample_thrust_acceleration', 'sample_t', 'm0']
+        input_names = ['sample_thrust_acceleration', 'estimator_sample_t', 'm0']
         for name in input_names:
             self.add_input(name, val=0.0)
         self.add_input('estimator_ignore_time', val=5.0)
@@ -74,19 +75,19 @@ class EnginePropertyEstimator(om.ExplicitComponent):
         run_estimator = discrete_inputs['run_estimator']
         estimator_ignore_time = inputs['estimator_ignore_time']
         estimator_output_time = inputs['estimator_output_time']
-        sample_t = inputs['sample_t']
+        t = inputs['estimator_sample_t']
 
-        if sample_t < estimator_ignore_time:
+        if t < estimator_ignore_time:
             return
-        else:
-            sample_t = inputs['sample_t'][0]
+        elif t != self._last_time:
+            t = inputs['estimator_sample_t'][0]
             sample_thrust_acc = inputs['sample_thrust_acceleration'][0]
             m0 = inputs['m0'][0]
 
             self.thrust_acc_history.append(sample_thrust_acc)
-            self.time_history.append(sample_t)
+            self.time_history.append(t)
 
-            if run_estimator and sample_t > estimator_output_time:
+            if run_estimator and t > estimator_output_time:
                 v_e_guess = outputs['v_e'][0]
                 m_dot_guess = outputs['m_dot'][0]
                 tau_guess = m0/m_dot_guess

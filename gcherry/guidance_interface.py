@@ -113,7 +113,9 @@ class OrbitTargetingAscent(OpenMDAOGuidanceBase):
         return super().get_command(t, state, 
                             outer_loop=outer_loop, log=log)
     
-    def set_thrust_acc_measurement
+    def set_thrust_acc_measurement(self, t, thrust_acc):
+        self._openmdao_problem['estimator_sample_t'] = t
+        self._openmdao_problem['sample_thrust_acceleration'] = thrust_acc
 
     # See OpenMDAOGuidanceBase
     # def estimated_final_time(self)
@@ -157,6 +159,7 @@ class DebugAscent1(OpenMDAOGuidanceBase):
     # See OpenMDAOGuidanceBase
     # def get_command(self, t, state, outer_loop=True, log=True)
     # def estimated_final_time(self)
+    def set_thrust_acc_measurement(self, t, thrust_acc): pass
 
     def _parse_input(self, config):
         v_e, m_dot = _convert_engine_data(config.spacecraft.specific_impulse,

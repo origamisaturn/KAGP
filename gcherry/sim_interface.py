@@ -125,6 +125,7 @@ class IntegratorSim(SingleStageSimulatorBase):
 
     def _integration_callback(self, t, state):
         self.log.state.log_state(t, state)
+        self.guidance_obj.set_thrust_acc_measurement(t, self._get_thrust_acc(t, state))
 
         if (not self._is_outer_loop_cutoff(t) and 
             self._is_outer_loop_scheduled(t)):
@@ -146,6 +147,12 @@ class IntegratorSim(SingleStageSimulatorBase):
     def _guidance_func_discrete(self, t, state):
         """ Uses *_store variables updated by _integration_callback. """
         return self._thrust_cmd_store, self._pitch_cmd_store, self._heading_cmd_store
+    
+    def _get_thrust_acc(self, t, state):
+        m = state[6]
+        thrust_acc = self._thrust_force_max/m
+        return thrust_acc
+
 
 
 def rocket_ode(t, state, mu, Isp, F_thrust_max, guidance_func):
@@ -237,7 +244,7 @@ class KRPCClient(SingleStageSimulatorBase):
         while guidance_time < estimated_T:
             state = self._get_state()
             self._log_state(state, guidance_time)
-            
+            self.guidance_obj.set_thrust_acc_measurement(self._get_thrust_acc())
             # Likely incorrect
             measured_thrust_acc = self._get_thrust_acc()
             if (not self._is_outer_loop_cutoff(guidance_time) and 
