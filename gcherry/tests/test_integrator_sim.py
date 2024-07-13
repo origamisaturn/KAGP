@@ -2,7 +2,7 @@ import unittest
 
 import gcherry.config as cfg
 from gcherry.guidance_interface import generateGuidanceObj
-from gcherry.sim_interface import IntegratorSim
+from gcherry.sim_interface import generateSimObj
 from gcherry.log import LogAnalyzer
 from gcherry.log_utils import almost_equal
 
@@ -12,7 +12,7 @@ class TestIntegratorSim(unittest.TestCase):
         filenames = ["gcherry/tests/input/test_debug_ascent_1_scenario_1.yaml"]
         config = cfg.load_config(filenames)
         guidance_obj = generateGuidanceObj(config)
-        sim_obj = IntegratorSim(config, guidance_obj)
+        sim_obj = generateSimObj(config, guidance_obj)
 
         sim_obj.run()
 
@@ -33,7 +33,7 @@ class TestIntegratorSim(unittest.TestCase):
         filenames = ["gcherry/tests/input/test_debug_ascent_1_scenario_2.yaml"]
         config = cfg.load_config(filenames)
         guidance_obj = generateGuidanceObj(config)
-        sim_obj = IntegratorSim(config, guidance_obj)
+        sim_obj = generateSimObj(config, guidance_obj)
 
         sim_obj.run()
 
@@ -54,7 +54,7 @@ class TestIntegratorSim(unittest.TestCase):
         filenames = ["gcherry/tests/input/test_orbit_targeting_ascent_scenario_1.yaml"]
         config = cfg.load_config(filenames)
         guidance_obj = generateGuidanceObj(config)
-        sim_obj = IntegratorSim(config, guidance_obj)
+        sim_obj = generateSimObj(config, guidance_obj)
 
         sim_obj.run()
 
@@ -79,7 +79,7 @@ class TestIntegratorSim(unittest.TestCase):
         filenames = ["gcherry/tests/input/test_orbit_targeting_ascent_scenario_2.yaml"]
         config = cfg.load_config(filenames)
         guidance_obj = generateGuidanceObj(config)
-        sim_obj = IntegratorSim(config, guidance_obj)
+        sim_obj = generateSimObj(config, guidance_obj)
 
         sim_obj.run()
 
