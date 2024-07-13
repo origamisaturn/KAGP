@@ -514,7 +514,7 @@ class LogAnalyzer:
     def plot_final_error(self):
         df_final_err = self.get_final_error_values()
         T = self.get_final_estimated_T()
-        t_meco = self._get_commanded_meco()
+        # t_meco = self._get_commanded_meco()
 
         t = df_final_err['t']
         y_vars = list(df_final_err.columns)
@@ -700,8 +700,8 @@ class LogAnalyzer:
         final_derived = derived[(derived['t'] >= T-final_time_span/2) &
                                 (derived['t'] <= T+final_time_span/2)]
         final_err_dict = {
-            't': derived['t'],
-            'dt': derived['dt'],
+            't': final_derived['t'],
+            'dt': final_derived['dt'],
             'target_lan_err': (final_derived['lan'] - 
                                self.config.debug_ascent_1.longitude_of_ascending_node),
             'target_inc_err': (final_derived['inc'] -
@@ -720,8 +720,8 @@ class LogAnalyzer:
         final_derived = derived[derived['t'] >= T-final_time_span/2 and
                                 derived['t'] <= T+final_time_span/2]
         final_err_dict = {
-            't': derived['t'],
-            'dt': derived['dt'],
+            't': final_derived['t'],
+            'dt': final_derived['dt'],
             'target_lan_err': (final_derived['lan'] - 
                                self.config.orbit_targeting_ascent.longitude_of_ascending_node),
             'target_inc_err': (final_derived['inc'] -
