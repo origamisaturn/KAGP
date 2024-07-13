@@ -476,17 +476,20 @@ class LogAnalyzer:
         outputs_name = "outputs.csv"
         state_name = "state.csv"
         derived_name = "derived.csv"
+        shared_derived_name = "shared_derived.csv"
         err_name = "err.csv"
 
         df_log = self.guidance_log.problem.dataframe_log()
         df_state = self.sim_log.state.dataframe_log()
         df_derived = self.get_derived_values()
+        df_shared_derived = self.get_shared_derived_values()
         df_err = self.get_error_values()
 
         df_log['inputs'].to_csv(os.path.join(save_path, inputs_name))
         df_log['outputs'].to_csv(os.path.join(save_path, outputs_name))
         df_state.to_csv(os.path.join(save_path, state_name))
         df_derived.to_csv(os.path.join(save_path, derived_name))
+        df_shared_derived.to_csv(os.path.join(save_path, shared_derived_name))
         df_err.to_csv(os.path.join(save_path, err_name))
 
     def get_derived_values(self, t_interp=None):
