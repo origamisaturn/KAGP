@@ -35,7 +35,7 @@ def generateSimObj(config: cfg.Config, guidance_obj: GuidanceBase) -> SimulatorB
     return sim_obj
 
 
-class SingleStageSimulatorBase(ABC):
+class SingleStageSimulatorBase(SimulatorBase):
     """ Abstract class for implementing methods common in simulation
     objects using single stage guidance methods. """
     guidance_obj: GuidanceBase
@@ -212,6 +212,7 @@ def rocket_ode(t, state, mu, Isp, F_thrust_max, guidance_func):
 class KRPCClient(SingleStageSimulatorBase):
     guidance_obj: GuidanceBase
     log: SimulationLog
+    _post_guidance_measurement: int
 
     def __init__(self, config: cfg.Config, guidance_obj: GuidanceBase):
         self.log = SimulationLog()
@@ -244,7 +245,7 @@ class KRPCClient(SingleStageSimulatorBase):
         while guidance_time < estimated_T:
             state = self._get_state()
             self._log_state(state, guidance_time)
-            self.guidance_obj.set_thrust_acc_measurement(self._get_thrust_acc())
+            self.guidance_obj.set_thrust_acc_measurement(guidance_time, self._get_thrust_acc())
             # Likely incorrect
             measured_thrust_acc = self._get_thrust_acc()
             if (not self._is_outer_loop_cutoff(guidance_time) and 
@@ -275,6 +276,13 @@ class KRPCClient(SingleStageSimulatorBase):
                 np.rad2deg(heading_cmd),
                 guidance_time,
                 estimated_T))
+            
+        while guidance_time < estimated_T + self._post_guidance_measurement:
+            with self._streams['time'].condition:
+                self._streams['time'].wait()
+            guidance_time = self._streams['time']() - init_time
+            state = self._get_state()
+            self._log_state(state, guidance_time)
         
         self._vessel.control.throttle = 0
         self._vessel.auto_pilot.disengage()
@@ -324,6 +332,7 @@ class KRPCClient(SingleStageSimulatorBase):
         self.client_name = config.krpc_client.name
         self._outer_loop_cutoff = config.krpc_client.outer_loop_cutoff
         self._outer_loop_interval = config.krpc_client.outer_loop_interval
+        self._post_guidance_measurement = config.krpc_client.post_guidance_measurement
 
     def _log_state(self, state, t):
         self.log.state.log_state(t, state)
