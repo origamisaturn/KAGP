@@ -395,7 +395,7 @@ def get_time_steps(t):
             time_steps[i] = t_val - t[i-1]
     return time_steps
 
-def plot_vars(vars, t, columns=3, keys=None):
+def plot_vars(vars, t, columns=3, keys=None, plotkwargs=None):
     """ Plot several variables on a grid.
     
     Args:
@@ -409,6 +409,8 @@ def plot_vars(vars, t, columns=3, keys=None):
         2-tuple containing matplotlib figure and axes.
         
     """
+    if plotkwargs is None:
+        plotkwargs={}
     if keys:
         var_names = keys
     else:
@@ -429,7 +431,7 @@ def plot_vars(vars, t, columns=3, keys=None):
                 if type(var_val) == type(dict()):
                     continue
 
-                axs[i, j].plot(t, var_val)
+                axs[i, j].plot(t, var_val, **plotkwargs)
                 axs[i, j].set_title(var_name)
     return fig, axs
 

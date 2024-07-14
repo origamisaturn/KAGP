@@ -123,15 +123,19 @@ class IntegratorSim(SingleStageSimulatorBase):
         # there is no thrusting past the estimated final time.
         # t_res, y_res = rk4(ode_func, tspan, initial_state, 
         #     self._max_time_step, callback=self._integration_callback)
-        t = sim_start_time
-        state = initial_state
-        while t < self._sim_end_time - 1e-8:
+
+        t_res = np.array([sim_start_time])
+        y_res = np.array([initial_state]).T
+        while t_res[-1] < self._sim_end_time - 1e-8:
+            t = t_res[-1]
+            y = y_res[:, -1]
             next_t = self._get_next_timestep(t)
             h = next_t - t
-            next_state = rk4_step(ode_func, t, state, h)
-            self._integration_callback(next_t, next_state)
-            state = next_state
-            t = next_t
+            next_state = np.atleast_2d(rk4_step(ode_func, t, y, h)).T
+
+            y_res = np.concatenate((y_res, next_state), axis=1)
+            t_res = np.append(t_res, next_t)
+            self._integration_callback(next_t, y_res[:, -1])
 
         return t_res, y_res
     
@@ -139,11 +143,11 @@ class IntegratorSim(SingleStageSimulatorBase):
         estimated_T = self.guidance_obj.estimated_final_time()
         # Values near estimated_T to have relatively sharp cutoff of 
         # throttle by integrator.
-        event_times = [estimated_T - 1e-8, estimated_T + 1e-8, self._sim_end_time]
+        event_times = [estimated_T - 1e-7, estimated_T + 1e-7, self._sim_end_time]
         next_time = t + self._max_time_step
         for candidate_time in event_times:
             h = candidate_time - t
-            if h <= next_time - t:
+            if h > 0 and h <= next_time - t:
                 next_time = candidate_time
         return next_time
         
@@ -176,7 +180,7 @@ class IntegratorSim(SingleStageSimulatorBase):
     
     def _get_thrust_acc(self, t, state):
         m = state[6]
-        thrust_acc = self._thrust_force_max/m
+        thrust_acc = self._thrust_command_store * self._thrust_force_max/m
         return thrust_acc
 
 
@@ -278,13 +282,15 @@ class KRPCClient(SingleStageSimulatorBase):
                 self._is_outer_loop_scheduled(guidance_time)):
                 thrust_cmd, pitch_cmd, heading_cmd = (
                     self.guidance_obj.get_command(
-                        guidance_time, state, outer_loop=True, log=True))
+                        guidance_time, state, outer_loop=True, log=True, 
+                        mecoshift=self._main_engine_cutoff_shift))
                 self._mark_outer_loop_calc(guidance_time)
                 print("Outer Loop Calculated")
             else:
                 thrust_cmd, pitch_cmd, heading_cmd = (
                     self.guidance_obj.get_command(
-                        guidance_time, state, outer_loop=False, log=True))
+                        guidance_time, state, outer_loop=False, log=True,
+                        mecoshift=self._main_engine_cutoff_shift))
 
             self._vessel.control.throttle = thrust_cmd
             self._vessel.auto_pilot.target_pitch_and_heading(
@@ -359,6 +365,7 @@ class KRPCClient(SingleStageSimulatorBase):
         self._outer_loop_cutoff = config.krpc_client.outer_loop_cutoff
         self._outer_loop_interval = config.krpc_client.outer_loop_interval
         self._post_guidance_measurement = config.krpc_client.post_guidance_measurement
+        self._main_engine_cutoff_shift = config.krpc_client.main_engine_cutoff_shift
 
     def _log_state(self, state, t):
         self.log.state.log_state(t, state)

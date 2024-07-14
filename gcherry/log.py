@@ -5,6 +5,7 @@ import numpy as np
 import os
 from gcherry.config import Config
 import typing
+import matplotlib
 
 import gcherry.log_utils as log_utils
 from gcherry.log_utils import plot_vars
@@ -540,15 +541,29 @@ class LogAnalyzer:
         fig.suptitle("Guidance vs. Sim Error Values")
         return fig, axs
     
-    def plot_final_error(self):
+    def plot_final_error(self, tspan=None):
+        """ Plots the error of spacecraft state vs final target value.
+        
+        Args:
+            tspan: [s] float, length of x-axis when focusing plot around
+                final estimated time.
+                
+        Returns:
+            matplotlib figure and axes.
+            
+        """
         df_final_err = self.get_final_error_values()
         T = self.get_final_estimated_T()
         # t_meco = self._get_commanded_meco()
-
+        plotkwargs=None
+        if tspan:
+            df_final_err = df_final_err[(df_final_err['t'] >= T-tspan/2) & 
+                                        (df_final_err['t'] <= T+tspan/2)]
+            plotkwargs={'marker': 'o'}
         t = df_final_err['t']
         y_vars = list(df_final_err.columns)
         y_vars.remove('t')
-        fig, axs = plot_vars(df_final_err, t, columns=4, keys=y_vars)
+        fig, axs = plot_vars(df_final_err, t, columns=4, keys=y_vars, plotkwargs=plotkwargs)
         for ax1 in axs:
             for ax in ax1:
                 ax.axvline(T, color='red', ls='-.', alpha=0.5)
@@ -564,6 +579,18 @@ class LogAnalyzer:
     def plot_outputs(self):
         fig, axs = self.guidance_log.problem.plot_outputs('pitch_heading_query.query_t')
         fig.suptitle("Guidance Outputs")
+
+        df_prob = self.guidance_log.problem.dataframe_log()
+        fig2, ax2 = matplotlib.pyplot.subplots()
+        t = df_prob['inputs']['pitch_heading_query.query_t']
+        T = self.get_final_estimated_T()
+        tspan = 0.5
+        final_indices = (t>=T-tspan/2) & (t<=T+tspan/2)
+        ax2.plot(t[final_indices], np.array(self.guidance_log.thrust_cmd)[final_indices], marker='o')
+        ax2.axvline(T, color='red', ls='-.', alpha=0.5)
+        ax2.set_ylabel("thrust_cmd")
+        ax2.set_xlabel("t")
+        ax2.set_title("Guidance Thrust Command")
         return fig, axs
 
     def plot_state(self):
@@ -617,22 +644,18 @@ class LogAnalyzer:
     
     def _final_error_values_orbit_targeting_ascent(self):
         derived = self.get_derived_values()
-        T = self.get_final_estimated_T()
-        final_time_span = 0.2 # seconds
-        final_derived = derived[(derived['t'] >= T-final_time_span/2) &
-                                (derived['t'] <= T+final_time_span/2)]
         final_err_dict = {
-            't': final_derived['t'],
-            'dt': final_derived['dt'],
-            'target_lan_err': (final_derived['lan'] - 
+            't': derived['t'],
+            'dt': derived['dt'],
+            'target_lan_err': (derived['lan'] - 
                                self.config.orbit_targeting_ascent.longitude_of_ascending_node),
-            'target_inc_err': (final_derived['inc'] -
+            'target_inc_err': (derived['inc'] -
                                self.config.orbit_targeting_ascent.inclination),
-            'target_ap_err': (final_derived['ap'] -
+            'target_ap_err': (derived['ap'] -
                               self.config.orbit_targeting_ascent.apoapsis),
-            'target_pe_err': (final_derived['pe'] -
+            'target_pe_err': (derived['pe'] -
                               self.config.orbit_targeting_ascent.periapsis),
-            'target_argp_err': (final_derived['argp'] -
+            'target_argp_err': (derived['argp'] -
                                 self.config.orbit_targeting_ascent.argument_of_periapsis)
         }
         return pd.DataFrame(final_err_dict)
@@ -667,20 +690,16 @@ class LogAnalyzer:
     
     def _final_error_values_debug_ascent_1(self):
         derived = self.get_derived_values()
-        T = self.config.debug_ascent_1.terminal_time
-        final_time_span = 2 # seconds
-        final_derived = derived[(derived['t'] >= T-final_time_span/2) &
-                                (derived['t'] <= T+final_time_span/2)]
         final_err_dict = {
-            't': final_derived['t'],
-            'dt': final_derived['dt'],
-            'target_lan_err': (final_derived['lan'] - 
+            't': derived['t'],
+            'dt': derived['dt'],
+            'target_lan_err': (derived['lan'] - 
                                self.config.debug_ascent_1.longitude_of_ascending_node),
-            'target_inc_err': (final_derived['inc'] -
+            'target_inc_err': (derived['inc'] -
                                self.config.debug_ascent_1.inclination),
-            'target_r_T': (final_derived['radius'] -
+            'target_r_T': (derived['radius'] -
                            self.config.debug_ascent_1.radius),
-            'target_r_dot_T': (final_derived['r_dot'] -
+            'target_r_dot_T': (derived['r_dot'] -
                            self.config.debug_ascent_1.radial_velocity)
         }
         return pd.DataFrame(final_err_dict)
