@@ -77,6 +77,7 @@ class OpenMDAOGuidanceBase(GuidanceBase):
 
         if log:
             self.log.log_problem(self._openmdao_problem)
+            self.log.log_thrust_cmd(thrust_magnitude)
 
         return thrust_magnitude, thrust_pitch, thrust_heading
     
