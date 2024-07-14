@@ -28,6 +28,11 @@ class OrbitTargetingAscentConfig(BaseModel):
     inclination: NonNegativeFloat
     argument_of_periapsis: NonNegativeFloat
 
+    enable_estimator: bool = True
+    estimator_ignore_time: NonNegativeFloat = 5
+    estimator_output_time: NonNegativeFloat = 50
+
+
 class DebugAscent1Config(BaseModel):
     terminal_time: PositiveFloat
     radius: PositiveFloat
@@ -54,6 +59,7 @@ class KRPCClientConfig(BaseModel):
     name: str = "PLACEHOLDER"
     outer_loop_interval: PositiveFloat = 7
     outer_loop_cutoff: PositiveFloat = 10
+    post_guidance_measurement: NonNegativeFloat = 5
 
 class Config(BaseModel):
     """ Main settings class.

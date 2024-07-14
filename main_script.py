@@ -13,7 +13,6 @@ import gcherry.config as cfg
 from gcherry.guidance_interface import generateGuidanceObj, GuidanceBase
 from gcherry.sim_interface import generateSimObj
 from gcherry.log import LogAnalyzer
-from gcherry.krpc_client import KRPCClient
 
 
 def gcherry_cmd():

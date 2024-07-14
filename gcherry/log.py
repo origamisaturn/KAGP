@@ -352,8 +352,7 @@ class LogAnalyzer:
     _target_lan: float
     _target_inc: float
     
-    # TODO: Standardize inputs. Figure out what to do with t_interp.
-    _derived_values_function: typing.Callable
+    _shared_derived_values_function: typing.Callable
     _error_values_function: typing.Callable
 
 
@@ -367,14 +366,14 @@ class LogAnalyzer:
             self._set_analysis_attributes({
                 'target_lan': config.orbit_targeting_ascent.longitude_of_ascending_node,
                 'target_inc': config.orbit_targeting_ascent.inclination,
-                'derived_values_function': self._derived_values_orbit_targeting_ascent,
+                'shared_derived_values_function': self._shared_derived_values_orbit_targeting_ascent,
                 'error_values_function': self._error_values_orbit_targeting_ascent
             })
         elif config.debug_ascent_1:
             self._set_analysis_attributes({
                 'target_lan': config.debug_ascent_1.longitude_of_ascending_node,
                 'target_inc': config.debug_ascent_1.inclination,
-                'derived_values_function': self._derived_values_debug_ascent_1,
+                'shared_derived_values_function': self._shared_derived_values_debug_ascent_1,
                 'error_values_function': self._error_values_debug_ascent_1
             })
         else:
@@ -393,10 +392,13 @@ class LogAnalyzer:
         """
         self._target_lan = input_dict['target_lan']
         self._target_inc = input_dict['target_inc']
-        self._derived_values_function = input_dict['derived_values_function']
+        self._shared_derived_values_function = input_dict['shared_derived_values_function']
         self._error_values_function = input_dict['error_values_function']
 
     def get_derived_values(self, t_interp=None):
+        return pd.DataFrame(self.get_derived_values(t_interp))
+
+    def get_shared_derived_values(self, t_interp=None):
         """ Obtains values calculated from state history. 
         
         Args:
@@ -409,7 +411,7 @@ class LogAnalyzer:
             values are arrays of data.
 
         """
-        return self._derived_values_function(t_interp)
+        return self._shared_derived_values_function(t_interp)
 
     def get_error_values(self):
         """ Dataframe of error between predicted and actual values. 
@@ -431,26 +433,40 @@ class LogAnalyzer:
         y_vars.remove('t')
         fig, axs = plot_vars(df_err, t, columns=4, keys=y_vars)
         fig.suptitle("Guidance vs. Sim Error Values")
+        return fig, axs
 
     def plot_derived(self):
-        df_derived = pd.DataFrame(self.get_derived_values())
+        df_derived = self.get_derived_values()
         t = df_derived['t']
         y_vars = list(df_derived.columns)
         y_vars.remove('t')
         fig, axs = plot_vars(df_derived, t, columns=4, keys=y_vars)
         fig.suptitle("Derived State Values")
+        return fig, axs
+
+    def plot_shared_derived(self):
+        df_shared = self.get_shared_derived_values()
+        t = df_shared['t']
+        y_vars = list(df_shared.columns)
+        y_vars.remove('t')
+        fig, axs = plot_vars(df_shared, t, columns=4, keys=y_vars)
+        fig.suptitle("Derived Guidance/State Values")
+        return fig, axs
 
     def plot_inputs(self):
         fig, axs = self.guidance_log.problem.plot_inputs('pitch_heading_query.query_t')
         fig.suptitle("Guidance Inputs")
+        return fig, axs
 
     def plot_outputs(self):
         fig, axs = self.guidance_log.problem.plot_outputs('pitch_heading_query.query_t')
         fig.suptitle("Guidance Outputs")
+        return fig, axs
 
     def plot_state(self):
         fig, axs = self.sim_log.state.plot_state()
         fig.suptitle("Guidance State")
+        return fig, axs
 
     def save_csv(self, save_path):
         if not os.path.exists(save_path):
@@ -460,33 +476,39 @@ class LogAnalyzer:
         outputs_name = "outputs.csv"
         state_name = "state.csv"
         derived_name = "derived.csv"
+        shared_derived_name = "shared_derived.csv"
         err_name = "err.csv"
 
         df_log = self.guidance_log.problem.dataframe_log()
         df_state = self.sim_log.state.dataframe_log()
         df_derived = self.get_derived_values()
+        df_shared_derived = self.get_shared_derived_values()
         df_err = self.get_error_values()
 
         df_log['inputs'].to_csv(os.path.join(save_path, inputs_name))
         df_log['outputs'].to_csv(os.path.join(save_path, outputs_name))
         df_state.to_csv(os.path.join(save_path, state_name))
         df_derived.to_csv(os.path.join(save_path, derived_name))
+        df_shared_derived.to_csv(os.path.join(save_path, shared_derived_name))
         df_err.to_csv(os.path.join(save_path, err_name))
 
+    def get_derived_values(self, t_interp=None):
+        """ Derived values common across all guidance methods. 
+        
+        Args:
+            t_interp: [s] Array of time values to interpolate state at.
 
-    def _common_derived_values(self, t_interp=None):
-        """ Derived values common across all guidance methods. """
-        t, pos, vel, mass = self._get_interpolated_state(t_interp)
+        Returns:
+            Dictionary of derived state values.
+            
+        """
+        if t_interp is None:
+            t = self.sim_log.state.get_time()
+            pos = self.sim_log.state.get_position()
+            vel = self.sim_log.state.get_velocity()
+        else:
+            t, pos, vel, _ = self.get_interpolated_state(t_interp)
 
-        # NOTE: Assumes that mu, target_lan, target_inc are constant.
-        # May not be true for guidance that updates target values
-        # during launch.
-        # TODO: dataframe_log() is useful, but this method of accessing
-        # constants and targeting info is very sensitive to changes
-        # in subsystem names. Consider having a dataframe of promoted
-        # variable names, or built-in log methods that access constants
-        # and targeting info.
-        df_prob = self.guidance_log.problem.dataframe_log()
         mu = self.config.body.gravitational_parameter
         target_lan = self._target_lan
         target_inc = self._target_inc
@@ -508,6 +530,32 @@ class LogAnalyzer:
         derived['non_gravity_acc_mag'] = log_utils.get_non_gravity_acc_mag(t, pos, vel, mu)
         derived['thrust_pitch'] = log_utils.get_thrust_pitch(t, pos, vel, mu)
 
+        oe = log_utils.get_orbital_elements(pos, vel, mu)
+        derived['semi_major_axis'] = oe[0, :]
+        derived['ecc'] = oe[1, :]
+        derived['inc'] = oe[2, :]
+        derived['lan'] = oe[3, :]
+        derived['argp'] = oe[4, :]
+        derived['nu'] = oe[5, :]
+
+        return pd.DataFrame(derived)
+
+    def _common_shared_derived_values(self):
+        """ Derived values common across all guidance methods. """
+        df_prob = self.guidance_log.problem.dataframe_log()
+        t_interp = df_prob['inputs']['pitch_heading_query.query_t']
+        t, pos, vel, mass = self.get_interpolated_state(t_interp)
+
+        # NOTE: Assumes that mu, target_lan, target_inc are constant.
+        # May not be true for guidance that updates target values
+        # during launch.
+        # TODO: dataframe_log() is useful, but this method of accessing
+        # constants and targeting info is very sensitive to changes
+        # in subsystem names. Consider having a dataframe of promoted
+        # variable names, or built-in log methods that access constants
+        # and targeting info.
+        
+        df_prob = self.guidance_log.problem.dataframe_log()
         target_lan_list = df_prob['inputs']['outer_loop.target_lan']
         target_inc_list = df_prob['inputs']['outer_loop.target_inc']
         cmd_thrust_pitch = df_prob['outputs']['pitch_heading_query.cmd_pitch']
@@ -520,31 +568,26 @@ class LogAnalyzer:
             mass,
             target_lan_list,
             target_inc_list, F_thrust_max)
-        derived['a_thrust_i_pcf'] = thrust_acc_pcf[0]
-        derived['a_thrust_j_pcf'] = thrust_acc_pcf[1]
-        derived['a_thrust_k_pcf'] = thrust_acc_pcf[2]
+        shared_derived = {}
+        shared_derived['t'] = t
+        shared_derived['dt'] = log_utils.get_time_steps(t)
+        shared_derived['a_thrust_i_pcf'] = thrust_acc_pcf[0]
+        shared_derived['a_thrust_j_pcf'] = thrust_acc_pcf[1]
+        shared_derived['a_thrust_k_pcf'] = thrust_acc_pcf[2]
 
         theta_hat_pcf = log_utils.get_theta_hat_PCF(
             pos, vel, target_lan_list, target_inc_list
         )
-        derived['theta_hat_i_pcf'] = theta_hat_pcf[0]
-        derived['theta_hat_j_pcf'] = theta_hat_pcf[1]
-        derived['theta_hat_k_pcf'] = theta_hat_pcf[2]
+        shared_derived['theta_hat_i_pcf'] = theta_hat_pcf[0]
+        shared_derived['theta_hat_j_pcf'] = theta_hat_pcf[1]
+        shared_derived['theta_hat_k_pcf'] = theta_hat_pcf[2]
 
-        oe = log_utils.get_orbital_elements(pos, vel, mu)
-        derived['semi_major_axis'] = oe[0, :]
-        derived['ecc'] = oe[1, :]
-        derived['inc'] = oe[2, :]
-        derived['lan'] = oe[3, :]
-        derived['argp'] = oe[4, :]
-        derived['nu'] = oe[5, :]
-
-        return derived
+        return shared_derived
     
-    def _derived_values_orbit_targeting_ascent(self, t_interp=None):
-        derived = self._common_derived_values(t_interp)
-
-        t, pos, vel, mass = self._get_interpolated_state(t_interp)
+    def _shared_derived_values_orbit_targeting_ascent(self, t_interp=None):
+        derived = self._common_shared_derived_values()
+        t_interp = derived['t']
+        _, pos, _, _ = self.get_interpolated_state(t_interp)
         df_prob = self.guidance_log.problem.dataframe_log()
         target_lan_list = df_prob['inputs']['outer_loop.target_lan']
         target_inc_list = df_prob['inputs']['outer_loop.target_inc']
@@ -557,8 +600,8 @@ class LogAnalyzer:
         derived.update(ota_derived)
         return pd.DataFrame(derived)
     
-    def _derived_values_debug_ascent_1(self, t_interp=None):
-        derived = self._common_derived_values(t_interp)
+    def _shared_derived_values_debug_ascent_1(self, t_interp=None):
+        derived = self._common_shared_derived_values()
         return pd.DataFrame(derived)
             
     def _error_values_orbit_targeting_ascent(self):
@@ -615,21 +658,17 @@ class LogAnalyzer:
         final_time = ...
         final_derived_values = _common_derived_values(t_interp=[final_time])
         ...
-        
-    def _get_interpolated_state(self, t_interp=None):
+
+    def get_interpolated_state(self, t_interp):
         t = self.sim_log.state.get_time()
         pos = self.sim_log.state.get_position()
         vel = self.sim_log.state.get_velocity()
         mass = self.sim_log.state.get_mass()
 
-        # TODO: take a closer look at t_interp. Does this function make
-        # sense without it? like we are indexing the df_prob directly
-        # but interpolating only the state values.
-        if t_interp is not None:
-            t_orig = t
-            t = t_interp
-            pos = np.array([np.interp(t_interp, t_orig, pos[i, :]) for i in range(pos.shape[0])])
-            vel = np.array([np.interp(t_interp, t_orig, vel[i, :]) for i in range(vel.shape[0])])
-            mass = np.interp(t_interp, t_orig, mass)
+        t_orig = t
+        t = t_interp
+        pos = np.array([np.interp(t_interp, t_orig, pos[i, :]) for i in range(pos.shape[0])])
+        vel = np.array([np.interp(t_interp, t_orig, vel[i, :]) for i in range(vel.shape[0])])
+        mass = np.interp(t_interp, t_orig, mass)
 
         return t, pos, vel, mass

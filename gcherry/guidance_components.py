@@ -25,8 +25,9 @@ class EnginePropertyEstimator(om.ExplicitComponent):
     
     Inputs:
         --- User Input ---
+        run_estimator: (bool) If false, does not compute v_e and m_dot.
         sample_thrust_acceleration: [m/s^2]
-        sample_t: [s] Time at which sample_thrust_acceleration, 
+        estimator_sample_t: [s] Time at which sample_thrust_acceleration, 
             sample_x, and sample_v were collected.
         estimator_ignore_time: [s] Will ignore 
             sample_thrust_acceleration measurements until 
@@ -54,10 +55,11 @@ class EnginePropertyEstimator(om.ExplicitComponent):
         return res_a_thrust
 
     def setup(self):
+        self._last_time = -1
         self.thrust_acc_history = []
         self.time_history = []
 
-        input_names = ['sample_thrust_acceleration', 'sample_t', 'm0']
+        input_names = ['sample_thrust_acceleration', 'estimator_sample_t', 'm0']
         for name in input_names:
             self.add_input(name, val=0.0)
         self.add_input('estimator_ignore_time', val=5.0)
@@ -67,27 +69,31 @@ class EnginePropertyEstimator(om.ExplicitComponent):
         for name in output_names:
             self.add_output(name, val=0.0)
 
-    def compute(self, inputs, outputs):
+        self.add_discrete_input('run_estimator', val=True)
+
+    def compute(self, inputs, outputs, discrete_inputs, discrete_outputs):
+        run_estimator = discrete_inputs['run_estimator']
         estimator_ignore_time = inputs['estimator_ignore_time']
         estimator_output_time = inputs['estimator_output_time']
-        sample_t = inputs['sample_t']
+        t = inputs['estimator_sample_t']
 
-        if sample_t < estimator_ignore_time:
+        if t < estimator_ignore_time:
             return
-        else:
-            sample_t = inputs['sample_t'][0]
+        elif t != self._last_time:
+            t = inputs['estimator_sample_t'][0]
             sample_thrust_acc = inputs['sample_thrust_acceleration'][0]
             m0 = inputs['m0'][0]
 
             self.thrust_acc_history.append(sample_thrust_acc)
-            self.time_history.append(sample_t)
+            self.time_history.append(t)
 
-            if sample_t > estimator_output_time:
+            if run_estimator and t > estimator_output_time:
                 v_e_guess = outputs['v_e'][0]
                 m_dot_guess = outputs['m_dot'][0]
                 tau_guess = m0/m_dot_guess
 
                 x0 = [v_e_guess, tau_guess]
+                # TODO: recalculate hard-coded bounds
                 # Hardcoded bounds
                 bounds = ([10, 1/2], [10000, m0/0.1])
                 res = least_squares(self.minimize_function, x0, method='trf', bounds=bounds)
@@ -824,7 +830,7 @@ def _orbit_to_guidance_target(periapsis, apoapsis, true_anomaly,
 
     return r, v_r, v_theta
 
-class OuterLoopGroupRefactor(om.Group):
+class OuterLoopGroup(om.Group):
     """ Group that solves for ascent given target orbital plane and final
     radial position, velocity, and circumferential velocity.
 
@@ -838,14 +844,13 @@ class OuterLoopGroupRefactor(om.Group):
         self.nonlinear_solver.options['maxiter'] = 100
         self.nonlinear_solver.options['atol'] = 1e-3
 
-# TODO: Rename this
-class OrbitGuidanceGroup(om.Group):
+class OrbitTargetingGroup(om.Group):
     """ Group for ascent given target orbital parameters. 
 
     """
     def setup(self):
         self.add_subsystem('orbit_targeting', OrbitTargeting(), promotes=['*'])
-        self.add_subsystem('outer_loop', OuterLoopGroupRefactor(), promotes=['*'])
+        self.add_subsystem('outer_loop', OuterLoopGroup(), promotes=['*'])
         self.nonlinear_solver = om.NonlinearBlockGS()
         self.nonlinear_solver.options['maxiter'] = 100
         self.nonlinear_solver.options['atol'] = 1e-3
@@ -897,7 +902,7 @@ class OrbitGuidanceComponent(om.ExplicitComponent):
         
     """
     def setup(self):
-        model = OrbitGuidanceGroup()
+        model = OrbitTargetingGroup()
         self.prob = om.Problem(model)
         self.prob.setup()
 
