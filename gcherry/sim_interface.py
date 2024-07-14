@@ -6,7 +6,9 @@ import krpc
 from abc import ABC, abstractmethod
 from gcherry.guidance_interface import GuidanceBase
 from gcherry.log import SimulationLog
+from gcherry.log_utils import almost_equal
 from gcherry.transform import body2global_rot
+from gcherry.rk4 import rk4_step
 
 
 # TODO: add docs for this
@@ -119,9 +121,33 @@ class IntegratorSim(SingleStageSimulatorBase):
         # NOTE: consider using rk4_step instead in order to change one of
         # the integration steps to be the estimated final time. That way
         # there is no thrusting past the estimated final time.
-        t_res, y_res = rk4(ode_func, tspan, initial_state, 
-            self._max_time_step, callback=self._integration_callback)
+        # t_res, y_res = rk4(ode_func, tspan, initial_state, 
+        #     self._max_time_step, callback=self._integration_callback)
+        t = sim_start_time
+        state = initial_state
+        while t < self._sim_end_time - 1e-8:
+            next_t = self._get_next_timestep(t)
+            h = next_t - t
+            next_state = rk4_step(ode_func, t, state, h)
+            self._integration_callback(next_t, next_state)
+            state = next_state
+            t = next_t
+
         return t_res, y_res
+    
+    def _get_next_timestep(self, t):
+        estimated_T = self.guidance_obj.estimated_final_time()
+        # Values near estimated_T to have relatively sharp cutoff of 
+        # throttle by integrator.
+        event_times = [estimated_T - 1e-8, estimated_T + 1e-8, self._sim_end_time]
+        next_time = t + self._max_time_step
+        for candidate_time in event_times:
+            h = candidate_time - t
+            if h <= next_time - t:
+                next_time = candidate_time
+        return next_time
+        
+
 
     def _integration_callback(self, t, state):
         self.log.state.log_state(t, state)
@@ -242,7 +268,7 @@ class KRPCClient(SingleStageSimulatorBase):
         self._vessel.auto_pilot.engage()
         self._vessel.control.throttle = 1
  
-        while guidance_time < estimated_T:
+        while guidance_time < estimated_T + self._post_guidance_measurement:
             state = self._get_state()
             self._log_state(state, guidance_time)
             self.guidance_obj.set_thrust_acc_measurement(guidance_time, self._get_thrust_acc())
@@ -277,12 +303,12 @@ class KRPCClient(SingleStageSimulatorBase):
                 guidance_time,
                 estimated_T))
             
-        while guidance_time < estimated_T + self._post_guidance_measurement:
-            with self._streams['time'].condition:
-                self._streams['time'].wait()
-            guidance_time = self._streams['time']() - init_time
-            state = self._get_state()
-            self._log_state(state, guidance_time)
+        # while guidance_time < estimated_T + self._post_guidance_measurement:
+        #     with self._streams['time'].condition:
+        #         self._streams['time'].wait()
+        #     guidance_time = self._streams['time']() - init_time
+        #     state = self._get_state()
+        #     self._log_state(state, guidance_time)
         
         self._vessel.control.throttle = 0
         self._vessel.auto_pilot.disengage()

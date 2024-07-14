@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 from main_script import _load_obj
 
 if __name__ == '__main__':
-    dirpath = "logs/071324_165602"
+    dirpath = "logs/071424_013812"
     guidance_obj, sim_obj, log_obj = _load_obj(dirpath)
 
     log_obj.save_csv("testOut071324")

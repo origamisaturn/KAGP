@@ -549,10 +549,10 @@ class LogAnalyzer:
         y_vars = list(df_final_err.columns)
         y_vars.remove('t')
         fig, axs = plot_vars(df_final_err, t, columns=4, keys=y_vars)
-        axs[0][0].axvline(T, color='red', ls='-.')
         for ax1 in axs:
             for ax in ax1:
                 ax.axvline(T, color='red', ls='-.', alpha=0.5)
+                # ax.axhline(0.0, color='red', ls='-', alpha=0.5, linewidth=2)
         fig.suptitle("Final Error")
         return fig, axs
 
@@ -618,9 +618,9 @@ class LogAnalyzer:
     def _final_error_values_orbit_targeting_ascent(self):
         derived = self.get_derived_values()
         T = self.get_final_estimated_T()
-        final_time_span = 2 # seconds
-        final_derived = derived[derived['t'] >= T-final_time_span/2 and
-                                derived['t'] <= T+final_time_span/2]
+        final_time_span = 0.2 # seconds
+        final_derived = derived[(derived['t'] >= T-final_time_span/2) &
+                                (derived['t'] <= T+final_time_span/2)]
         final_err_dict = {
             't': final_derived['t'],
             'dt': final_derived['dt'],
@@ -639,8 +639,8 @@ class LogAnalyzer:
     
     def _final_estimated_T_orbit_targeting_ascent(self):
         df_prob = self.guidance_log.problem.dataframe_log()
-        estimated_T_arr = self.get_final_estimated_T(df_prob['outputs']['outer_loop.T'])
-        return estimated_T_arr[-1]
+        estimated_T_arr = df_prob['outputs']['outer_loop.T']
+        return estimated_T_arr.iloc[-1]
     
     def _final_error_table_orbit_targeting_ascent(self):
         df_final_err = self.get_final_error_values()
