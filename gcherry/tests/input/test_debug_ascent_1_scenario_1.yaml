@@ -18,7 +18,7 @@ debug_ascent_1:
   inclination: 0.0
 
 integrator:
-  simulation_end_time: 438
+  simulation_end_time: 450
   initial_position: [1737.4E+3, 0.0, 0.0E+3]
   initial_velocity: [0.0, 0.0, 0.0]
   outer_loop_interval: 500

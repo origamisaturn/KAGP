@@ -441,3 +441,21 @@ def almost_equal(val1, val2, tol=1e-8):
         return (val1-val2 > -tol).all() and (val1-val2 < tol).all()
     else:
         return val1-val2 > -tol and val1-val2 < tol
+    
+def interp_table(x, xkey, table):
+    """ Interpolate dictionary or dataframe.
+    
+    Args:
+        x: Value to interpolate at.
+        xkey: Key in table containing list or series to interpolate over.
+        table: dict of lists (of equal dimension) or a dataframe object.
+    
+    Returns:
+        dictionary containing each key in table and the interpolated
+        value at x.
+    
+    """
+    new_table = {}
+    for key in table:
+        new_table[key] = np.interp(x, table[xkey], table[key])
+    return new_table

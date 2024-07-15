@@ -11,8 +11,8 @@ if __name__ == '__main__':
     guidance_obj, sim_obj, log_obj = _load_obj(dirpath)
 
     log_obj.save_csv("testOut071324")
-    # log_obj.plot_error()
-    log_obj.plot_final_error(tspan=5)
+    log_obj.plot_error()
+    log_obj.plot_final_error(tspan=0.2)
     log_obj.plot_derived()
     # log_obj.plot_shared_derived()
     log_obj.plot_inputs()

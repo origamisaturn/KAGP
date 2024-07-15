@@ -180,7 +180,7 @@ class IntegratorSim(SingleStageSimulatorBase):
     
     def _get_thrust_acc(self, t, state):
         m = state[6]
-        thrust_acc = self._thrust_command_store * self._thrust_force_max/m
+        thrust_acc = self._thrust_cmd_store * self._thrust_force_max/m
         return thrust_acc
 
 
