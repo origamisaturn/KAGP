@@ -56,7 +56,7 @@ class IntegratorConfig(BaseModel):
         return self
 
 class KRPCClientConfig(BaseModel):
-    name: str = "PLACEHOLDER"
+    name: str = "gcherry"
     outer_loop_interval: PositiveFloat = 7
     outer_loop_cutoff: PositiveFloat = 10
     post_guidance_measurement: NonNegativeFloat = 5

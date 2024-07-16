@@ -118,12 +118,6 @@ class IntegratorSim(SingleStageSimulatorBase):
                                                self._isp, 
                                                self._thrust_force_max, 
                                                self._guidance_func_continuous)
-        # NOTE: consider using rk4_step instead in order to change one of
-        # the integration steps to be the estimated final time. That way
-        # there is no thrusting past the estimated final time.
-        # t_res, y_res = rk4(ode_func, tspan, initial_state, 
-        #     self._max_time_step, callback=self._integration_callback)
-
         t_res = np.array([sim_start_time])
         y_res = np.array([initial_state]).T
         while t_res[-1] < self._sim_end_time - 1e-8:
@@ -276,8 +270,6 @@ class KRPCClient(SingleStageSimulatorBase):
             state = self._get_state()
             self._log_state(state, guidance_time)
             self.guidance_obj.set_thrust_acc_measurement(guidance_time, self._get_thrust_acc())
-            # Likely incorrect
-            measured_thrust_acc = self._get_thrust_acc()
             if (not self._is_outer_loop_cutoff(guidance_time) and 
                 self._is_outer_loop_scheduled(guidance_time)):
                 thrust_cmd, pitch_cmd, heading_cmd = (
