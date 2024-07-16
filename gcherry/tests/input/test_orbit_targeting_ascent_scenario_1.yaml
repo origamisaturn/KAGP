@@ -17,8 +17,7 @@ orbit_targeting_ascent:
   argument_of_periapsis: 0.0
 
 integrator:
-  simulation_end_time: 457.074553487163
-  # simulation_end_time: 460
+  simulation_end_time: 460
   initial_position: [1737.4E+3, 0.0, 0.0E+3]
   initial_velocity: [0.0, 0.0, 0.0]
   outer_loop_interval: 500

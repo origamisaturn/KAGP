@@ -60,6 +60,7 @@ class KRPCClientConfig(BaseModel):
     outer_loop_interval: PositiveFloat = 7
     outer_loop_cutoff: PositiveFloat = 10
     post_guidance_measurement: NonNegativeFloat = 5
+    main_engine_cutoff_shift: float = -0.061
 
 class Config(BaseModel):
     """ Main settings class.

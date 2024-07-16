@@ -5,9 +5,10 @@ import numpy as np
 import os
 from gcherry.config import Config
 import typing
+import matplotlib
 
 import gcherry.log_utils as log_utils
-from gcherry.log_utils import plot_vars
+from gcherry.log_utils import plot_vars, interp_table
 
 # TODO: Write documentation for this
 class StateLog:
@@ -356,7 +357,6 @@ class LogAnalyzer:
     _error_values_function: typing.Callable
     _final_error_values_function: typing.Callable
     _final_estimated_T_function: typing.Callable
-    _final_error_table_function: typing.Callable
 
     def __init__(self, config, guidance_log, sim_log):
         self.guidance_log = guidance_log
@@ -371,8 +371,7 @@ class LogAnalyzer:
                 'shared_derived_values_function': self._shared_derived_values_orbit_targeting_ascent,
                 'error_values_function': self._error_values_orbit_targeting_ascent,
                 'final_error_values_function': self._final_error_values_orbit_targeting_ascent,
-                'final_estimated_T': self._final_estimated_T_orbit_targeting_ascent,
-                'final_error_table_function': self._final_error_table_orbit_targeting_ascent
+                'final_estimated_T': self._final_estimated_T_orbit_targeting_ascent
             })
         elif config.debug_ascent_1:
             self._set_analysis_attributes({
@@ -381,8 +380,7 @@ class LogAnalyzer:
                 'shared_derived_values_function': self._shared_derived_values_debug_ascent_1,
                 'error_values_function': self._error_values_debug_ascent_1,
                 'final_error_values_function': self._final_error_values_debug_ascent_1,
-                'final_estimated_T': self._final_estimated_T_debug_ascent_1,
-                'final_error_table_function': self._final_error_table_debug_ascent_1                
+                'final_estimated_T': self._final_estimated_T_debug_ascent_1
             })
         else:
             raise NotImplementedError("No recognized guidance method " +
@@ -404,7 +402,6 @@ class LogAnalyzer:
         self._error_values_function = input_dict['error_values_function']
         self._final_error_values_function = input_dict['final_error_values_function']
         self._final_estimated_T_function = input_dict['final_estimated_T']
-        self._final_error_table_function = input_dict['final_error_table_function']
 
     def get_derived_values(self, t_interp=None):
         """ Derived values common across all guidance methods. 
@@ -497,7 +494,10 @@ class LogAnalyzer:
         return self._final_estimated_T_function()
     
     def get_final_error_table(self):
-        return self._final_error_table_function()
+        df_final_err = self.get_final_error_values()
+        T = self.get_final_estimated_T()
+        final_err_table = interp_table(T, 't', df_final_err)
+        return final_err_table
     
     def get_interpolated_state(self, t_interp):
         t = self.sim_log.state.get_time()
@@ -540,16 +540,29 @@ class LogAnalyzer:
         fig.suptitle("Guidance vs. Sim Error Values")
         return fig, axs
     
-    def plot_final_error(self):
+    def plot_final_error(self, tspan=None):
+        """ Plots the error of spacecraft state vs final target value.
+        
+        Args:
+            tspan: [s] float, length of x-axis when focusing plot around
+                final estimated time.
+                
+        Returns:
+            matplotlib figure and axes.
+            
+        """
         df_final_err = self.get_final_error_values()
         T = self.get_final_estimated_T()
         # t_meco = self._get_commanded_meco()
-
+        plotkwargs=None
+        if tspan:
+            df_final_err = df_final_err[(df_final_err['t'] >= T-tspan/2) & 
+                                        (df_final_err['t'] <= T+tspan/2)]
+            plotkwargs={'marker': 'o'}
         t = df_final_err['t']
         y_vars = list(df_final_err.columns)
         y_vars.remove('t')
-        fig, axs = plot_vars(df_final_err, t, columns=4, keys=y_vars)
-        axs[0][0].axvline(T, color='red', ls='-.')
+        fig, axs = plot_vars(df_final_err, t, columns=4, keys=y_vars, plotkwargs=plotkwargs)
         for ax1 in axs:
             for ax in ax1:
                 ax.axvline(T, color='red', ls='-.', alpha=0.5)
@@ -564,6 +577,18 @@ class LogAnalyzer:
     def plot_outputs(self):
         fig, axs = self.guidance_log.problem.plot_outputs('pitch_heading_query.query_t')
         fig.suptitle("Guidance Outputs")
+
+        df_prob = self.guidance_log.problem.dataframe_log()
+        fig2, ax2 = matplotlib.pyplot.subplots()
+        t = df_prob['inputs']['pitch_heading_query.query_t']
+        T = self.get_final_estimated_T()
+        tspan = 0.5
+        final_indices = (t>=T-tspan/2) & (t<=T+tspan/2)
+        ax2.plot(t[final_indices], np.array(self.guidance_log.thrust_cmd)[final_indices], marker='o')
+        ax2.axvline(T, color='red', ls='-.', alpha=0.5)
+        ax2.set_ylabel("thrust_cmd")
+        ax2.set_xlabel("t")
+        ax2.set_title("Guidance Thrust Command")
         return fig, axs
 
     def plot_state(self):
@@ -617,45 +642,26 @@ class LogAnalyzer:
     
     def _final_error_values_orbit_targeting_ascent(self):
         derived = self.get_derived_values()
-        T = self.get_final_estimated_T()
-        final_time_span = 2 # seconds
-        final_derived = derived[derived['t'] >= T-final_time_span/2 and
-                                derived['t'] <= T+final_time_span/2]
         final_err_dict = {
-            't': final_derived['t'],
-            'dt': final_derived['dt'],
-            'target_lan_err': (final_derived['lan'] - 
+            't': derived['t'],
+            'dt': derived['dt'],
+            'target_lan_err': (derived['lan'] - 
                                self.config.orbit_targeting_ascent.longitude_of_ascending_node),
-            'target_inc_err': (final_derived['inc'] -
+            'target_inc_err': (derived['inc'] -
                                self.config.orbit_targeting_ascent.inclination),
-            'target_ap_err': (final_derived['ap'] -
+            'target_ap_err': (derived['ap'] -
                               self.config.orbit_targeting_ascent.apoapsis),
-            'target_pe_err': (final_derived['pe'] -
+            'target_pe_err': (derived['pe'] -
                               self.config.orbit_targeting_ascent.periapsis),
-            'target_argp_err': (final_derived['argp'] -
+            'target_argp_err': (derived['argp'] -
                                 self.config.orbit_targeting_ascent.argument_of_periapsis)
         }
         return pd.DataFrame(final_err_dict)
     
     def _final_estimated_T_orbit_targeting_ascent(self):
         df_prob = self.guidance_log.problem.dataframe_log()
-        estimated_T_arr = self.get_final_estimated_T(df_prob['outputs']['outer_loop.T'])
-        return estimated_T_arr[-1]
-    
-    def _final_error_table_orbit_targeting_ascent(self):
-        df_final_err = self.get_final_error_values()
-        T = self.get_final_estimated_T()
-        final_err_table = {
-            'target_lan_err': 0,
-            'target_inc_err': 0,
-            'target_pe_err': 0,
-            'target_ap_err': 0,
-            'target_argp_err': 0
-        }
-        for key in final_err_table:
-            final_err_table[key] = np.interp(T, df_final_err['t'], df_final_err[key])
-        final_err_table['T'] = T
-        return final_err_table
+        estimated_T_arr = df_prob['outputs']['outer_loop.T']
+        return estimated_T_arr.iloc[-1]
     
     def _shared_derived_values_debug_ascent_1(self, t_interp=None):
         derived = self._common_shared_derived_values()
@@ -667,20 +673,16 @@ class LogAnalyzer:
     
     def _final_error_values_debug_ascent_1(self):
         derived = self.get_derived_values()
-        T = self.config.debug_ascent_1.terminal_time
-        final_time_span = 2 # seconds
-        final_derived = derived[(derived['t'] >= T-final_time_span/2) &
-                                (derived['t'] <= T+final_time_span/2)]
         final_err_dict = {
-            't': final_derived['t'],
-            'dt': final_derived['dt'],
-            'target_lan_err': (final_derived['lan'] - 
+            't': derived['t'],
+            'dt': derived['dt'],
+            'target_lan_err': (derived['lan'] - 
                                self.config.debug_ascent_1.longitude_of_ascending_node),
-            'target_inc_err': (final_derived['inc'] -
+            'target_inc_err': (derived['inc'] -
                                self.config.debug_ascent_1.inclination),
-            'target_r_T': (final_derived['radius'] -
+            'target_r_T_err': (derived['radius'] -
                            self.config.debug_ascent_1.radius),
-            'target_r_dot_T': (final_derived['r_dot'] -
+            'target_r_dot_T_err': (derived['r_dot'] -
                            self.config.debug_ascent_1.radial_velocity)
         }
         return pd.DataFrame(final_err_dict)
@@ -688,20 +690,6 @@ class LogAnalyzer:
     def _final_estimated_T_debug_ascent_1(self):
         T = self.config.debug_ascent_1.terminal_time
         return T
-    
-    def _final_error_table_debug_ascent_1(self):
-        df_final_err = self.get_final_error_values()
-        T = self.get_final_estimated_T()
-        final_err_table = {
-            'target_lan_err': 0,
-            'target_inc_err': 0,
-            'target_r_T': 0,
-            'target_r_dot_T': 0
-        }
-        for key in final_err_table:
-            final_err_table[key] = np.interp(T, df_final_err['t'], df_final_err[key])
-        final_err_table['T'] = T
-        return final_err_table
 
     def _common_shared_derived_values(self):
         """ Derived values common across all guidance methods. """

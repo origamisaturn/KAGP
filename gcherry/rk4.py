@@ -43,7 +43,7 @@ def rk4(fun, tspan, y0, max_step, callback=None):
             t = t_res[i-1]
             y = y_res[:, i-1]
             h = t_res[i] - t
-            y_res[:, i] = _rk4_step(fun, t, y, h)
+            y_res[:, i] = rk4_step(fun, t, y, h)
 
             t_new = t_res[i]
             y_new = y_res[:, i]
@@ -52,7 +52,7 @@ def rk4(fun, tspan, y0, max_step, callback=None):
 
     return t_res, y_res
 
-def _rk4_step(fun, t, y, h):
+def rk4_step(fun, t, y, h):
     w1 = h*fun(t, y)
     w2 = h*fun(t + 1/2*h, y + 1/2*w1)
     w3 = h*fun(t + 1/2*h, y + 1/2*w2)

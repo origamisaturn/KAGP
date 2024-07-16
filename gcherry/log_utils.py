@@ -395,7 +395,7 @@ def get_time_steps(t):
             time_steps[i] = t_val - t[i-1]
     return time_steps
 
-def plot_vars(vars, t, columns=3, keys=None):
+def plot_vars(vars, t, columns=3, keys=None, plotkwargs=None):
     """ Plot several variables on a grid.
     
     Args:
@@ -409,6 +409,8 @@ def plot_vars(vars, t, columns=3, keys=None):
         2-tuple containing matplotlib figure and axes.
         
     """
+    if plotkwargs is None:
+        plotkwargs={}
     if keys:
         var_names = keys
     else:
@@ -429,7 +431,7 @@ def plot_vars(vars, t, columns=3, keys=None):
                 if type(var_val) == type(dict()):
                     continue
 
-                axs[i, j].plot(t, var_val)
+                axs[i, j].plot(t, var_val, **plotkwargs)
                 axs[i, j].set_title(var_name)
     return fig, axs
 
@@ -439,3 +441,21 @@ def almost_equal(val1, val2, tol=1e-8):
         return (val1-val2 > -tol).all() and (val1-val2 < tol).all()
     else:
         return val1-val2 > -tol and val1-val2 < tol
+    
+def interp_table(x, xkey, table):
+    """ Interpolate dictionary or dataframe.
+    
+    Args:
+        x: Value to interpolate at.
+        xkey: Key in table containing list or series to interpolate over.
+        table: dict of lists (of equal dimension) or a dataframe object.
+    
+    Returns:
+        dictionary containing each key in table and the interpolated
+        value at x.
+    
+    """
+    new_table = {}
+    for key in table:
+        new_table[key] = np.interp(x, table[xkey], table[key])
+    return new_table

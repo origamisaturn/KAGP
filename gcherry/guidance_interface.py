@@ -13,7 +13,7 @@ from gcherry.guidance_components import (
 # TODO: Add docs for this
 class GuidanceBase(ABC):
     @abstractmethod
-    def get_command(self, t, state, outer_loop=True, log=True): pass
+    def get_command(self, t, state, outer_loop=True, log=True, mecoshift=0.0): pass
 
     @abstractmethod
     def set_thrust_acc_measurement(self, t, thrust_acc): pass
@@ -50,7 +50,7 @@ class OpenMDAOGuidanceBase(GuidanceBase):
     _openmdao_problem: om.Problem
     log: GuidanceLog
 
-    def get_command(self, t, state, outer_loop=True, log=True):
+    def get_command(self, t, state, outer_loop=True, log=True, mecoshift=0.0):
         position = state[:3]
         velocity = state[3:6]
         mass = state[6]
@@ -70,7 +70,7 @@ class OpenMDAOGuidanceBase(GuidanceBase):
         self._openmdao_problem.run_model()
 
         thrust_magnitude = 1
-        if t > self._openmdao_problem['T']:
+        if t > self._openmdao_problem['T'] + mecoshift:
             thrust_magnitude = 0
         thrust_pitch = self._openmdao_problem['cmd_pitch'][0]
         thrust_heading = self._openmdao_problem['cmd_heading'][0]
@@ -105,14 +105,14 @@ class OrbitTargetingAscent(OpenMDAOGuidanceBase):
         self.log = GuidanceLog()
         self.log.init_problem(self._openmdao_problem)
 
-    def get_command(self, t, state, outer_loop=True, log=True):
+    def get_command(self, t, state, outer_loop=True, **kwargs):
         # TODO: tidy up with args and kwargs
         if outer_loop == True and self._enable_estimator:
             self._openmdao_problem['run_estimator'] = True
         else:
             self._openmdao_problem['run_estimator'] = False
         return super().get_command(t, state, 
-                            outer_loop=outer_loop, log=log)
+                            outer_loop=outer_loop, **kwargs)
     
     def set_thrust_acc_measurement(self, t, thrust_acc):
         self._openmdao_problem['estimator_sample_t'] = t
