@@ -21,15 +21,6 @@ Key                     | Units     | Required  | Type  | Description
 ---                     | ---       | ---       | ---   | ---
 gravitational_parameter | m^3/s^-2  | Yes       | `float` | Gravitational parameter of major body.
 
-## debug_ascent_1
-Key                         | Units | Required  | Type      | Description
----                         | ---   | ---       | ---       | ---
-terminal_time               | s     | Yes       | `float`   | Time at guidance termination.
-radius                      | m     | Yes       | `float`   |
-radial_velocity             | m/s   | Yes       | `float`   |
-longitude_of_ascending_node | deg   | Yes       | `float`   |
-inclination                 | deg   | Yes       | `float`   |
-
 ## orbit_targeting_ascent
 Key                         | Units | Required  | Default   | Type      | Description
 ---                         | ---   | ---       | ---       | ---       | ---
@@ -40,7 +31,16 @@ inclination                 | deg   | Yes       |           | `float`   | Range 
 argument_of_periapsis       | deg   | Yes       |           | `float`   |
 enable_estimator            | N/A   | No        | `True`    | `bool`    | Enables engine property estimator. Calculates exhaust velocity and mass flow.
 estimator_ignore_time       | s     | No        | 5.0       | `float`   | Will cause engine estimator to ignore thrust measurements until estimator_ignore_time seconds after guidance start. To avoid engine measurements during engine ramp-up.
-estimator_output_time       | s     | No        | 50.0      | `float`   | Will start engine estimator calculations after estimator_output_time seconds after guidance start. If too low, estimator may not converge.
+estimator_output_time       | s     | No        | 50.0      | `float`   | Will start engine estimator calculations estimator_output_time seconds after guidance start. If too low, estimator may not converge.
+
+## debug_ascent_1
+Key                         | Units | Required  | Type      | Description
+---                         | ---   | ---       | ---       | ---
+terminal_time               | s     | Yes       | `float`   | Time at guidance termination.
+radius                      | m     | Yes       | `float`   |
+radial_velocity             | m/s   | Yes       | `float`   |
+longitude_of_ascending_node | deg   | Yes       | `float`   |
+inclination                 | deg   | Yes       | `float`   |
 
 ## integrator
 Uses internal integrator, intended for testing guidance.

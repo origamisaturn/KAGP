@@ -1,7 +1,14 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "gcherry"
 version = "0.0.1"
 dynamic = ["dependencies"]
+
+[project.scripts]
+gcherry = "gcherry.main_script:gcherry_cmd"
 
 [tool.setuptools.dynamic]
 dependencies = {file = ["requirements.txt"]}

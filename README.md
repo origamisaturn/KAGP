@@ -4,6 +4,7 @@
 # Single Stage Guidance
 Implementation of single stage ascent "E-guidance" as described in [REFERENCE], with ability to control spacecraft in Kerbal Space Program (KSP).
 Running in KSP requires the KRPC modification [LINK] to be installed in KSP.
+[config inputs](inputs.md)
 ## Example
 ```
     gcherry run examples/newScriptKRPC2.yaml --log
