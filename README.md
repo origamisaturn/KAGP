@@ -6,8 +6,23 @@ Implementation of single stage ascent "E-guidance" as described in [REFERENCE], 
 Running in KSP requires the KRPC modification [LINK] to be installed in KSP.
 [config inputs](inputs.md)
 ## Example
+Invoke the program with the `gcherry` command. There are two subcommands:
+`gcherry run` and `gcherry plotlog`.
+
+`gcherry run` takes the path to yaml file(s) as input, and runs the guidance algorithm on either an internal integrator, or on a KSP spacecraft through a KRPC server. An invocation using the lunar ascent example is:
 ```
-    gcherry run examples/newScriptKRPC2.yaml --log
+    gcherry run examples/ascent_lem.yaml examples/integrator_lunar_ascent.yaml 
+```
+Separating the spacecraft config file from the guidance config file, as is done in the example, allows swapping out different ascent vehicles for the same guidance path.
+
+Config files are loaded and placed into a dictionary in the order they were provided to the command. If a key has already been provided by a preceeding config file when the next config file is loaded, the preceeding key is overwritten.
+
+Log files are saved 
+
+
+`gcherry plotlog` plots the logs of the guidance method and the simulation state.
+
+```
     gcherry plotlog logs/071524_010721
 ```
 ## Info
@@ -21,6 +36,8 @@ modified to have orbit targeting and estimation of engine parameters
 
 The file specification for input can be found here:
 examples are in this folder
+
+see transform.py for frames used.
 
 ## Demo
 A demo of the guidance in action can be found here:

@@ -4,7 +4,7 @@ from gcherry.log import LogAnalyzer
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from main_script import _load_obj
+from gcherry.main_script import _load_obj
 
 if __name__ == '__main__':
     dirpath = "logs/071424_180957"

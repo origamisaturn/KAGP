@@ -27,7 +27,7 @@ Key                         | Units | Required  | Default   | Type      | Descri
 apoapsis                    | m     | Yes       |           | `float`   | Target apoapsis radius, from major body center.
 periapsis                   | m     | Yes       |           | `float`   | Target periapsis radius, from major body center.
 longitude_of_ascending_node | deg   | Yes       |           | `float`   |
-inclination                 | deg   | Yes       |           | `float`   | Range of [-90, 90).
+inclination                 | deg   | Yes       |           | `float`   | Range of [-90, 90). #TODO: THIS IS WRONG, SHOULD BE 0 TO 180
 argument_of_periapsis       | deg   | Yes       |           | `float`   |
 enable_estimator            | N/A   | No        | `True`    | `bool`    | Enables engine property estimator. Calculates exhaust velocity and mass flow.
 estimator_ignore_time       | s     | No        | 5.0       | `float`   | Will cause engine estimator to ignore thrust measurements until estimator_ignore_time seconds after guidance start. To avoid engine measurements during engine ramp-up.
@@ -49,21 +49,21 @@ Uses internal integrator, intended for testing guidance.
 Key                         | Units | Required  | Default   | Type      | Description
 ---                         | ---   | ---       | ---       | ---       | ---
 simulation_end_time         | s     | Yes       |           | `float`   | Length of time the simulation will run.
-initial_position            | m     | Yes       |           | 1x3 `vector` [`float`]    | Position at start of guidance.
-initial_velocity            | m/s   | Yes       |           | 1x3 `vector` [`float`]    | Velocity at start of guidance.
+initial_position            | m     | Yes       |           | 1x3 `vector` [`float`]    | Position at start of guidance, right-handed global frame.
+initial_velocity            | m/s   | Yes       |           | 1x3 `vector` [`float`]    | Velocity at start of guidance, right-handed global frame.
 outer_loop_interval         | s     | No        | 7         | `float`   | Time between successive outer loop calculations.
-outer_loop_cutoff           | s     | No        | 10        | `float`   | Outer loop calculation will be disabled outer_loop_cutoff seconds before the estimated terminal time.
+outer_loop_cutoff           | s     | No        | 10        | `float`   | Outer loop calculation will be disabled outer_loop_cutoff seconds before the estimated terminal time. An outer loop iteration calculated less than 10 seconds before terminal time may fail to converge.
 
 ## krpc_client
 Connects to KRPC server for guidance.
 
-'krpc_client' connects to a KRPC server in KSP and transmits guidance commands to the active spacecraft.
+'krpc_client' connects to a locally hosted KRPC server in KSP and transmits guidance commands to the active spacecraft.
 
 Key                         | Units | Required  | Default   | Type      | Description
 ---                         | ---   | ---       | ---       | ---       | ---
 name                        | N/A   | No        | `gcherry` | `string`  | Name of this program when displayed on KRPC server.
 outer_loop_interval         | s     | No        | 7         | `float`   | Time between successive outer loop calculations.
-outer_loop_cutoff           | s     | No        | 10        | `float`   | Outer loop calculation will be disabled outer_loop_cutoff seconds before the estimated terminal time.
+outer_loop_cutoff           | s     | No        | 10        | `float`   | Outer loop calculation will be disabled outer_loop_cutoff seconds before the estimated terminal time. An outer loop iteration calculated less than 10 seconds before terminal time may fail to converge.
 post_guidance_measurement   | s     | No        | 5         | `float`   | Client will continue to run and log data until post_guidance_measurement seconds after guidance termination.
 main_engine_cutoff_shift    | s     | No        | -0.061    | `float`   | Client will send the thrust off command main_engine_cutoff_shift seconds after terminal time. Default is negative due to 0.060s lag time between client commanding thrust cutoff and KSP turning off engines.
 

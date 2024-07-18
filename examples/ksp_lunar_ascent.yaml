@@ -1,0 +1,17 @@
+# Sample ascent trajectory for Apollo Lunar Module
+# Uses target orbit of 9 by 45 nautical miles above lunar surface. 
+# Arbitrary starting position.
+# Based on pg13 of https://ntrs.nasa.gov/api/citations/19700024568/downloads/19700024568.pdf
+
+body:
+  gravitational_parameter: 4.9028e+12
+
+orbit_targeting_ascent:
+  apoapsis: 1821.74e+3
+  periapsis: 1755.068e+3
+  longitude_of_ascending_node: 0.0
+  inclination: 0.0001
+  argument_of_periapsis: -0.1396
+
+krpc_client:
+  name: "ksp_lunar_ascent"
