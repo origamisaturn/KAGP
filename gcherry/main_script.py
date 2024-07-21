@@ -39,7 +39,6 @@ def gcherry_cmd():
 def _run_cmd(args):
     config = cfg.load_config(args.config_paths)
     guidance_obj = generateGuidanceObj(config)
-    # TODO: create "generateSimObj"
     sim_obj = generateSimObj(config, guidance_obj)
     sim_obj.run()
     # TODO: find cause of unit_vector() runtime warning.

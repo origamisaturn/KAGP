@@ -17,14 +17,22 @@ Separating the spacecraft config file from the guidance config file, as is done 
 
 Config files are loaded and placed into a dictionary in the order they were provided to the command. If a key has already been provided by a preceeding config file when the next config file is loaded, the preceeding key is overwritten.
 
-Log files are saved 
+Log files for each run are saved in ./logs. Each run is stored in a folder named with a timestamp.
 
-
-`gcherry plotlog` plots the logs of the guidance method and the simulation state.
+`gcherry plotlog` plots the logs, given the folder they are stored in.
 
 ```
     gcherry plotlog logs/071524_010721
 ```
+It plots:
+- state
+- guidance inputs
+- guidance outputs
+- values derived from state
+- values derived from guidance and state
+- guidance error values
+- final state error values
+
 ## Info
 Implements ascent vehicle guidance
 Mostly follows the book, implements yaw guidance and pitch guidance
