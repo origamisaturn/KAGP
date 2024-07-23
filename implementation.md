@@ -210,12 +210,30 @@ $$\begin{align}
         {v_\theta}
 \end{align}$$
 
+### Orbit Targeting
+
+Will not derive.
+
+$$\begin{align}
+    a = \frac{r_p + r_a}{2} \\
+    e = 1 - \frac{r_p}{a} \\
+    r = a \frac{(1-e^2)}{1 + e\cos(\theta)} \\
+    h = \sqrt{r_p \mu (1+e)} \\
+    v_r = \mu/h e \sin(\theta) \\
+    v_\theta = \frac{h}{r}
+\end{align}$$
+
 $$\begin{align}
 \end{align}$$
 
-
-### Orbit Targeting
 ### Engine Property Estimator
+
+No derivation.
+
+$$\begin{align}
+    a_T = \frac{v_e}{\tau - t}
+\end{align}$$
+
 ## Reference
 
 ## Notes
