@@ -60,7 +60,7 @@ $$\begin{align}
     a_T(t) = a_0 + a_1(T-t) + a_2(T-t)^2 + ... + a_n(T-t)^n \\
 \end{align}$$
 
-In this problem,  $p_1(t)$ and $p_2(t)$ are given, and the following boundary conditions are provided
+It will be desirable to know the equation for $\ddot q(t)$. In this problem, $p_1(t)$ and $p_2(t)$ are given, and the following boundary conditions are provided
 
 $$\begin{align}
     q_0 & = q(t_0) \\
@@ -69,7 +69,7 @@ $$\begin{align}
     \dot q_D & = \dot q(T)
 \end{align}$$
 
-where $t_0$ is the current time. In this case, the unknowns are $c_1$ and $c_2$. 
+where $t_0$ is the current time. The unknowns are $c_1$ and $c_2$. 
 
 Integrating the generalized guidance equation yields the equations of constraint
 
@@ -110,10 +110,110 @@ $c_1$ and $c_2$ can be solved from the matrix equation by inverting the $F$ matr
 
 ### Radial Guidance
 
+$$\begin{align}
+    \tan \alpha = A + Bt \\
+    \ddot r = a_T\sin\alpha - \mu/r^2 + v_{\theta}^2/r \\
+        = a_T\sin\alpha + g_{eff} \\
+    g_{eff} = -\mu/r^2 + v_{\theta}^2/r \\
+    \sin \alpha = C + Dt - g_{eff} \\
+    \ddot r = C a_T + D a_T t \\
+    \ddot r = c_1p_1(t) = c_2p_2(t) \\
+    p_1(t) = a_T \\
+    p_2(t) = (T-t)a_T
+\end{align}$$
+
+Then use (A15 - A20).
+
+NOTE: NEED to differentiate symbology.
 
 ### Yaw Guidance
+
+$$\begin{align}
+    \tan \alpha_y = A + Bt \\
+    \ddot y = a_T \sin \alpha_y + \vec g \cdot \vec y \\
+    \sin \alpha_y(t) = C+Dt - \vec g \cdot \vec y/a_T \\
+    \ddot y = C a_T + D a_T t \\
+    \ddot y = c_1p_1(t) + c_2p_2(t) \\
+    p_1(t) = a_T \\
+    p_2(t) = (T-t)a_T \\
+    a_T(T) = a_T(T) + \dot a_T(T)(t-T) + \ddot a_T(T)(t-T)^2/2 + \dots \\
+    p_1(t) = a_0 + a_1(T-t) + a_2(T-t)^2 + \dots \\
+\end{align}$$
+
+Then copy values for $a_i$ in (A17) to (A20).
+
 ### Time-to-Go
+
+$$\begin{align}
+\end{align}$$
+
 ### Final Tangential Velocity
+
+Spacecraft position at $\vec r$. Origin at body center. Vector of normal distance from target orbital plane $\vec y$, parallel to the angular momentum of the target orbit.
+
+Plane control frame is centered at spacecraft. 
+$$\begin{align}
+    \hat i = \frac{\vec r}{|r|} \\
+    \hat j = \frac{\hat y \times \hat i}{|\hat y \times \hat i|} \\
+    \hat k = \hat i \times \hat j
+\end{align}$$
+
+TODO: need to add figures.
+
+$\beta(t)$ is declination of spacecraft position $\vec r$ relative to target orbital plane. Solve for $\cos \beta(t)$, $\sin \beta(t)$, in terms of $r(t)$, $y(t)$.
+
+$$\begin{align}
+\cos \beta(t) = \frac{\sqrt{r(t)^2 - y(t)^2}}{r(t)} \\
+\sin \beta(t) = \frac{y(t)}{r(t)}
+\end{align}$$
+
+$\hat y(t)$ in plane control frame is 
+
+$$\begin{align}
+\hat y(t) = \begin{bmatrix} \sin \beta(t) & 0 & \cos \beta(t)\end{bmatrix}
+\end{align}$$
+
+Find $\hat \theta$ with $\dot y(t)$ and $v_\theta$. $\vec v_\theta$ acts only in $\hat j$ and $\hat k$.
+
+Find $\vec a_T$.
+
+Find $\vec a_T \cdot \vec y$.
+
+$$\begin{align}
+    \vec g \cdot \hat y = -\frac{\mu y}{r^3} \\
+    \vec a_T \cdot \hat y =  \ddot y(t) + \frac{\mu y}{r^3}
+\end{align}$$
+
+Find $\vec a_T \cdot \hat r$
+
+$$\begin{align}
+    \vec a_T \cdot \hat r =  \ddot r(t) - g_{eff}(t)
+\end{align}$$
+
+Find $\vec a_T$ in PCF.
+
+$$\begin{align}
+    \vec a_T \cdot \hat i = \vec a_T \cdot \hat r\\
+    \vec a_T \cdot \hat j = \sqrt{a_T^2 - (\vec a_T \cdot \hat i)^2 - (\vec a_T \cdot \hat k)^2}\\
+    \vec a_T \cdot \hat k = \frac{\vec a_T \cdot \hat y - (\vec a_T \cdot \hat r)(\hat y \cdot \hat i)}{\hat y \cdot \hat k}
+\end{align}$$
+
+$$\begin{align}
+    \vec v(t) \cdot \hat i = \dot r \\
+    \vec v(t) \cdot \hat j = \sqrt{v(t)^2 - (\vec v(t) \cdot \hat i)^2 - (\vec v(t) \cdot \hat k)^2}\\
+    \vec v(t) \cdot \hat k = \frac{\vec v(t) \cdot \hat y - (\vec v(t) \cdot \hat r)(\hat y \cdot \hat i)}{\hat y \cdot \hat k}
+\end{align}$$
+
+$$\begin{align}
+    \hat \theta(t) = \frac{\vec v_\theta(t)}{v_\theta(t)}
+        = \frac{\begin{bmatrix} 0 & \vec v \cdot \hat j & \vec v \cdot \hat k \end{bmatrix}}
+        {v_\theta}
+\end{align}$$
+
+$$\begin{align}
+\end{align}$$
+
+
 ### Orbit Targeting
 ### Engine Property Estimator
 ## Reference
