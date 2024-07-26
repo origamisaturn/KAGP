@@ -262,4 +262,5 @@ $$\begin{align}
     f_{22} & = \int_{t_0}^T \int_{t_0}^t p_2(s) ds \; dt
 \end{align}$$
 
-![svg-test](test.svg)
+<!-- ![svg-test](test.svg) -->
+<img src="test.svg" alt="svg-test" style="width:400px;height:400px">
