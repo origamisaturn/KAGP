@@ -145,6 +145,17 @@ Then copy values for $a_i$ in (A17) to (A20).
 ### Time-to-Go
 
 $$\begin{align}
+    \dot v_\theta = a_T \cos \alpha - \frac{\dot r v_\theta}{r} \\
+    \dot v_\theta = a_T - [(1 - \cos \alpha)a_T + \frac{\dot r v_\theta}{r}] \\
+    a_L = (1 - \cos \alpha) a_T + \frac{\dot r v_\theta }{r} \\
+    \dot v_\theta = a_T - a_L \\
+    T_{go} = \tau _o \{ 1 - \exp[-(v_{\theta D} - v_{\theta o} + \Delta v_{\theta L})/v_e] \} \\
+    \Delta v_{\theta L} = \int_{t_0}^T a_L(t) dt \\
+    \Delta v_{\theta L, n+1} = v_{\theta D} - v_{\theta F, n} + \Delta v_{\theta L, n} \\
+    | v_{\theta D } - v_{\theta F, n} | < \epsilon \\
+    Q_{n+1} = \exp[-(v_{\theta D} - v_{\theta o}) / v_e] Q_n/H(T_n) \\
+    Q_{n} = \exp(-\Delta v_{\theta L, n}/v_e) \\
+    H(T_n) = H_{F, n} = \exp[-(v_{\theta F, n} - v_{\theta o})/v_e]
 \end{align}$$
 
 ### Final Tangential Velocity
@@ -250,3 +261,5 @@ $$\begin{align}
     f_{21} & = \int_{t_0}^T \int_{t_0}^t p_1(s) ds \; dt\\
     f_{22} & = \int_{t_0}^T \int_{t_0}^t p_2(s) ds \; dt
 \end{align}$$
+
+![svg-test](test.svg)
