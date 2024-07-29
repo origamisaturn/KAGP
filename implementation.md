@@ -1,10 +1,157 @@
 # GCherry Implementation
-## Guidance Objects
-## Simulation Objects
-### IntegratorSim
-### KRPCClient
 ## Guidance Components
+### RadialYawGuidance
+
+This module calculates constants for the pitch (TBD) and yaw (TBD) guidance equations.
+
+Vehicle thrust acceleration $a_T(t)$ is defined to be a second-order Taylor series of $a_T=v_e/(\tau-t)$ about terminal time T
+$$\begin{align}
+    a_T(t) = a_0 + a_1(T-t) + a_2(T-t)^2
+\end{align}$$
+where
+$$\begin{align}
+    a_0& = a_T(T) = v_e/(\tau - T) \\
+    a_1& = -\dot a_T(t) = -a_0^2/v_e \\
+    a_2& = 2 \ddot a_T(T) = a_0^3/v_e^2
+\end{align}$$
+Equations (TBD) to (TBD) for the $F$ matrix then become
+$$\begin{align}
+    f_{11} & = a_0 T_{go} + a_1 T_{go}^2/2 + a_2 T_{go}^3/3\\
+    f_{12} & = a_0 T_{go}^2/2 + a_1 T_{go}^3/3 + a_2 T_{go}^4/4\\
+    f_{21} & = f_{12} \\
+    f_{22} & = a_0 T_{go}^3/3 + a_1 T_{go}^4/4 + a_2 T_{go}^5/5
+\end{align}$$
+
+The following equations are solved for the $c_1$ and $c_2$ variables
+$$\begin{align}
+    \begin{bmatrix}
+    \dot y_D - \dot y_0 \\
+    y_D - (y_o + \dot y_o T_{go})
+    \end{bmatrix}
+    = F 
+    \begin{bmatrix}
+    c_{1, yaw} \\
+    c_{2, yaw}
+    \end{bmatrix}
+\end{align}$$
+$$\begin{align}
+    \begin{bmatrix}
+    \dot r_D - \dot r_0 \\
+    r_D - (r_o + \dot r_o T_{go})
+    \end{bmatrix}
+    = F 
+    \begin{bmatrix}
+    c_{1, radial} \\
+    c_{2, radial}
+    \end{bmatrix}
+\end{align}$$
+
+where the boundary conditions and $T_{go}$ are determined by input variables. This module outputs $c_{1, radial}$, $c_{2, radial}$, $c_{1, yaw}$, $c_{2, yaw}$, $a_0$, $a_1$, and $a_2$.
+
+### PitchHeadingQuery
+
+Calculates pitch and yaw commands given guidance constants and current state.
+
+$\ddot r(t)$ and $\ddot y(t)$ are found
+$$\begin{align}
+    \ddot r = c_{1, radial} \,p_1(t) + c_{2, radial} \,p_2(t) \\
+    \ddot y = c_{1, yaw} \,p_1(t) + c_{2, yaw} \,p_2(t)
+\end{align}$$
+
+The thrust commands aligned with the guidance axes is determined to be
+$$\begin{align}
+    \vec a_T \cdot \hat r &= \ddot r + \mu/r_0^2 - v_{\theta_0}^2/r_0\\
+    \vec a_T \cdot \hat y &= \ddot y - \vec g \cdot \hat y
+\end{align}$$
+
+Pitch command is determined by 
+$$\begin{align}
+    \theta_{pitch} = \sin^{-1}(\frac{\vec a_T \cdot \hat r}{a_T})
+\end{align}$$
+
+To calculate heading command, the thrust vector in the global frame must be found. $\hat i$, $\hat j$, $\hat k$ are defined as axes of the Plane Control Frame (PCF). The thrust commands in terms of PCF axes are
+$$\begin{align}
+    \vec a_T \cdot \hat r = \vec a_T \cdot \hat i = a_{T_i} \\
+    \vec a_T \cdot \hat y = a_{T_i} \hat y_i + a_{T_k} \hat y_k
+\end{align}$$
+There is no component of $\hat y$ along $\hat j$, by definition of PCF. $a_{T_k}$ is solved for
+$$\begin{align}
+    a_{T_k} = \frac{\vec a_T \cdot \hat y - a_{T_i} \hat y_i}{\hat y_k}
+\end{align}$$
+$a_{T_j}$ is found based on thrust magnitude
+$$\begin{align}
+    a_{T_j} = \sqrt{a_T^2 - a_{T_i}^2 - a_{T_k}^2}
+\end{align}$$
+Given $\vec a_T$ found in terms of PCF axes
+$$\begin{align}
+    \vec a_T = \begin{bmatrix} a_{T_i} & a_{T_j} & a_{T_k} \end{bmatrix}
+\end{align}$$
+$\vec a_T$ is transformed to topocentric frame, with axes $\hat n$, $\hat e$, $\hat d$. Heading is calculated as
+$$\begin{align}
+    \psi = \arctan2(a_{T_e},\, a_{T_n})
+\end{align}$$
+
+This component outputs $\theta_{pitch}$ and $\psi$.
+
+### VThetaSolver
+Calculates estimated $v_{\theta}$ at terminal time T.
+
+TODO: Finish derivation
+
+### TimeToGo
+Iteratively solves for terminal time T.
+
+TODO: Finish derivation
+
+### OrbitTargeting
+Iteratively calculates target $r(T)$, $\dot r(T)$, and $v_{\theta}(T)$ based on target orbital parameters.
+
+True anomaly $\theta$ is based on vehicle position $\vec x$ projected onto the target orbital plane using perifocal coordinates $\hat i$, $\hat j$, and $\hat k$
+$$\begin{align}
+    \theta = \arctan2(x_j, \, x_i)
+\end{align}$$
+
+True anomaly at terminal time T is calculated using the $\Delta \theta(T)$ output from VThetaSolver
+$$\begin{align}
+    \theta(T) = \theta + \Delta \theta(T)
+\end{align}$$
+
+Based on $r_p$, $r_a$, and projected true anomaly $\theta$, the following equations are solved.
+$$\begin{align}
+    a = \frac{r_p + r_a}{2} \\
+    e = 1 - \frac{r_p}{a} \\
+    r = a \frac{(1-e^2)}{1 + e\cos(\theta)} \\
+    h = \sqrt{r_p \mu (1+e)} \\
+    v_r = \mu/h e \sin(\theta) \\
+    v_\theta = \frac{h}{r}
+\end{align}$$
+
+This module returns $r$, $v_r$, and $v_\theta$.
+
+### EnginePropertyEstimator
+Estimates $v_e$ and $\dot m$ during flight, based on measured thrust acceleration.
+
+This module runs a least squares solver comparing measured thrusts $a_T$ with calculated thrusts $a_T = v_e/(\frac{m_0}{\dot m} - t)$.
+
+## Simulation Objects
+All simulation objects use the state vector 
+$$\begin{align}
+    \begin{bmatrix} x & y & z & \dot x & \dot y & \dot z & m \end{bmatrix}
+\end{align}$$
+Where $x$, $y$, $z$ are the components of the position vector $\vec x$ in the global intertial frame, and m is mass.
+
+Lengths are in meters, mass in kg, time in seconds. Angles are radians.
+
+### IntegratorSim
+Uses Runge-Kutta 4 integrator. Models rocket vehicle as being solely under the forces of gravity and acceleration. There is no orientation stored in the state: acceleration direction is determined by the guidance function at that instant. 
+
+### KRPCClient
+Uses KRPC library to connect to KSP.
+
+## Guidance Objects
 ### OrbitTargetingAscent
+
+
 ### DebugAscent1
 ## Appendix A: Symbols
 
@@ -100,10 +247,10 @@ $$\begin{align}
 where the $F$ matrix is a $2 \times 2$ matrix composed of the following entries
 
 $$\begin{align}
-    f_{11} & = a_o T_{go} + a_1 T_{go}^2/2 + \dots + a_nT_{go}^{n+1}/(n+1)\\
-    f_{12} & = a_o T_{go}^2/2 + a_1 T_{go}^3/3 + \dots + a_nT_{go}^{n+2}/(n+2)\\
+    f_{11} & = a_0 T_{go} + a_1 T_{go}^2/2 + \dots + a_nT_{go}^{n+1}/(n+1)\\
+    f_{12} & = a_0 T_{go}^2/2 + a_1 T_{go}^3/3 + \dots + a_nT_{go}^{n+2}/(n+2)\\
     f_{21} & = f_{12} \\
-    f_{22} & = a_o T_{go}^3/3 + a_1 T_{go}^4/4 + \dots + a_nT_{go}^{n+3}/(n+3)
+    f_{22} & = a_0 T_{go}^3/3 + a_1 T_{go}^4/4 + \dots + a_nT_{go}^{n+3}/(n+3)
 \end{align}$$
 
 $c_1$ and $c_2$ can be solved from the matrix equation by inverting the $F$ matrix. This solves the general guidance equation.
@@ -117,7 +264,7 @@ $$\begin{align}
     g_{eff} = -\mu/r^2 + v_{\theta}^2/r \\
     \sin \alpha = C + Dt - g_{eff} \\
     \ddot r = C a_T + D a_T t \\
-    \ddot r = c_1p_1(t) = c_2p_2(t) \\
+    \ddot r = c_1p_1(t) + c_2p_2(t) \\
     p_1(t) = a_T \\
     p_2(t) = (T-t)a_T
 \end{align}$$
