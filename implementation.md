@@ -156,6 +156,20 @@ Uses KRPC library to connect to KSP.
 ## Appendix A: Symbols
 
 ## Appendix B: Abbreviated Derivation
+
+TODO: Check this assertion:
+
+At it's core, "E-guidance" is a ascent guidance method based on 
+1) An approximation of the calculus of variations solution for ... $\tan(\theta) = At + B$ as applied to
+    a) The radial differential equation ...
+    b) The differential equation normal to the target orbital plane, and
+2) Iterative solving for the terminal time $T$ based on the target tangential velocity $v_{\theta_D}$.
+
+The implementation of the PROGRAM differs from the paper in that
+1) estimation of final tangential velocity under both radial and yaw guidance, using RK4 instead of a Taylor expansion, and 
+2) Targeting of orbits based on the elements LAN, argp, inc, ap, pe, as opposed to (THE METHOD USED IN THE PAPER)
+3) engine property estimation
+
 ### Fixed Thrust
 A constant thrust model for a rocket, with constant mass flow and constant exhaust velocity, is defined as follows
 
@@ -291,17 +305,67 @@ Then copy values for $a_i$ in (A17) to (A20).
 
 ### Time-to-Go
 
+The differential equation for $\dot v_\theta$ is 
 $$\begin{align}
-    \dot v_\theta = a_T \cos \alpha - \frac{\dot r v_\theta}{r} \\
-    \dot v_\theta = a_T - [(1 - \cos \alpha)a_T + \frac{\dot r v_\theta}{r}] \\
+    \dot v_\theta = a_T \cos \alpha - \frac{\dot r v_\theta}{r}
+\end{align}$$
+
+$\dot v_\theta$ can be rewritten as 
+
+$$\begin{align}
+    \dot v_\theta = a_T - a_L
+\end{align}$$
+
+where
+$$\begin{align}
     a_L = (1 - \cos \alpha) a_T + \frac{\dot r v_\theta }{r} \\
-    \dot v_\theta = a_T - a_L \\
+\end{align}$$
+
+Integrating THIS EQUATION and solving for $T_{go}$ yields
+$$\begin{align}
     T_{go} = \tau _o \{ 1 - \exp[-(v_{\theta D} - v_{\theta o} + \Delta v_{\theta L})/v_e] \} \\
+\end{align}$$
+
+where
+$$\begin{align}
     \Delta v_{\theta L} = \int_{t_0}^T a_L(t) dt \\
-    \Delta v_{\theta L, n+1} = v_{\theta D} - v_{\theta F, n} + \Delta v_{\theta L, n} \\
-    | v_{\theta D } - v_{\theta F, n} | < \epsilon \\
-    Q_{n+1} = \exp[-(v_{\theta D} - v_{\theta o}) / v_e] Q_n/H(T_n) \\
+    \Delta v_{\theta L, n+1} = v_{\theta D} - v_{\theta F, n} + \Delta v_{\theta L, n}
+\end{align}$$
+
+TODO: Standardize $v_{\theta D}$
+
+We iterate based on $\Delta v_{\theta L}$, not $T$ directly.
+
+$\Delta v_{\theta L, n+1}$ is the next estimate of $\Delta v_{\theta L}$, $v_{\theta D}$ is the target $v_\theta$ at time $T$, and $v_{\theta F, n}$ is the estimated $v_\theta$ at time $T$ for thrust loss estimate $v_{\theta L, n}$. TODO: FIGURE 9. This iterative procedure is run until 
+$$\begin{align}
+    | v_{\theta D} - v_{\theta F, n} | < \epsilon
+\end{align}$$
+
+where $\epsilon$ is the tolerable guidance scheme error (RIPPED FROM GCHERRY)
+
+NOTE: After calculating the iterative equation
+
+The following alters the format of the NUMBERED EQUATION for the purpose of 
+1) Reducing the amount of exponentials solved, and
+2) Writing the new estimate for T_go in terms of a Taylor series expansion of the tangential velocity.
+
+The program was written without concern for either of these purposes, but adheres to the notation in the paper for the sake of convenience.
+
+Rewrite EQUATION NUMBER in the following form
+$$\begin{align}
+    T_{go, n} = \tau_o \{1 - \exp [-(v_{\theta D} - v_{\theta o})/v_e]\, Q_n\}
+\end{align}$$
+
+where
+$$\begin{align}
     Q_{n} = \exp(-\Delta v_{\theta L, n}/v_e) \\
+\end{align}$$
+
+TODO: looks weird
+
+The EQUATION NUMBER then becomes
+$$\begin{align}
+    Q_{n+1} = \exp \begin{bmatrix} \frac{-(v_{\theta D} - v_{\theta o})}{v_e} \end{bmatrix} \frac{Q_n}{H(T_n)} \\
     H(T_n) = H_{F, n} = \exp[-(v_{\theta F, n} - v_{\theta o})/v_e]
 \end{align}$$
 
