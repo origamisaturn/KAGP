@@ -150,9 +150,11 @@ Uses KRPC library to connect to KSP.
 
 ## Guidance Objects
 ### OrbitTargetingAscent
-
+<img src="OrbitTargetingAscentDiagram.svg" alt="svg-test" style="width:800px;height:800px">
 
 ### DebugAscent1
+<img src="test2.svg" alt="svg-test" style="width:800px;height:800px">
+
 ## Appendix A: Symbols
 
 ## Appendix B: Abbreviated Derivation
@@ -169,6 +171,9 @@ The implementation of the PROGRAM differs from the paper in that
 1) estimation of final tangential velocity under both radial and yaw guidance, using RK4 instead of a Taylor expansion, and 
 2) Targeting of orbits based on the elements LAN, argp, inc, ap, pe, as opposed to (THE METHOD USED IN THE PAPER)
 3) engine property estimation
+
+Also I've abbreviated the derivation and justified it in terms of the CALCULUS LAW
+as used in APPENDIX whatever to get the optimal values of a0 and a1 and so on.
 
 ### Fixed Thrust
 A constant thrust model for a rocket, with constant mass flow and constant exhaust velocity, is defined as follows
@@ -270,35 +275,95 @@ $$\begin{align}
 $c_1$ and $c_2$ can be solved from the matrix equation by inverting the $F$ matrix. This solves the general guidance equation.
 
 ### Radial Guidance
+The differential equation of radial motion is 
+$$\begin{align}
+    \ddot r = a_T\sin\alpha - \mu/r^2 + v_{\theta}^2/r
+\end{align}$$
 
+This can be rewritten as 
+$$\begin{align}
+    \ddot r = a_T\sin\alpha + g_{eff}
+\end{align}$$
+
+where 
+$$\begin{align}
+    g_{eff} = -\mu/r^2 + v_{\theta}^2/r \\
+\end{align}$$
+
+The WHATEVER WHATEVER LAW is (linear tangent law, page 61 applied optimal control, bryson/ho)
 $$\begin{align}
     \tan \alpha = A + Bt \\
-    \ddot r = a_T\sin\alpha - \mu/r^2 + v_{\theta}^2/r \\
-        = a_T\sin\alpha + g_{eff} \\
-    g_{eff} = -\mu/r^2 + v_{\theta}^2/r \\
+\end{align}$$
+
+We assume that $\tan \alpha \approx \sin \alpha$ (not necessarily true, true for small angles but ok here) and that $g_{eff} << 0$ (also not necessarily true, approaches zero however nearing $T$ for a target circular orbit). The tangent law can then be approximated by 
+
+$$\begin{align}
     \sin \alpha = C + Dt - g_{eff} \\
+\end{align}$$
+
+where
+$$\begin{align}
+    g_{eff} = -\mu/r^2 + v_{\theta}^2/r
+\end{align}$$
+
+Substituting equation NUMBER into equation NUMBER yields 
+$$\begin{align}
     \ddot r = C a_T + D a_T t \\
+\end{align}$$
+
+This can be written in the form of EQUATION NUMBER as
+$$\begin{align}
     \ddot r = c_1p_1(t) + c_2p_2(t) \\
+\end{align}$$
+
+where
+$$\begin{align}
     p_1(t) = a_T \\
     p_2(t) = (T-t)a_T
 \end{align}$$
+
+and SOLVE FOR C1 and C2 in terms of C and D.
 
 Then use (A15 - A20).
 
 NOTE: NEED to differentiate symbology.
 
 ### Yaw Guidance
+The differential equation of motion normal to the target orbital plane is 
+$$\begin{align}
+    \ddot y = a_T \sin \alpha_y + \vec g \cdot \vec y \\
+\end{align}$$
 
+linear tangent law
 $$\begin{align}
     \tan \alpha_y = A + Bt \\
-    \ddot y = a_T \sin \alpha_y + \vec g \cdot \vec y \\
+\end{align}$$
+
+We approximate $\tan \alpha_y \approx \sin \alpha_y$ and say that $\vec g \cdot \vec y$ is very small. The linear tangent law can be approximated as
+$$\begin{align}
     \sin \alpha_y(t) = C+Dt - \vec g \cdot \vec y/a_T \\
+\end{align}$$
+
+Substituting it into EQUATION NUMBER results in 
+$$\begin{align}
     \ddot y = C a_T + D a_T t \\
+\end{align}$$
+
+This can be written in the generalized form 
+$$\begin{align}
     \ddot y = c_1p_1(t) + c_2p_2(t) \\
+\end{align}$$
+
+where 
+$$\begin{align}
     p_1(t) = a_T \\
-    p_2(t) = (T-t)a_T \\
+    p_2(t) = (T-t)a_T
+\end{align}$$
+
+acceleration numbers
+$$\begin{align}
     a_T(T) = a_T(T) + \dot a_T(T)(t-T) + \ddot a_T(T)(t-T)^2/2 + \dots \\
-    p_1(t) = a_0 + a_1(T-t) + a_2(T-t)^2 + \dots \\
+    p_1(t) = a_0 + a_1(T-t) + a_2(T-t)^2 + \dots
 \end{align}$$
 
 Then copy values for $a_i$ in (A17) to (A20).
