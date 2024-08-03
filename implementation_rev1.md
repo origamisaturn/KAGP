@@ -61,25 +61,104 @@ orbital elements
 ???
 \hat i, \hat j, \hat k
 ??? Do we want to keep these symbols for PCF, or use something else?
+| Symbol | Description |
+| ---   | ---   |
+| $a_T$ | thrust acceleration, $m/s^2$ |
+| $F_T$ | thrust, $N$ |
+| $g_0$ | standard gravity, $m/s^2$  |
+| $I_{sp}$ | specific impulse, $s$ |
+| $m$ | mass, $kg$ |
+| $v_e$ | exhaust velocity, $m/s$ |
+
+subscript $o$ indicates current time, except for $m_o$? Which indicates mass at time $t=0$.
 
 
 ## Appendix B: Abbreviated Derivation
 
-The following is an abbreviated derivation that follows that of Cherry [1]?
+The following is a derivation of an iterative method for guiding a single-stage rocket ascent vehicle. This derivation is based completely on that of Cherry [1], with some modification:
 
-The following is a derivation of an iterative method for guiding a single-stage rocket ascent vehicle. The derivation largely follows that of Cherry [1], with some modifications:
-1. Estimation of the final circumferential velocity $v_{\theta D}$ using RK4 integration instead of a Taylor expansion
-2. Targeting orbits based on the elements $$ instead of $$.
+1) Cherry derives the guidance law by defining the law to have the minimum number of terms necessary to uniquely satisfy the boundary conditions, and defers optimization of the guidance law to the appendix. The derivation here instead starts from the content in Appendix A, and derives the guidance laws based on an approximation of the linear tangent steering law and the differential equations of motion.
+2) The method of predicting the final circumferential velocity derived in Cherry is a Taylor expansion and it uses the radial guidance law. Here, the final circumferential velocity is predicted using a numerical integrator, and incorporates both radial and plane control guidance. A numerical integrator is used here instead of a Taylor expansion mainly for convenience; the equation for $\dot v_{\theta}(t)$ derived here is large, and it was determined that a Taylor expansion would be much larger and more difficult to debug in the implemented program compared to using a numerical integrator.
+3) The orbit targeting method in Cherry has an arbitary argument of periapsis, while the orbit targeting method here specifies the argument of periapsis.
 
-In broad terms, the guidance method is derived by 
-1. Applying the linear tangent law [2] 
-2. 
+In broad terms, the guidance method is derived by
+1) Applying the linear tangent law [2] to the differential equation of radial motion, and to the differential equation of distance normal to the target orbital plane. This yields guidance laws for $\ddot r$ and $\ddot y$. 
+2) Finding a method for estimating the final value for circumferential velocity.
+3) Solving for $T_{go}$ using the differential equation for circumferential velocity, and defining an iterative method of solving $T_{go}$ based on estimated values of the final circumferential velocity $v_{\theta}(T)$.
 
-The derivation is performed without concern for the speed of calculation.
+### B.1. Fixed-Thrust Model
 
-Cherry explicitly avoids invoking the calculus of variations when deriving the guidance laws.
+A constant-thrust model for a rocket, with constant mass flow and exhaust velocity, is defined as follows
+$$\begin{align}
+    v_e & = g_0I_{sp} = constant \tag{B.1.1} \\
+    \dot{m} & = constant \tag{B.1.2} \\
+    \dot{m} & > 0 \tag{B.1.3} \\
+    F_T & = \dot{m} v_e \tag{B.1.4} 
+\end{align}$$
+
+The mass of the rocket vehicle is a linear function of time
+$$\begin{align}
+    m=m_o-\dot m t \tag{B.1.5}
+\end{align}$$
+
+where $m_o$ is the mass of the vehicle at $t=0$. Applying Newton's second law yields a formula for thrust acceleration
+$$\begin{align}
+    a_T=v_e/(\tau-t) \tag{B.1.6}
+\end{align}$$
+
+where
+$$\begin{align}
+    \tau \equiv m_o/ \dot m \tag{B.1.7}
+\end{align}$$
+
+$\tau$ can be interpreted as the time at which the rocket vehicle composed of only fuel (no structure) will reach 0 mass. 
+
+
+### B.2. Generalized Guidance Law
+
+It will be helpful to have a general formula to solve for the guidance laws that will be derived. A guidance law for generalized coordinate $q$ is defined:
+$$\begin{align}
+    \ddot q(t) & = c_1 p_1(t) + c_2 p_2(t) \tag{B.2.1} \\
+\end{align}$$
+
+where
+$$\begin{align}
+    p_1(t)&=a_T(t) \tag{B.2.2} \\
+    p_2(t)&=(T-t)a_T(t) \tag{B.2.3} 
+\end{align}$$
+
+where $T$ is the time of guidance termination and $a_T$ is written in the form
+$$\begin{align}
+    a_T(t) = a_0 + a_1(T-t) + a_2(T-t)^2 + ... + a_n(T-t)^n \tag{B.2.4} \\
+\end{align}$$
+
+It is desirable to solve for $\ddot q(t)$. The constants $c_1$ and $c_2$ are unknown. $p_1(t)$ and $p_2(t)$ are given, and the following boundary conditions are provided
+$$\begin{align}
+    q_0 & = q(t_0) \\
+    \dot q_0 & = \dot q(t_0) \\
+    q_D & = q(T) \\
+    \dot q_D & = \dot q(T)
+\end{align}$$
+
+where $t_0$ is the current time. Integrating equation (B.2.1) yields the equations of constraint 
+$$\begin{align}
+    \dot q_D - \dot q_0 
+        & = \int_{t_0}^T \ddot q(t) dt
+        = c_1 \int_{t_0}^T p_1(t) dt + c_2 \int_{t_0}^T p_2(t) dt \\
+    q_D - q_0 - \dot q(t_0)T_{go}
+        & = \int_{t_0}^T \int_{t_0}^t \ddot q(s) ds \; dt
+        = c_1 \int_{t_0}^T \int_{t_0}^t p_1(s) ds \; dt
+            + c_2 \int_{t_0}^T \int_{t_0}^t p_2(s) ds \; dt
+\end{align}$$
+
+
 
 ## References
 [1] G. W. Cherry, "A General, Explicit, Optimizing Guidance Law for Rocket-Propelled Spaceflight," in *Astrodynamics Guidance and Control Conference, August 24-26, 1964, Los Angeles, CA, USA* [Online]. Available: ARC, https://arc.aiaa.org/doi/10.2514/6.1964-638
 
 TODO: Perhaps tone down the formal reference.
+
+## Notes
+From Cherry[1], page 4: "Explicit guidance laws are laws which express the formulas for the steering commands directly in terms of the current and desired boundary values of the components of the position and velocity vectors. For the guidance laws to be truly explicit, that is valid for any values of the current and desired boundary conditions, the laws must be derived as direct solutions to the equations of motion."
+
+Why did I implement VThetaSolver instead of using the integrated pitch heading query directly, since I was going to integrate anyways? The equation looks more complicated that the pitch heading query one.
