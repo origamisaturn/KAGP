@@ -65,16 +65,16 @@ orbital elements
 | ---   | ---   |
 | $a_0$, $a_1$, ... $a_n$ |  |
 | $a_T$ | thrust acceleration, $m/s^2$ |
-| $c_1$, $c_2$ | steering constants (eq. (B.2.1)), <br> (nondimensional, $s^{-1}$) |
+| $c_1$, $c_2$ | steering constants (B.1), <br> (nondimensional, $s^{-1}$) |
 | $F$ | ??? |
 | $F_T$ | thrust, $N$ |
 | $g_0$ | standard gravity, $m/s^2$  |
 | $I_{sp}$ | specific impulse, $s$ |
 | $m$ | mass, $kg$ |
-| $p_1$, $p_2$ | steering polynomials (eq. (B.2.2-3)), <br> ($m/s^2$, $m/s$) |
+| $p_1$, $p_2$ | steering polynomials (B.2), <br> ($m/s^2$, $m/s$) |
 | $q$ | general distance coordinate, $m$ |
 | $T$ | cutoff time, $s$ |
-| $\tau$ | (eq. (B.1.7)), $s$ |
+| $\tau$ | (B.1), $s$ |
 | $T_{go}$ | time-to-go, $s$ |
 | $v_e$ | exhaust velocity, $m/s$ |
 
@@ -97,6 +97,7 @@ In broad terms, the guidance method is derived by
 ### B.1. Fixed-Thrust Model
 
 A constant-thrust model for a rocket, with constant mass flow and exhaust velocity, is defined as follows
+
 $$\begin{align}
     v_e & = g_0I_{sp} = constant \tag{B.1.1} \\
     \dot{m} & = constant \tag{B.1.2} \\
@@ -105,16 +106,19 @@ $$\begin{align}
 \end{align}$$
 
 The mass of the rocket vehicle is a linear function of time
+
 $$\begin{align}
     m=m_o-\dot m t \tag{B.1.5}
 \end{align}$$
 
 where $m_o$ is the mass of the vehicle at $t=0$. Applying Newton's second law yields a formula for thrust acceleration
+
 $$\begin{align}
     a_T=v_e/(\tau-t) \tag{B.1.6}
 \end{align}$$
 
 where
+
 $$\begin{align}
     \tau \equiv m_o/ \dot m \tag{B.1.7}
 \end{align}$$
@@ -125,22 +129,26 @@ $\tau$ can be interpreted as the time at which the rocket vehicle composed of on
 ### B.2. Generalized Guidance Law
 
 It will be helpful to have a general formula to solve for the guidance laws that will be derived. A guidance law for generalized coordinate $q$ is defined:
+
 $$\begin{align}
     \ddot q(t) & = c_1 p_1(t) + c_2 p_2(t) \tag{B.2.1} \\
 \end{align}$$
 
 where
+
 $$\begin{align}
     p_1(t)&=a_T(t) \tag{B.2.2} \\
     p_2(t)&=(T-t)a_T(t) \tag{B.2.3} 
 \end{align}$$
 
 where $T$ is the time of guidance termination and the thrust acceleration $a_T$ is written in the form
+
 $$\begin{align}
     a_T(t) = a_0 + a_1(T-t) + a_2(T-t)^2 + ... + a_n(T-t)^n \tag{B.2.4} \\
 \end{align}$$
 
 It is desirable to solve for $\ddot q(t)$. The constants $c_1$ and $c_2$ are unknown. $p_1(t)$ and $p_2(t)$ are given, and the following boundary conditions are provided
+
 $$\begin{align}
     q_0 & = q(t_0) \tag{B.2.5} \\
     \dot q_0 & = \dot q(t_0) \tag{B.2.6} \\
@@ -148,7 +156,8 @@ $$\begin{align}
     \dot q_D & = \dot q(T) \tag{B.2.8} 
 \end{align}$$
 
-where $t_0$ is the current time. Integrating equation (B.2.1) yields the equations of constraint 
+where $t_0$ is the current time. Integrating the equation for $\ddot q(t)$ yields the equations of constraint 
+
 $$\begin{align}
     \dot q_D - \dot q_0 
         & = \int_{t_0}^T \ddot q(t) dt \tag{B.2.9}\\
@@ -160,11 +169,13 @@ $$\begin{align}
 \end{align}$$
 
 where
+
 $$\begin{align}
     T_{go} = T - t_0 \tag{B.2.11} \\
 \end{align}$$
 
 The equations of constraint can be represented by the matrix equation
+
 $$\begin{align}
     \begin{bmatrix}
     \dot q_D - \dot q_0 \\
@@ -178,6 +189,7 @@ $$\begin{align}
 \end{align}$$
 
 where the $F$ matrix is a $2 \times 2$ matrix composed of the following entries
+
 $$\begin{align}
     f_{11} & = a_0 T_{go} + a_1 T_{go}^2/2 + \dots + a_nT_{go}^{n+1}/(n+1) \tag{B.2.13} \\
     f_{12} & = a_0 T_{go}^2/2 + a_1 T_{go}^3/3 + \dots + a_nT_{go}^{n+2}/(n+2) \tag{B.2.14} \\
@@ -190,10 +202,80 @@ $c_1$ and $c_2$ can be solved from the matrix equation by inverting the $F$ matr
 
 ### B.3. Radial Guidance Law
 
-The LINEAR TANGENT LAW ...
+The linear tangent steering law [2] will be used to derive the radial guidance law
+
+$$\begin{align}
+    \tan \alpha = A + Bt \tag{B.3.1} \\
+\end{align}$$
+
+The differential equation of radial motion is 
+
+$$\begin{align}
+    \ddot r = a_T\sin\alpha + g_{eff} \tag{B.3.2} \\
+\end{align}$$
+
+where
+
+$$\begin{align}
+    g_{eff} = -\mu/r^2 + v_{\theta}^2/r \tag{B.3.3} 
+\end{align}$$
+
+The tangent law can be approximated by 
+
+$$\begin{align}
+    \sin \alpha = A + Bt - g_{eff}/a_T \tag{B.3.4} \\
+\end{align}$$
+
+The approximation assumes that $\tan \alpha \approx \sin \alpha$, and that $g_{eff}/a_T \approx 0$. The latter approximation becomes more accurate near guidance termination: as the vehicle approaches the cut-off time $T$ when targeting a circular orbit, $g_{eff}$ approaches zero and $a_T$ continues increasing.
+
+Substituting the approximated tangent law into the differential equation of radial motion yields
+
+$$\begin{align}
+    \ddot r = A a_T + B a_T t \tag{B.3.5} \\
+\end{align}$$
+
+If it is assumed $A = c_1 + c_2 T$ and $B = -c_2$ (rewriting constants in terms of other constants), then the equation can be written in the form of the generalized guidance law in B.2 as 
+
+$$\begin{align}
+    \ddot r = c_1p_1(t) + c_2p_2(t) \\
+\end{align}$$
+
+where
+
+$$\begin{align}
+    p_1(t) = a_T \\
+    p_2(t) = (T-t)a_T
+\end{align}$$
+
+Given the following boundary conditions
+
+$$\begin{align}
+    r_0 & = r(t_0) \\
+    \dot r_0 & = \dot r(t_0) \\
+    r_D & = r(T) \\
+    \dot r_D & = \dot r(T)
+\end{align}$$
+
+$c_1$ and $c_2$ can be solved using the matrix form of the equations of constraint in B.2. This fully defines the guidance law for $\ddot r$.
+
+### B.4. Plane Control Guidance Law
+
+The differential equation for $y$, the vehicle's distance from the target orbital plane along the plane's normal axis $\hat y$, is
+
+$$\begin{align}
+    \ddot y = a_T \sin \theta_y + \vec g \cdot \vec y \\
+\end{align}$$
+
+The linear tangent law 
+
+
+$a$, $e$, $i$, $\Omega$, $\omega$, $\nu$
+
 
 ## References
 [1] G. W. Cherry, "A General, Explicit, Optimizing Guidance Law for Rocket-Propelled Spaceflight," in *Astrodynamics Guidance and Control Conference, August 24-26, 1964, Los Angeles, CA, USA* [Online]. Available: ARC, https://arc.aiaa.org/doi/10.2514/6.1964-638
+
+[2] A.E. Bryson, Jr. and Y. Ho, "Optimization Problems for Dynamic Systems," in *Applied Optimal Control,* Waltham, MA, USA: Ginn, 1969, pp. 61.
 
 TODO: Perhaps tone down the formal reference.
 
@@ -201,3 +283,5 @@ TODO: Perhaps tone down the formal reference.
 From Cherry[1], page 4: "Explicit guidance laws are laws which express the formulas for the steering commands directly in terms of the current and desired boundary values of the components of the position and velocity vectors. For the guidance laws to be truly explicit, that is valid for any values of the current and desired boundary conditions, the laws must be derived as direct solutions to the equations of motion."
 
 Why did I implement VThetaSolver instead of using the integrated pitch heading query directly, since I was going to integrate anyways? The equation looks more complicated that the pitch heading query one.
+
+I think $a_T$ is defined using a Taylor expansion since the integral for $a_T$ yields a logarithm, which may take 30 times the amount of time to multiply. I generally do not care about the performance here.
