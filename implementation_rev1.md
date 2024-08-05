@@ -65,20 +65,20 @@ orbital elements
 | ---   | ---   |
 | $a_0$, $a_1$, ... $a_n$ |  |
 | $a_T$ | thrust acceleration, $m/s^2$ |
-| $c_1$, $c_2$ | steering constants (B.1), <br> (nondimensional, $s^{-1}$) |
-| $F$ | ??? |
+| $c_1$, $c_2$ | steering constants (eq. (B.2.1)), <br> (nondimensional, $s^{-1}$) || $F$ | ??? |
 | $F_T$ | thrust, $N$ |
 | $g_0$ | standard gravity, $m/s^2$  |
 | $I_{sp}$ | specific impulse, $s$ |
 | $m$ | mass, $kg$ |
-| $p_1$, $p_2$ | steering polynomials (B.2), <br> ($m/s^2$, $m/s$) |
-| $q$ | general distance coordinate, $m$ |
+| $p_1$, $p_2$ | steering polynomials (eq. (B.2.2-3)), <br> ($m/s^2$, $m/s$) || $q$ | general distance coordinate, $m$ |
 | $T$ | cutoff time, $s$ |
-| $\tau$ | (B.1), $s$ |
+| $\tau$ | (eq. (B.1.7)), $s$ |
 | $T_{go}$ | time-to-go, $s$ |
 | $v_e$ | exhaust velocity, $m/s$ |
 
 subscript $o$ indicates current time, except for $m_o$? Which indicates mass at time $t=0$.
+subscript $r$ for radial steering constants
+subscript $y$ for plane control steering constants
 
 
 ## Appendix B: Abbreviated Derivation
@@ -156,7 +156,7 @@ $$\begin{align}
     \dot q_D & = \dot q(T) \tag{B.2.8} 
 \end{align}$$
 
-where $t_0$ is the current time. Integrating the equation for $\ddot q(t)$ yields the equations of constraint 
+where $t_0$ is the current time. Integrating the equation (B.2.1) yields the equations of constraint 
 
 $$\begin{align}
     \dot q_D - \dot q_0 
@@ -228,48 +228,133 @@ $$\begin{align}
 
 The approximation assumes that $\tan \alpha \approx \sin \alpha$, and that $g_{eff}/a_T \approx 0$. The latter approximation becomes more accurate near guidance termination: as the vehicle approaches the cut-off time $T$ when targeting a circular orbit, $g_{eff}$ approaches zero and $a_T$ continues increasing.
 
-Substituting the approximated tangent law into the differential equation of radial motion yields
+Substituting (B.3.4) into (B.3.2) yields
 
 $$\begin{align}
     \ddot r = A a_T + B a_T t \tag{B.3.5} \\
 \end{align}$$
 
-If it is assumed $A = c_1 + c_2 T$ and $B = -c_2$ (rewriting constants in terms of other constants), then the equation can be written in the form of the generalized guidance law in B.2 as 
+If it is assumed $A = c_{1,r} + c_{2,r} T$ and $B = -c_{2,r}$ (rewriting constants in terms of other constants), then the equation can be written in the form of the generalized guidance law (B.2.1) as 
 
 $$\begin{align}
-    \ddot r = c_1p_1(t) + c_2p_2(t) \\
+    \ddot r = c_{1,r}p_1(t) + c_{2,r}p_2(t) \tag{B.3.6} \\
 \end{align}$$
 
 where
 
 $$\begin{align}
-    p_1(t) = a_T \\
-    p_2(t) = (T-t)a_T
+    p_1(t) & = a_T \tag{B.3.7}  \\
+    p_2(t) & = (T-t)a_T \tag{B.3.8} 
 \end{align}$$
 
 Given the following boundary conditions
 
 $$\begin{align}
-    r_0 & = r(t_0) \\
-    \dot r_0 & = \dot r(t_0) \\
-    r_D & = r(T) \\
-    \dot r_D & = \dot r(T)
+    r_0 & = r(t_0) \tag{B.3.9} \\
+    \dot r_0 & = \dot r(t_0) \tag{B.3.10} \\
+    r_D & = r(T) \tag{B.3.11} \\
+    \dot r_D & = \dot r(T) \tag{B.3.12} 
 \end{align}$$
 
-$c_1$ and $c_2$ can be solved using the matrix form of the equations of constraint in B.2. This fully defines the guidance law for $\ddot r$.
+$c_{1,r}$ and $c_{2,r}$ can be solved using the matrix form of the equations of constraint (B.2.12). This fully defines the guidance law for $\ddot r(t)$.
 
 ### B.4. Plane Control Guidance Law
 
 The differential equation for $y$, the vehicle's distance from the target orbital plane along the plane's normal axis $\hat y$, is
 
 $$\begin{align}
-    \ddot y = a_T \sin \theta_y + \vec g \cdot \vec y \\
+    \ddot y = a_T \sin \alpha_y + \vec g \cdot \vec y \tag{B.4.1} \\
 \end{align}$$
 
-The linear tangent law 
+The linear tangent law can be approximated as
+
+$$\begin{align}
+    \sin \alpha_y(t) = A+Bt - \vec g \cdot \vec y/a_T \tag{B.4.2} \\
+\end{align}$$
+
+The approximation assumes that $\tan \alpha \approx \sin \alpha$, and that $(\vec g \cdot \vec y)/a_T \approx 0$. $\vec g \cdot \vec y$ is small in general, and $(\vec g \cdot \vec y)/a_T$ even more so.
+
+Substituting (B.4.2) in (B.4.1) yields 
+
+$$\begin{align}
+    \ddot y = A a_T + B a_T t \tag{B.4.3} \\
+\end{align}$$
+
+If the constants are written in terms of $c_{1,y}$ and $c_{2,y}$ as $A = c_{1,y} + c_{2,y} T$ and $B = -c_{2,y}$, then the equation can be written in the form of the generalized guidance law (B.2.1) as 
+
+$$\begin{align}
+    \ddot y = c_{1,y}p_1(t) + c_{2,y}p_2(t) \tag{B.4.4} \\
+\end{align}$$
+
+where
+
+$$\begin{align}
+    p_1(t) & = a_T \tag{B.4.5} \\
+    p_2(t) & = (T-t)a_T \tag{B.4.6} 
+\end{align}$$
+
+Given the following boundary conditions
+
+$$\begin{align}
+    y_0 & = y(t_0) \tag{B.4.7} \\
+    \dot y_0 & = \dot y(t_0) \tag{B.4.8} \\
+    y_D & = y(T) \tag{B.4.9} \\
+    \dot y_D & = \dot y(T) \tag{B.4.10} 
+\end{align}$$
+
+$c_{1,y}$ and $c_{2,y}$ can be solved using the matrix form of the equations of constraint (B.2.12). This fully defines the guidance law for $\ddot y(t)$.
 
 
-$a$, $e$, $i$, $\Omega$, $\omega$, $\nu$
+### B.5. Time-To-Go
+
+The radial guidance law and plane control guidance law require the cut-off time $T$ to be given in order to solve for the constants. An iterative method of finding $T$ based on the target circumferential velocity $v_{\theta D}$ is derived.
+
+The differential equation for $\dot v_\theta$ is 
+
+$$\begin{align}
+    \dot v_\theta = a_T \cos \alpha - \frac{\dot r v_\theta}{r} \tag{B.5.1} 
+\end{align}$$
+
+$\dot v_\theta$ can be rewritten as 
+
+$$\begin{align}
+    \dot v_\theta = a_T - a_L \tag{B.5.2} 
+\end{align}$$
+
+where
+
+$$\begin{align}
+    a_L = (1 - \cos \alpha) a_T + \frac{\dot r v_\theta }{r} \tag{B.5.3} \\
+\end{align}$$
+
+Integrating (B.5.2) and solving for $T_{go}$ yields
+
+$$\begin{align}
+    T_{go} = \tau _o \{ 1 - \exp[-(v_{\theta D} - v_{\theta o} + \Delta v_{\theta L})/v_e] \} \\
+\end{align}$$
+
+where
+
+$$\begin{align}
+    \Delta v_{\theta L} = \int_{t_0}^T a_L(t) dt \\
+\end{align}$$
+
+The time-to-go $T_{go}$ is calculated using an iterative method based on varying guesses of $\Delta v_{\theta L}$. The formula for the next estimate of $\Delta v_{\theta L}$ based on the previous one is 
+
+$$\begin{align}
+    \Delta v_{\theta L, n+1} = v_{\theta D} - v_{\theta F, n} + \Delta v_{\theta L, n}
+\end{align}$$
+
+where $v_{\theta D}$ is the target $v_\theta$ at time $T$, and $v_{\theta F, n}$ is the estimated $v_\theta(T)$ for thrust loss estimate $v_{\theta L, n}$. 
+
+
+The estimates of $\Delta v_{\theta L}$ continue until the estimated final circumferential velocity is close enough to the desired final circumferential velocity
+
+$$\begin{align}
+    | v_{\theta D} - v_{\theta F, n} | < \epsilon
+\end{align}$$
+
+where $\epsilon$ is the tolerable guidance scheme error.
 
 
 ## References
@@ -285,3 +370,5 @@ From Cherry[1], page 4: "Explicit guidance laws are laws which express the formu
 Why did I implement VThetaSolver instead of using the integrated pitch heading query directly, since I was going to integrate anyways? The equation looks more complicated that the pitch heading query one.
 
 I think $a_T$ is defined using a Taylor expansion since the integral for $a_T$ yields a logarithm, which may take 30 times the amount of time to multiply. I generally do not care about the performance here.
+
+Orbital elements: $a$, $e$, $i$, $\Omega$, $\omega$, $\nu$
