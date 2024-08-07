@@ -345,7 +345,10 @@ $$\begin{align}
     \Delta v_{\theta L, n+1} = v_{\theta D} - v_{\theta F, n} + \Delta v_{\theta L, n}
 \end{align}$$
 
-where $v_{\theta D}$ is the target $v_\theta$ at time $T$, and $v_{\theta F, n}$ is the estimated $v_\theta(T)$ for thrust loss estimate $v_{\theta L, n}$. 
+where $v_{\theta D}$ is the target $v_\theta$ at time $T$, and $v_{\theta F, n}$ is the estimated $v_\theta(T)$ for thrust loss estimate $v_{\theta L, n}$. The following figure illustrates the procedure for calculating $\Delta v_{\theta L}$.
+<p align="center">
+    <img width="600px" src="iterative_T_go_algo.svg">
+</p>
 
 
 The estimates of $\Delta v_{\theta L}$ continue until the estimated final circumferential velocity is close enough to the desired final circumferential velocity
@@ -355,6 +358,14 @@ $$\begin{align}
 \end{align}$$
 
 where $\epsilon$ is the tolerable guidance scheme error.
+
+TODO: Rewrite in terms of Q.
+
+### B.6. Final Circumferential Velocity
+
+A method for predicting the final circumferential velocity $v_{\theta}(T)$ is derived, to serve as a component of the iterative calculation for cut-off time $T$ in B.5.
+
+(This also calculated $\Delta \theta(T)$)
 
 
 ## References
