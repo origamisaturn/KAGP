@@ -330,19 +330,19 @@ $$\begin{align}
 Integrating (B.5.2) and solving for $T_{go}$ yields
 
 $$\begin{align}
-    T_{go} = \tau _o \{ 1 - \exp[-(v_{\theta D} - v_{\theta o} + \Delta v_{\theta L})/v_e] \} \\
+    T_{go} = \tau _o \{ 1 - \exp[-(v_{\theta D} - v_{\theta o} + \Delta v_{\theta L})/v_e] \} \tag{B.5.4} \\
 \end{align}$$
 
 where
 
 $$\begin{align}
-    \Delta v_{\theta L} = \int_{t_0}^T a_L(t) dt \\
+    \Delta v_{\theta L} = \int_{t_0}^T a_L(t) dt \tag{B.5.5} \\
 \end{align}$$
 
 The time-to-go $T_{go}$ is calculated using an iterative method based on varying guesses of $\Delta v_{\theta L}$. The formula for the next estimate of $\Delta v_{\theta L}$ based on the previous one is 
 
 $$\begin{align}
-    \Delta v_{\theta L, n+1} = v_{\theta D} - v_{\theta F, n} + \Delta v_{\theta L, n}
+    \Delta v_{\theta L, n+1} = v_{\theta D} - v_{\theta F, n} + \Delta v_{\theta L, n} \tag{B.5.6} 
 \end{align}$$
 
 where $v_{\theta D}$ is the target $v_\theta$ at time $T$, and $v_{\theta F, n}$ is the estimated $v_\theta(T)$ for thrust loss estimate $v_{\theta L, n}$. The following figure illustrates the procedure for calculating $\Delta v_{\theta L}$.
@@ -354,12 +354,30 @@ where $v_{\theta D}$ is the target $v_\theta$ at time $T$, and $v_{\theta F, n}$
 The estimates of $\Delta v_{\theta L}$ continue until the estimated final circumferential velocity is close enough to the desired final circumferential velocity
 
 $$\begin{align}
-    | v_{\theta D} - v_{\theta F, n} | < \epsilon
+    | v_{\theta D} - v_{\theta F, n} | < \epsilon \tag{B.5.7} 
 \end{align}$$
 
 where $\epsilon$ is the tolerable guidance scheme error.
 
-TODO: Rewrite in terms of Q.
+The derivation by Cherry [1] rewrites the equation in the following form
+$$\begin{align}
+    T_{go, n} = \tau_o \{1 - \exp [-(v_{\theta D} - v_{\theta o})/v_e]\, Q_n\} \tag{B.5.8} 
+\end{align}$$
+
+where
+$$\begin{align}
+    Q_{n} = \exp(-\Delta v_{\theta L, n}/v_e) \tag{B.5.9} \\
+\end{align}$$
+
+Equation (B.5.6) then becomes
+$$\begin{align}
+    Q_{n+1} = \exp \begin{bmatrix} \frac{-(v_{\theta D} - v_{\theta o})}{v_e} \end{bmatrix} \frac{Q_n}{H(T_n)} \tag{B.5.10} \\
+\end{align}$$
+
+where
+$$\begin{align}
+    H(T_n) = H_{F, n} = \exp[-(v_{\theta F, n} - v_{\theta o})/v_e] \tag{B.5.11} 
+\end{align}$$
 
 ### B.6. Final Circumferential Velocity
 
@@ -367,6 +385,46 @@ A method for predicting the final circumferential velocity $v_{\theta}(T)$ is de
 
 (This also calculated $\Delta \theta(T)$)
 
+The differential equation for circumferential velocity is
+$$\begin{align}
+    \dot v_{\theta}(t) = \vec a_T \cdot \hat \theta - \dot r v_\theta / r
+\end{align}$$
+
+$\dot r(t)$ and $r(t)$ are both found by integrating the radial guidance law (B.3.5) and using T as one of the boundary conditions
+$$\begin{align}
+    \begin{bmatrix}
+        \dot r(t) \\
+        r(t)
+    \end{bmatrix} =
+    \begin{bmatrix}
+        \dot r_D \\
+        r_D - \dot r(t) T_{go}
+    \end{bmatrix}
+    - F \begin{bmatrix}
+        c_{1,r} \\
+        c_{2, r}
+    \end{bmatrix}
+\end{align}$$
+
+The following finds an equation for $\hat \theta(t)$. Establish Plane Control Frame, where
+$$\begin{align}
+    \hat i & = \hat r \\
+    \hat j & = \frac{\hat y \times \hat i}{|\hat y \times \hat i |} \\
+    \hat k & = \hat i \times \hat j
+\end{align}$$
+
+and $\hat y$ is the normal vector of the target orbital plane. The frame has origin at vehicle position $\vec r$.
+
+TODO: Do we need to call it frame here? Can we get away with just axes?
+
+Define $\beta (t)$ as declination of vehicle relative to target orbital plane.
+
+
+$$\begin{align}
+\end{align}$$
+
+$$\begin{align}
+\end{align}$$
 
 ## References
 [1] G. W. Cherry, "A General, Explicit, Optimizing Guidance Law for Rocket-Propelled Spaceflight," in *Astrodynamics Guidance and Control Conference, August 24-26, 1964, Los Angeles, CA, USA* [Online]. Available: ARC, https://arc.aiaa.org/doi/10.2514/6.1964-638
