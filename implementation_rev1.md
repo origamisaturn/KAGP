@@ -390,7 +390,12 @@ $$\begin{align}
     \dot v_{\theta}(t) = \vec a_T \cdot \hat \theta - \dot r v_\theta / r
 \end{align}$$
 
-$\dot r(t)$ and $r(t)$ are both found by integrating the radial guidance law (B.3.5) and using T as one of the boundary conditions
+$\dot v_{\theta}(t)$ will be numerically integrated to find $v_{\theta}(T)$. In this scheme, $v_\theta$ is given. Expressions for $\vec a_T$, $\hat \theta$, $\dot r$, and $r$ must be found.
+
+#### B.6.1. $\dot r(t)$ and $r(t)$
+
+Both $\ddot r(t)$ and $\ddot y(t)$ are assumed given by the guidance laws.
+$\dot r(t)$ and $r(t)$ are both found by integrating the radial guidance law (B.3.6) and using T as one of the boundary conditions
 $$\begin{align}
     \begin{bmatrix}
         \dot r(t) \\
@@ -406,6 +411,26 @@ $$\begin{align}
     \end{bmatrix}
 \end{align}$$
 
+Similarly, a solution exists for $\dot y(t)$ and $y(t)$ when integrating (B.4.4)
+$$\begin{align}
+    \begin{bmatrix}
+        \dot y(t) \\
+        y(t)
+    \end{bmatrix} =
+    \begin{bmatrix}
+        0 \\
+        - \dot y(t) T_{go}
+    \end{bmatrix}
+    - F \begin{bmatrix}
+        c_{1,y} \\
+        c_{2, y}
+    \end{bmatrix}
+\end{align}$$
+
+#### B.6.2. $\hat \theta(t)$
+
+TODO: establish RCN frame, which we keep referencing ($\hat r$, $\hat \theta$, $\hat h$).
+
 The following finds an equation for $\hat \theta(t)$. Establish Plane Control Frame, where
 $$\begin{align}
     \hat i & = \hat r \\
@@ -418,6 +443,11 @@ and $\hat y$ is the normal vector of the target orbital plane. The frame has ori
 TODO: Do we need to call it frame here? Can we get away with just axes?
 
 Define $\beta (t)$ as declination of vehicle relative to target orbital plane.
+<p align="center">
+    <img src="B6_beta_angle.svg">
+</p>
+
+#### B.6.3. $\vec a_T(t)$
 
 
 $$\begin{align}
