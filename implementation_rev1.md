@@ -552,6 +552,85 @@ $$\begin{align}
 
 Equation (B.6.13) can now be solved to yield $\vec a_T(t)$
 
+### B.7. Final $\Delta \nu$
+
+The final $\nu(T)$ is found by considering the ...
+
+Finding the true anomaly $\nu(T)$ at cutoff time is necessary for targeting a series of orbital elements. The true anomaly at cutoff is with respect to the target orbit, but the true anomaly of the vehicle during ascent is with respect to an orbit that is constantly changing. Therefore, for the purpose of this calculation, it is assumed that the true anomaly of the launch vehicle at any point is given by its projection onto the perifocal plane of its target orbit.
+
+$$\begin{align}
+    \vec r_{peri} = r_q \hat q + r_p \hat p\\
+    \nu_{peri} = atan2(r_q, r_p)
+\end{align}$$
+
+where $\hat p$, $\hat q$, $\hat w$ are the perifocal axes.
+
+The equation for $\dot \theta_{peri}$ is given by
+$$\begin{align}
+    \dot \theta_{peri} = \frac{\vec v \cdot \hat \theta_{peri}}{r_{peri}}
+\end{align}$$
+
+Where $\hat \theta_{peri}$ is the circumferential unit vector at $\vec r_{peri}$. $\hat \theta_{peri} = \hat j$, so $\dot \theta_{peri}$ is rewritten as
+
+$$\begin{align}
+    \dot \theta_{peri} = \frac{\vec v \cdot \hat j}{r_{peri}}
+\end{align}$$
+
+Integrating this yields
+$$\begin{align}
+    \Delta \nu(T) = \Delta \theta_{peri}(T)
+\end{align}$$
+
+This can be added to the current projected true anomaly $\nu_0$ to yield the final true anomaly $\nu(T)$
+
+### B.8. Orbit Targeting
+
+The orbit to target is described by the following variables
+$$\begin{align}
+    r_p \\
+    r_a \\
+    i \\
+    \Omega \\
+    \omega \\
+\end{align}$$
+
+The variables required by the algorithm are
+$$\begin{align}
+    r_D \\
+    \dot r_D \\
+    v_\theta \\
+    i \\
+    \Omega \\
+    \omega
+\end{align}$$
+
+The variables $r_p$, $r_a$, and $\omega$ must be converted into $r_D$, $\dot r_D$, and $v_{\theta D}$ to be used in the radial guidance law, and in the calculation of cut-off time.
+
+True anomaly at cut-off time is given by 
+$$\begin{align}
+    \nu(T) = \Delta \nu_{peri}(T) + \nu_{peri 0}
+\end{align}$$
+
+Intermediate values are calculated
+$$\begin{align}
+    a = \frac{r_p + r_a}{2} \\
+    e = 1 - \frac{r_p}{a} \\
+    h = \sqrt{r_p \mu (1+e)} \\
+\end{align}$$
+
+The desired values are found
+
+$$\begin{align}
+    r = a \frac{(1-e^2)}{1 + e\cos(\nu)} \\
+    v_r = \mu/h e \sin(\nu) \\
+    v_\theta = \frac{h}{r}
+\end{align}$$
+
+The orbit targeting is placed outside the time-to-go calculation loop and solves iteratively until $\nu$ stops changing.
+
+$$\begin{align}
+\end{align}$$
+
 ## References
 [1] G. W. Cherry, "A General, Explicit, Optimizing Guidance Law for Rocket-Propelled Spaceflight," in *Astrodynamics Guidance and Control Conference, August 24-26, 1964, Los Angeles, CA, USA* [Online]. Available: ARC, https://arc.aiaa.org/doi/10.2514/6.1964-638
 
