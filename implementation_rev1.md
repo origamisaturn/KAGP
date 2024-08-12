@@ -63,11 +63,11 @@ orbital elements
 ??? Do we want to keep these symbols for PCF, or use something else?
 | Symbol | Description |
 | ---   | ---   |
-| $A$, $B$ | |
-| $a_0$, $a_1$, ... $a_n$ |  |
+| $A$, $B$ | steering constants (eq. (B.3.1)) |
+| $a_0$, $a_1$, ... $a_n$ | thrust acceleration coefficients (eq. (B.2.4)) |
 | $a_T$ | thrust acceleration, $m/s^2$ |
-| $\alpha$ |  |
-| $\alpha_y$ |  |
+| $\alpha$ | pitch above local horizon, $rad.$ |
+| $\alpha_y$ | "yaw angle" |
 | $c_1$, $c_2$ | steering constants (eq. (B.2.1)), <br> (nondimensional, $s^{-1}$) || $F$ | ??? |
 | $F$ | F matrix (eq. (B.2.12)) |
 | $F_T$ | thrust, $N$ |
@@ -79,12 +79,12 @@ orbital elements
 | $m$ | mass, $kg$ |
 | $p_1$, $p_2$ | steering polynomials (eq. (B.2.2-3)), <br> ($m/s^2$, $m/s$) |
 | $q$ | general distance coordinate, $m$ |
-| $t$ |  |
+| $t$ | time, $s$ |
 | $T$ | cutoff time, $s$ |
 | $\tau$ | (eq. (B.1.7)), $s$ |
 | $T_{go}$ | time-to-go (eq. (B.2.11)), $s$ |
-| $\theta_{pitch}$ |  |
-| $v
+| $\theta_{pitch}$ | pitch angle, $rad.$ |
+| $v$ | velocity, $m/s$ |
 | $v_e$ | exhaust velocity, $m/s$ |
 
 subscript $o$ indicates current time, except for $m_o$? Which indicates mass at time $t=0$.
@@ -103,7 +103,7 @@ B.4
 
 The following is a derivation of an iterative method for guiding a single-stage rocket ascent vehicle. This derivation is based completely on that of Cherry [1], with some modification:
 
-1) Cherry derives the guidance law by defining the law to have the minimum number of terms necessary to uniquely satisfy the boundary conditions, and defers optimization of the guidance law to the appendix. The derivation here instead starts from the content in Appendix A, and derives the guidance laws based on an approximation of the linear tangent steering law and the differential equations of motion.
+1) Cherry derives the guidance law by defining the law to have the minimum number of terms necessary to uniquely satisfy the boundary conditions, and defers optimization of the guidance law to the paper's appendix. The derivation here instead starts from the content in Appendix A of Cherry, deriving the guidance laws based on an approximation of the linear tangent steering law and the differential equations of motion.
 2) The method of predicting the final circumferential velocity derived in Cherry is a Taylor expansion and it uses the radial guidance law. Here, the final circumferential velocity is predicted using a numerical integrator, and incorporates both radial and plane control guidance. A numerical integrator is used here instead of a Taylor expansion mainly for convenience; the equation for $\dot v_{\theta}(t)$ derived here is large, and it was determined that a Taylor expansion would be much larger and more difficult to debug in the implemented program compared to using a numerical integrator.
 3) The orbit targeting method in Cherry has an arbitary argument of periapsis, while the orbit targeting method here specifies the argument of periapsis.
 
@@ -291,7 +291,7 @@ $$\begin{align}
     \sin \alpha_y(t) = A+Bt - \vec g \cdot \hat y/a_T \tag{B.4.2} \\
 \end{align}$$
 
-The approximation assumes that $\tan \alpha \approx \sin \alpha$, and that $(\vec g \cdot \vec y)/a_T \approx 0$. $\vec g \cdot \vec y$ is small in general, and $(\vec g \cdot \vec y)/a_T$ even more so.
+The approximation assumes that $\tan \alpha \approx \sin \alpha$, and that $(\vec g \cdot \vec y)/a_T \approx 0$. $\vec g \cdot \vec y$ is small in general, and $(\vec g \cdot \vec y)/a_T$ is even more so.
 
 Substituting (B.4.2) in (B.4.1) yields 
 
@@ -326,7 +326,7 @@ $c_{1,y}$ and $c_{2,y}$ can be solved using the matrix form of the equations of 
 
 ### B.5. Time-To-Go
 
-The radial guidance law and plane control guidance law require the cut-off time $T$ to be given in order to solve for the constants. An iterative method of finding $T$ based on the target circumferential velocity $v_{\theta D}$ is derived.
+The radial guidance law and plane control guidance law require the cut-off time $T$ to be given in order to solve for the $c_1$ and $c_2$ constants. An iterative method of finding $T$ based on the target circumferential velocity $v_{\theta D}$ is derived.
 
 The differential equation for $\dot v_\theta$ is 
 
