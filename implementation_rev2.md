@@ -48,6 +48,7 @@
 | $D$ | desired value at $t = T$ (cut-off time) |
 | $r$ | radial guidance constant |
 | $y$ | plane control guidance constant |
+| $peri$ | perifocal plane projection $\begin{bmatrix} \hat n & \hat e & 0 \end{bmatrix}$ |
 
 ## Appendix B: Reference Axes
 
@@ -78,6 +79,15 @@ $$\begin{align}
 \end{align}$$
 
 $\hat y$ is the normal vector of the target orbital plane, defined by $\Omega$ and $i$. Mainly used to simplify finding $v_\theta(T)$ and $\psi$.
+
+### Topocentric
+May need to be defined in terms of a rotation matrix from global to perifocal using latitude and longitude.
+
+$$\begin{align}
+    \hat n = \tag{B.10} \\
+    \hat e = \tag{B.11} \\
+    \hat d = \tag{B.12} 
+\end{align}$$
 
 ## Appendix C: Abbreviated Derivation
 
@@ -434,18 +444,18 @@ $$\begin{align}
 The circumferential unit vector $\hat \theta$ is given by 
 
 $$\begin{align}
-    \hat \theta(t) = \frac{\vec v_\theta(t)}{v_\theta(t)} \tag{B.6.7}
+    \hat \theta(t) = \frac{\vec v_\theta(t)}{v_\theta(t)} \tag{C.6.7}
 \end{align}$$
 
 By definition, circumferential velocity $v_\theta$ in PCF axes has no $\hat i$ component ($\hat \theta$ is orthogonal to $\hat r$)
 
 $$\begin{align}
-    \vec v_\theta = \begin{bmatrix} 0 & v_{j} & v_{ k} \end{bmatrix} \tag{B.6.8}
+    \vec v_\theta = \begin{bmatrix} 0 & v_{j} & v_{ k} \end{bmatrix} \tag{C.6.8}
 \end{align}$$
 
 The $\hat k$ component of velocity will be calculated from the commanded velocity projected along the $\hat y$ axis
 $$\begin{align}
-    \vec v \cdot \hat y = \dot y \tag{B.6.9}
+    \vec v \cdot \hat y = \dot y \tag{C.6.9}
 \end{align}$$
 
 where $\dot y$ is given by (C.6.3). Define $\beta (t)$ as the angle of the vehicle's position with respect to the target orbital plane.
@@ -459,29 +469,136 @@ $$\begin{align}
         y/r \\
         0 \\
         \sqrt{r^2 + y^2}/r
-    \end{bmatrix} \tag{B.6.10}
+    \end{bmatrix} \tag{C.6.10}
 \end{align}$$
 
-Substituting (B.6.10) into (B.6.9) and solving for $v_{\hat k}$ yields
+Substituting (C.6.10) into (C.6.9) and solving for $v_{k}$ yields
 
 $$\begin{align}
-    v_{\hat k} & = \frac{\dot y - v_{\hat i} \hat y_{\hat i}}{\hat y_{\hat k}} \tag{B.6.11} \\
-    & = \frac{\dot y - \dot r \hat y_{\hat i}}{\hat y_{\hat k}} \notag
+    v_{ k} & = \frac{\dot y - v_{i} \hat y_{i}}{\hat y_{k}} \tag{C.6.11} \\
+    & = \frac{\dot y - \dot r \hat y_{i}}{\hat y_{k}} \notag
 \end{align}$$
 
+$v_{\hat j}$ is given by finding the portion of velocity "unused" by the $\hat i$ and $\hat k$ components of velocity
+$$\begin{align}
+    v_{\hat j} = \sqrt{v^2 - v_{\hat i}^2 - v_{\hat k}^2} \tag{C.6.12}
+\end{align}$$
+
+Equation (C.6.7) can now be solved to yield $\hat \theta(t)$.
+
+#### $\vec a_T(t)$
+
+$a_T$ is given by 
+$$\begin{align}
+    \vec a_T = \begin{bmatrix} a_{T \hat i} & a_{T \hat j} & a_{T \hat k} \end{bmatrix} \tag{C.6.13}
+\end{align}$$
+
+$\vec a_T \cdot \hat i$ is given by rearranging the differential equation for radial motion (C.3.2)
+$$\begin{align}
+    \vec a_T \cdot \hat i = \vec a_T \cdot \hat r =  \ddot r - g_{eff}  \tag{C.6.14}
+\end{align}$$
+
+$\vec a_T \cdot \hat k$ is found by substituting the expression for $\hat y$ (C.6.10) into the differential equation for $\ddot y$ (C.4.1)
+$$\begin{align}
+    \vec a_T \cdot \hat k = \frac{\vec a_T \cdot \hat y - (\vec a_T \cdot \hat r)(\hat y_{\hat i})}{\hat y_{\hat k}} \tag{C.6.15}
+\end{align}$$
+
+where
+$$\begin{align}
+    \vec a_T \cdot \hat y & = \ddot y - \vec g \cdot \hat y \tag{C.6.16} \\
+    & = \ddot y + \frac{\mu y}{r^3} \notag
+\end{align}$$
+
+$\vec a_T \cdot \hat j$ is given by
+$$\begin{align}
+    \vec a_T \cdot \hat j = \sqrt{a_T^2 - (\vec a_T \cdot \hat i)^2 - (\vec a_T \cdot \hat k)} \tag{C.6.17}
+\end{align}$$
+
+All the components of $\vec a_T(t)$ have been found.
 
 ### C.7. Pitch and Heading
 
+The pitch and heading commands are found using the commanded thrust acceleration $a_T(t)$ (C.6.13). 
+
+$$\begin{align}
+    \alpha & = \sin^{-1}(\frac{\vec a_T \cdot \hat r}{a_T}) \tag{C.7.1} \\
+    \psi & = \arctan2(a_{T_e},\, a_{T_n}) \tag{C.7.2}
+\end{align}$$
+
+(C.7.2) uses the topocentric coordinates of $a_T$.
+
 ### C.8. Final True Anomaly
+
+Finding the true anomaly $\nu(T)$ at cutoff time is necessary for targeting a series of orbital elements. The true anomaly at cutoff is with respect to the target orbit, but the true anomaly of the vehicle during ascent is with respect to an orbit that is constantly changing. Therefore, for the purpose of this calculation, it is assumed that the true anomaly of the launch vehicle at any point is given by its projection onto the perifocal plane of its target orbit.
+
+$$\begin{align}
+    \vec r_{peri} = r_q \hat q + r_p \hat p \tag{C.8.1} \\
+    \nu_{peri} = atan2(r_{q}, r_{p}) \tag{C.8.2} 
+\end{align}$$
+
+where $\hat p$, $\hat q$, $\hat w$ are the perifocal axes.
+
+The differential equation for $\dot \nu_{peri}$ is
+$$\begin{align}
+    \dot \nu_{peri} = \frac{\vec v \cdot \hat \theta_{peri}}{r_{peri}} \tag{C.8.3} 
+\end{align}$$
+
+Where $\hat \theta_{peri}$ is the circumferential unit vector at $\vec r_{peri}$. $\hat \theta_{peri} = \hat j$, so $\dot \nu_{peri}$ is rewritten as
+
+$$\begin{align}
+    \dot \nu_{peri} = \frac{\vec v \cdot \hat j}{r_{peri}} \tag{C.8.4} 
+\end{align}$$
+
+Numerically integrating this from $t_o$ to $T$ yields
+
+$$\begin{align}
+    \nu_{peri}(T) = \Delta \nu_{peri}(T) + \nu_{peri}(t_o) \tag{C.8.5} 
+\end{align}$$
+
+where 
+
+$$\begin{align}
+    \Delta \nu_{peri}(T) = \int_{t_o}^T \dot \nu_{peri}(t)\; dt \tag{C.8.6}
+\end{align}$$
+
+(C.8.5) is used to predict the true anomaly at burnout.
 
 ### C.9. Orbit Targeting
 
+The target orbit is described by 
+$$
+\begin{matrix} 
+r_p& r_a & i & \Omega & \omega \tag{C.9.1}
+\end{matrix}
+$$
 
+The variables required by the algorithm are
+$$\begin{matrix}
+    r_D & \dot r_D & v_\theta & i & \Omega \tag{C.9.2}
+\end{matrix}$$
+
+The variables $r_p$, $r_a$, and $\omega$ must be converted into $r_D$, $\dot r_D$, and $v_{\theta D}$ to be used in the radial guidance law, and in the calculation of cut-off time.
+
+True anomaly at cut-off $\nu(T) = \nu_{proj}(T)$ is given by (C.8.5).
+
+Intermediate orbit values are calculated
+$$\begin{align}
+    a = \frac{r_p + r_a}{2} \tag{C.9.3} \\
+    e = 1 - \frac{r_p}{a} \tag{C.9.4} \\
+    h = \sqrt{r_p \mu (1+e)} \tag{C.9.5} \\
+\end{align}$$
+
+The desired values are found
+$$\begin{align}
+    r_D = a \frac{(1-e^2)}{1 + e\cos(\nu)} \tag{C.9.6} \\
+    v_{r D} = \mu/h e \sin(\nu) \tag{C.9.7} \\
+    v_{\theta D} = \frac{h}{r} \tag{C.9.8}
+\end{align}$$
+
+The orbit targeting is placed outside the time-to-go calculation loop and solved iteratively until the change of $\nu(T)$ between iterations becomes smaller than a certain error value.
 
 
 ## References
 [1] G. W. Cherry, "A General, Explicit, Optimizing Guidance Law for Rocket-Propelled Spaceflight," in *Astrodynamics Guidance and Control Conference, August 24-26, 1964, Los Angeles, CA, USA* [Online]. Available: ARC, https://arc.aiaa.org/doi/10.2514/6.1964-638
 
 [2] A.E. Bryson, Jr. and Y. Ho, "Optimization Problems for Dynamic Systems," in *Applied Optimal Control,* Waltham, MA, USA: Ginn, 1969, pp. 61.
-
-## Notes
