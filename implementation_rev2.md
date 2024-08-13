@@ -50,7 +50,11 @@
 | $y$ | plane control guidance constant |
 | $peri$ | perifocal plane projection $\begin{bmatrix} \hat n & \hat e & 0 \end{bmatrix}$ |
 
-## Appendix B: Reference Axes
+## Appendix B: Reference Frames
+
+### Global Frame
+
+Axes are $\hat X$, $\hat Y$, $\hat Z$. Axes are inertial, origin is at center of the celestial body. In terms of (right ascension, declination), $\hat X$ is at $(0, 0)$, $\hat Y$ is at $(\frac{\pi}{2}, 0)$, and $\hat Z$ is at $(0, \frac{\pi}{2})$.
 
 ### Radial-Circumferential-Normal
 
@@ -62,12 +66,17 @@ $$\begin{align}
 
 ### Perifocal
 
-May need to be defined in terms of a rotation matrix from global to perifocal using $\Omega$, $i$, $\omega$
+Origin is at center of celestial body. $\hat p$ points to orbit periapsis, $\hat q$ on orbital plane at $\nu = \frac{\pi}{2}$, and $\hat w = \hat p \times \hat q$.
+
+The following defines the perifocal axes in terms of the global frame.
 
 $$\begin{align}
-    \hat p = \tag{B.4} \\
-    \hat q = \tag{B.5} \\
-    \hat w = \tag{B.6} 
+    \begin{bmatrix}
+        & & \\
+        \hat p & \hat q & \hat w \\
+        & &
+    \end{bmatrix}
+    = R_z(\Omega) R_x(i) R_z(\omega)
 \end{align}$$
 
 ### Plane Control
@@ -78,16 +87,24 @@ $$\begin{align}
     \hat k = \hat i \times \hat j \tag{B.9} 
 \end{align}$$
 
-$\hat y$ is the normal vector of the target orbital plane, defined by $\Omega$ and $i$. Mainly used to simplify finding $v_\theta(T)$ and $\psi$.
+Origin is at vehicle position $\vec r$. $\hat y$ is the normal vector of the target orbital plane, defined by $\Omega$ and $i$. Mainly used to simplify finding $v_\theta(T)$ and $\psi$.
 
 ### Topocentric
-May need to be defined in terms of a rotation matrix from global to perifocal using latitude and longitude.
+
+Origin is at vehicle position $\vec r$. $\hat n$ points North, $\hat e$ points East, $\hat d$ points downwards.
+
+The following defines the topocentric axes in terms of the global frame.
 
 $$\begin{align}
-    \hat n = \tag{B.10} \\
-    \hat e = \tag{B.11} \\
-    \hat d = \tag{B.12} 
+    \begin{bmatrix}
+        & & \\
+        \hat n & \hat e & \hat d \\
+        & &
+    \end{bmatrix}
+    = R_z(RA) R_y(-DEC)
 \end{align}$$
+
+where $RA$ and $DEC$ are right ascension and declination, respectively.
 
 ## Appendix C: Abbreviated Derivation
 
