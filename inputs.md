@@ -1,13 +1,16 @@
 # Input File Reference
-The ascent program requires yaml configuration files to run. The config data can be defined in one file, or multiple files, as long as all necessary keys are passed to gcherry upon execution. The following keys are required:
+The program requires YAML configuration files as input. A configuration file specifies both the guidance method and the simulation environment to be used. The configuration data can be defined in one file, or spread across multiple files, as long as all necessary keys are passed to the program upon execution. 
 
-- spacecraft
-- body
-- orbit_targeting_ascent | debug_ascent_1
-- integrator | krpc_client
+The following keys are required:
 
-The '|' indicates that one, and only one, of the keys in the list must be defined.
-Either 'integrator' or 'krpc_client' may be defined, but not both. 
+- `spacecraft`
+- `body`
+- `orbit_targeting_ascent` | `debug_ascent_1`
+- `integrator` | `krpc_client`
+
+The '|' character indicates that one of the keys in the sequence must be defined. Each key in the sequence is exclusive.
+
+The following headings are dictionary keys. The content of each section is the available key-value pairs for that dictionary. See `examples\` for sample YAML configuration files.
 
 ## spacecraft
 Key                 | Units | Required  | Type   | Description
@@ -49,8 +52,8 @@ Uses internal integrator, intended for testing guidance.
 Key                         | Units | Required  | Default   | Type      | Description
 ---                         | ---   | ---       | ---       | ---       | ---
 simulation_end_time         | s     | Yes       |           | `float`   | Length of time the simulation will run.
-initial_position            | m     | Yes       |           | 1x3 `vector` [`float`]    | Position at start of guidance, right-handed global frame.
-initial_velocity            | m/s   | Yes       |           | 1x3 `vector` [`float`]    | Velocity at start of guidance, right-handed global frame.
+initial_position            | m     | Yes       |           | 1x3 `list[float]`    | Position at start of guidance, right-handed global frame.
+initial_velocity            | m/s   | Yes       |           | 1x3 `list[float]`    | Velocity at start of guidance, right-handed global frame.
 outer_loop_interval         | s     | No        | 7         | `float`   | Time between successive outer loop calculations.
 outer_loop_cutoff           | s     | No        | 10        | `float`   | Outer loop calculation will be disabled outer_loop_cutoff seconds before the estimated terminal time. An outer loop iteration calculated less than 10 seconds before terminal time may fail to converge.
 

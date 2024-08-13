@@ -1,5 +1,9 @@
 ## Table of Contents
 
+- [1. Guidance Objects](#1-guidance-objects)
+    - [1.1. OrbitTargetingAscent](#11-orbittargetingascent)
+    - [1.2. DebugAscent1](#12-debugascent1)
+- [2. Simulation Objects](#2-simulation-objects)
 - [Appendix A: Symbols](#appendix-a-symbols)
 - [Appendix B: Reference Frames](#appendix-b-reference-frames)
 - [Appendix C: Abbreviated Derivation](#appendix-c-abbreviated-derivation)
@@ -14,6 +18,32 @@
     - [C.9. Orbit Targeting](#c9-orbit-targeting)
 - [References](#references)
 
+## 1. Guidance Objects
+
+### 1.1. OrbitTargetingAscent
+
+### 1.2. DebugAscent1
+
+## 2. Simulation Objects
+
+### 2.1. IntegratorSim 
+
+### 2.2. KRPCClient
+
+## 3. Guidance Components
+
+### 3.1. RadialYawGuidance
+
+### 3.1. TimeToGo
+
+### 3.2. VThetaSolver
+
+### 3.3. PitchHeadingQuery
+
+### 3.4. OrbitTargeting
+
+### 3.5. EnginePropertyEstimator
+
 ## Appendix A: Symbols
 
 | Symbol | Description |
@@ -23,7 +53,7 @@
 | $a_T$ | thrust acceleration, $m/s^2$ |
 | $\alpha$ | pitch angle, $rad.$ |
 | $\alpha_y$ | yaw angle, $rad.$ |
-| $c_1$, $c_2$ | steering constants, <br> [nondimensional, $s^{-1}$] || $F$ | ??? |
+| $c_1$, $c_2$ | steering constants, <br> [nondimensional, $s^{-1}$] |
 | $F$ | F matrix |
 | $F_T$ | thrust, $N$ |
 | $f_{11}$, $f_{12}$, $f_{21}$, $f_{22}$ | F matrix entries |
