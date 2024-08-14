@@ -4,6 +4,15 @@
     - [1.1. OrbitTargetingAscent](#11-orbittargetingascent)
     - [1.2. DebugAscent1](#12-debugascent1)
 - [2. Simulation Objects](#2-simulation-objects)
+    - [2.1. Integrator Sim](#21-integratorsim)
+    - [2.2. KRPCClient](#22-krpcclient)
+- [3. Guidance Components](#3-guidance-components)
+    - [3.1. RadialYawGuidance](#31-radialyawguidance)
+    - [3.2. TimeToGo](#32-timetogo)
+    - [3.3. VThetaSolver](#33-vthetasolver)
+    - [3.4. PitchHeadingQuery](#34-pitchheadingquery)
+    - [3.5. OrbitTargeting](#35-orbittargeting)
+    - [3.6. EnginePropertyEstimator](#36-enginepropertyestimator)
 - [Appendix A: Symbols](#appendix-a-symbols)
 - [Appendix B: Reference Frames](#appendix-b-reference-frames)
 - [Appendix C: Abbreviated Derivation](#appendix-c-abbreviated-derivation)
@@ -20,29 +29,58 @@
 
 ## 1. Guidance Objects
 
+Guidance objects use config objects during initialization.
+
 ### 1.1. OrbitTargetingAscent
+
+<p align="center">
+    <img src="OrbitTargetingAscentDiagram.svg">
+</p>
 
 ### 1.2. DebugAscent1
 
+<p align="center">
+    <img src="test2.svg">
+</p>
+
+
 ## 2. Simulation Objects
+
+Simulation objects accept guidance objects and config objects during initialization.
+
+All simulation objects objects use the state vector
+
+$$\begin{align}
+    \begin{bmatrix} x & y & z & \dot x & \dot y & \dot z & m \end{bmatrix}
+\end{align}$$
+
+Where $x$, $y$, $z$ are the components of the position vector $\vec r$ in the global inertial frame, and m is mass.
+
+Length is in $m$, mass in $kg$, time in $s$.
 
 ### 2.1. IntegratorSim 
 
+Uses Runge-Kutta 4 integrator. Rocket modelled as being solely under the forces of gravity and acceleration. No turning dynamics are modelled, acceleration direction is determined each instant by the guidance commands.
+
 ### 2.2. KRPCClient
+
+Uses the KRPC library to connect to KSP. Currently only works for locally-hosted KRPC servers.
+
+Uses KRPC's internal autopilot to control pitch and heading.
 
 ## 3. Guidance Components
 
 ### 3.1. RadialYawGuidance
 
-### 3.1. TimeToGo
+### 3.2. TimeToGo
 
-### 3.2. VThetaSolver
+### 3.3. VThetaSolver
 
-### 3.3. PitchHeadingQuery
+### 3.4. PitchHeadingQuery
 
-### 3.4. OrbitTargeting
+### 3.5. OrbitTargeting
 
-### 3.5. EnginePropertyEstimator
+### 3.6. EnginePropertyEstimator
 
 ## Appendix A: Symbols
 
@@ -149,7 +187,7 @@ In broad terms, the guidance method is derived by
 This derivation is based completely on the paper by G.Cherry, with some modification:
 
 1) Cherry derives the guidance law by defining the law to have the minimum number of terms necessary to uniquely satisfy the boundary conditions, and defers optimization of the guidance law to the paper's appendix. The derivation here instead starts from the content in Appendix A of Cherry, deriving the guidance laws based on an approximation of the linear tangent steering law and the differential equations of motion.
-2) The method of predicting the final circumferential velocity derived in Cherry is a Taylor expansion, and it is designed exclusively for use with the radial guidance law. Here, the final circumferential velocity is predicted using a numerical integrator, and it incorporates both radial and plane control guidance.
+2) The method of predicting the final circumferential velocity derived in Cherry is a Taylor expansion, and it is designed exclusively for the radial guidance law. Here, the final circumferential velocity is predicted using a numerical integrator, and it incorporates both radial and plane control guidance.
 3) The orbit targeting method in Cherry has an unconstrained argument of periapsis. Here, the argument of periapsis is given.
 
 A numerical integrator is used here instead of a Taylor expansion mainly for convenience; the equation for $\dot v_{\theta}(t)$ derived here is large, and it was determined that a Taylor expansion would be much larger and more difficult to debug in the implemented program compared to using a numerical integrator.
