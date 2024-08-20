@@ -7,7 +7,9 @@ from gcherry.guidance_components import (
     OrbitGuidanceComponent,
     PitchHeadingQuery,
     VThetaSolverOuterLoop,
-    EnginePropertyEstimator
+    EnginePropertyEstimator,
+    VThetaSolver,
+    InfeasibleError
 )
 
 # TODO: Add docs for this
@@ -144,6 +146,7 @@ class DebugAscent1Group(om.Group):
     def setup(self):
         self.add_subsystem('outer_loop', VThetaSolverOuterLoop(), promotes=['*'])
         self.add_subsystem('pitch_heading_query', PitchHeadingQuery(), promotes=['*'])
+
 
 class DebugAscent1(OpenMDAOGuidanceBase):
     # _openmdao_problem: om.Problem
