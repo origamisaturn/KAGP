@@ -15,6 +15,9 @@ from gcherry.guidance_components import (
 # TODO: Add docs for this
 class GuidanceBase(ABC):
     @abstractmethod
+    def __init__(self, config: cfg.Config): pass
+
+    @abstractmethod
     def get_command(self, t, state, outer_loop=True, log=True, mecoshift=0.0): pass
 
     @abstractmethod

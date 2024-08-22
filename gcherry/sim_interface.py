@@ -14,6 +14,9 @@ from gcherry.rk4 import rk4_step
 # TODO: add docs for this
 class SimulatorBase(ABC):
     @abstractmethod
+    def __init__(self, config: cfg.Config, 
+                       guidance_obj: GuidanceBase): pass
+    @abstractmethod
     def run(self): pass
 
 def generateSimObj(config: cfg.Config, guidance_obj: GuidanceBase) -> SimulatorBase:
