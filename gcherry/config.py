@@ -2,7 +2,9 @@ import yaml
 import pickle as pkl
 from enum import Enum
 from pydantic import (
-    BaseModel, conlist, PositiveFloat, NonNegativeFloat, model_validator)
+    BaseModel, ValidationInfo,
+    conlist, model_validator, field_validator, 
+    PositiveFloat, NonNegativeFloat)
 from typing import Optional
 from typing_extensions import Self
 from pathlib import Path
@@ -24,21 +26,43 @@ class CelestialBodyConfig(BaseModel):
 class OrbitTargetingAscentConfig(BaseModel):
     apoapsis: PositiveFloat
     periapsis: PositiveFloat
-    longitude_of_ascending_node: NonNegativeFloat
-    inclination: NonNegativeFloat
-    argument_of_periapsis: NonNegativeFloat
+    longitude_of_ascending_node: NonNegativeFloat # rad. [0, 2pi]
+    inclination: NonNegativeFloat # rad. [0, pi]
+    argument_of_periapsis: NonNegativeFloat # rad. [0, 2pi]
 
     enable_estimator: bool = True
     estimator_ignore_time: NonNegativeFloat = 5
     estimator_output_time: NonNegativeFloat = 50
 
+    @field_validator('longitude_of_ascending_node', 'inclination', 
+                     'argument_of_periapsis')
+    @classmethod
+    def convert_deg_to_rad(cls, val: float, info: ValidationInfo) -> NonNegativeFloat:
+        if isinstance(val, float):
+            if info.field_name == 'inclination':
+                assert val >= 0 and val <= 180, f'{info.field_name} must be between 0 and 180 degrees.'
+                val = np.deg2rad(val%180)
+            else:
+                val = np.deg2rad(val%360)
+        return val
 
 class DebugAscent1Config(BaseModel):
     terminal_time: PositiveFloat
     radius: PositiveFloat
     radial_velocity: float
-    longitude_of_ascending_node: NonNegativeFloat
-    inclination: NonNegativeFloat
+    longitude_of_ascending_node: NonNegativeFloat # rad. [0, 2pi]
+    inclination: NonNegativeFloat # rad. [0, pi]
+
+    @field_validator('longitude_of_ascending_node', 'inclination')
+    @classmethod
+    def convert_deg_to_rad(cls, val: float, info: ValidationInfo) -> NonNegativeFloat:
+        if isinstance(val, float):
+            if info.field_name == 'inclination':
+                assert val >= 0 and val <= 180, f'{info.field_name} must be between 0 and 180 degrees.'
+                val = np.deg2rad(val%180)
+            else:
+                val = np.deg2rad(val%360)
+        return val
 
 class IntegratorConfig(BaseModel):
     simulation_end_time: PositiveFloat
