@@ -19,6 +19,9 @@ from gcherry.log_utils import almost_equal
 #   By George W. Gcherry
 #
 
+class InfeasibleError(Exception):
+    pass
+
 
 class EnginePropertyEstimator(om.ExplicitComponent):
     """ Estimates values of engine properties in-flight. 
@@ -490,6 +493,8 @@ class VThetaSolver(om.ExplicitComponent):
         sample_v: [m/s] (len(v) == 3) 3D velocity in global inertial 
             frame.
         sample_t: [s] Time at which sample_x and sample_v were collected.
+        permissive: (bool) If false, will throw exception upon encountering
+            an impossible thrust command.
 
         --- Targeting ---
         target_r_T: [m] Target final radial position.
@@ -531,6 +536,7 @@ class VThetaSolver(om.ExplicitComponent):
             self.add_input(name, val=0.0)
 
         # self.add_input('query_t', val=0.0)
+        self.add_discrete_input('permissive', val=True)
         
         output_names = ['v_theta_T', 'v_theta_loss_T', 'delta_theta_T']
         for name in output_names:
@@ -539,7 +545,7 @@ class VThetaSolver(om.ExplicitComponent):
         # self.add_discrete_output('_debug', val={
         #     'v_theta_dot': 0 })
 
-    def compute(self, inputs, outputs):
+    def compute(self, inputs, outputs, discrete_inputs, discrete_outputs):
         pos = inputs['sample_x']
         vel = inputs['sample_v']
         t0 = inputs['sample_t'][0]
@@ -557,6 +563,7 @@ class VThetaSolver(om.ExplicitComponent):
         c2_radial = inputs['c2_radial'][0]
         c1_yaw = inputs['c1_yaw'][0]
         c2_yaw = inputs['c2_yaw'][0]
+        permissive = discrete_inputs['permissive']
 
         tau = m0/m_dot
         r_hat = unit_vector(pos)
@@ -597,6 +604,13 @@ class VThetaSolver(om.ExplicitComponent):
             a_thrust_j = np.sqrt(a_thrust_mag**2 - a_thrust_i**2 - a_thrust_k**2)
             a_thrust_PCF = np.array([a_thrust_i, a_thrust_j, a_thrust_k])
 
+            # If permissive == False, this will throw an exception if 
+            # at any point the given trajectory is infeasible
+            if not permissive: 
+                if np.isnan(a_thrust_j):
+                    raise InfeasibleError("Guidance trajectory infeasible: " +
+                    "Excessive thrust command at t == {}.".format(t))
+
             theta_hat_PCF = np.zeros(3)
             if v_theta != 0:
                 vel_i = r_dot
@@ -632,6 +646,9 @@ class VThetaSolver(om.ExplicitComponent):
         estimated_delta_theta_T = y_res[1, -1]
         # TODO: come up with more robust method of dealing with guidance
         # exceeding thrust requirements.
+        # Not immediately throwing an exception based on NaN v_theta_T,
+        # time-to-go estimator can work VThetaSolver out of the 
+        # infeasible region sometimes.
         if np.isnan(estimated_v_theta_T):
             estimated_v_theta_T = 0
             estimated_delta_theta_T = 0
@@ -844,7 +861,7 @@ class OuterLoopGroup(om.Group):
         self.nonlinear_solver.options['maxiter'] = 100
         self.nonlinear_solver.options['atol'] = 1e-3
 
-class OrbitTargetingGroup(om.Group):
+class OrbitTargetingSubGroup(om.Group):
     """ Group for ascent given target orbital parameters. 
 
     """
@@ -854,6 +871,13 @@ class OrbitTargetingGroup(om.Group):
         self.nonlinear_solver = om.NonlinearBlockGS()
         self.nonlinear_solver.options['maxiter'] = 100
         self.nonlinear_solver.options['atol'] = 1e-3
+
+class OrbitTargetingGroup(om.Group):
+    """ Wrapper for OrbitTargetingSubGroup with trajectory verification. """
+    def setup(self):
+        self.add_subsystem('orbit_targeting_sub_group', OrbitTargetingSubGroup(), promotes=['*'])
+        self.add_subsystem('trajectory_verifier', VThetaSolver(), 
+            promotes_inputs=['*'])
 
 class OrbitGuidanceComponent(om.ExplicitComponent):
     """ Solves for ascent guidance equation given target orbital 
@@ -905,6 +929,9 @@ class OrbitGuidanceComponent(om.ExplicitComponent):
         model = OrbitTargetingGroup()
         self.prob = om.Problem(model)
         self.prob.setup()
+        # Necessary to have VThetaSolver throw exceptions for invalid
+        # trajectories
+        self.prob.model.set_val('trajectory_verifier.permissive', False)
 
         self.add_input('sample_x', val=np.zeros((3)))
         self.add_input('sample_v', val=np.zeros((3)))
@@ -971,6 +998,9 @@ class VThetaSolverOuterLoop(om.ExplicitComponent):
         model = VThetaSolverTestGroup()
         self.prob = om.Problem(model)
         self.prob.setup()
+        # Necessary to have VThetaSolver throw exceptions for invalid
+        # trajectories
+        self.prob.model.set_val('v_theta_solver.permissive', False)
 
         self._vector_input_names = ['sample_x', 'sample_v']
         self._scalar_input_names = ['sample_t', 
