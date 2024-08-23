@@ -601,15 +601,20 @@ class VThetaSolver(om.ExplicitComponent):
             # i, j, k are axes in Plane Control Frame
             a_thrust_i = a_thrust_r
             a_thrust_k = (a_thrust_y - a_thrust_i*y_unit_PCF[0])/y_unit_PCF[2]
-            a_thrust_j = np.sqrt(a_thrust_mag**2 - a_thrust_i**2 - a_thrust_k**2)
-            a_thrust_PCF = np.array([a_thrust_i, a_thrust_j, a_thrust_k])
-
+            radicand = a_thrust_mag**2 - a_thrust_i**2 - a_thrust_k**2
             # If permissive == False, this will throw an exception if 
             # at any point the given trajectory is infeasible
-            if not permissive: 
-                if np.isnan(a_thrust_j):
+            if radicand < 0:
+                if not permissive:
                     raise InfeasibleError("Guidance trajectory infeasible: " +
                     "Excessive thrust command at t == {}.".format(t))
+                a_thrust_j = np.NaN
+            else:
+                a_thrust_j = np.sqrt(radicand)
+                
+            a_thrust_PCF = np.array([a_thrust_i, a_thrust_j, a_thrust_k])
+
+
 
             theta_hat_PCF = np.zeros(3)
             if v_theta != 0:
