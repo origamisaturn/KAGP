@@ -121,8 +121,8 @@ class OpenMDAOProblemLog:
 
         """
         model = openmdao_problem.model
-        inputs = model.list_inputs()
-        outputs = model.list_outputs()
+        inputs = model.list_inputs(val=False, out_stream=None)
+        outputs = model.list_outputs(val=False, out_stream=None)
         for var in inputs:
             var_name = var[0]
             self.inputs[var_name] = list()
