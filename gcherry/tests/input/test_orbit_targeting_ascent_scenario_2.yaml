@@ -12,9 +12,9 @@ body:
 orbit_targeting_ascent:
   apoapsis: 1790.00e+3
   periapsis: 1780.00e+3
-  longitude_of_ascending_node: 4.363323129985824
-  inclination: 0.19198621771937624
-  argument_of_periapsis: 0.3
+  longitude_of_ascending_node: 250.0
+  inclination: 11.0
+  argument_of_periapsis: 17.188733853924695
 
 integrator:
   simulation_end_time: 458.3449375
