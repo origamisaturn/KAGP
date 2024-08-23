@@ -14,8 +14,8 @@ debug_ascent_1:
   terminal_time: 470
   radius: 1785.00e+3
   radial_velocity: 20.0
-  longitude_of_ascending_node: 4.363323129985824
-  inclination: 0.19198621771937624
+  longitude_of_ascending_node: 250.0
+  inclination: 11.0
 
 integrator:
   simulation_end_time: 470

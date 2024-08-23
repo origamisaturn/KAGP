@@ -13,9 +13,9 @@ orbit_targeting_ascent:
   apoapsis: 1785.00e+3
   periapsis: 1785.00e+3
   # TEST: large initial y
-  longitude_of_ascending_node: 0.4
+  longitude_of_ascending_node: 22.918311805232932
   # TEST: excessive inclination
-  inclination: 90.0
+  inclination: 116.62015617740872
   argument_of_periapsis: 0.0
 
 integrator:

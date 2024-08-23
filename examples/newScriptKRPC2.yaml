@@ -10,9 +10,9 @@ body:
 orbit_targeting_ascent:
   apoapsis: 1790.00e+3
   periapsis: 1780.00e+3
-  longitude_of_ascending_node: 3.000
-  inclination: 0.0349066
-  argument_of_periapsis: 0.3
+  longitude_of_ascending_node: 171.88733853924697
+  inclination: 2.0
+  argument_of_periapsis: 17.188733853924695
   outer_loop_interval: 7
   outer_loop_cutoff: 3
 
