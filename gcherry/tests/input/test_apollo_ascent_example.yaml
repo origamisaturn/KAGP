@@ -1,0 +1,44 @@
+# Example of Apollo LM Ascent Stage at Lunar equator
+
+# Ascent scenario based on:
+# Apollo Lunar Descent and Ascent Trajectories
+# [1] https://www.nasa.gov/wp-content/uploads/static/history/alsj/nasa58040.pdf
+
+# [1]
+# Vehicle on lunar surface, 8 degrees past periapsis of target orbit.
+# 9NM by 45NM orbit above lunar surface
+# Burnout expected at true anomaly 18 degrees and altitude 60,000ft
+# Expected ascent burn time 7 minutes 18 seconds, +-17 seconds
+# LAN and inc are chosen to be arbitrary
+
+# [2] https://nssdc.gsfc.nasa.gov/nmc/spacecraft/display.action?id=1969-059C
+# Total mass of ascent stage 4821 kg
+
+# [3] Flight Performance of the LM Ascent and Descent Propulsion Systems
+# AIAA-70-673, AIAA 6th Propulsion Joint Specialist Conference
+# Apollo 11 Ascent Propulsion system had thrust of 3452 lbf and specific
+# impulse of 310.5 seconds
+
+spacecraft:
+  specific_impulse: 310.5
+  thrust: 15.36e+3
+  wet_mass: 4821
+
+body:
+  gravitational_parameter: 4.9028e+12
+
+orbit_targeting_ascent:
+  apoapsis: 1820.740e+3
+  periapsis: 1754.068e+3
+  longitude_of_ascending_node: 0
+  inclination: 0
+  argument_of_periapsis: 352
+  outer_loop_interval: 7
+  outer_loop_cutoff: 3
+
+integrator:
+  simulation_end_time: 450
+  initial_position: [1737.4E+3, 0.0, 0.0E+3]
+  initial_velocity: [0.0, 0.0, 0.0]
+  outer_loop_interval: 500
+  outer_loop_cutoff: 3

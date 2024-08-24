@@ -54,29 +54,43 @@ class OpenMDAOGuidanceBase(GuidanceBase):
     objects using OpenMDAO. """
     _openmdao_problem: om.Problem
     log: GuidanceLog
+    _estimated_T: float
+
+    def __init__(self, config: cfg.Config):
+        self._estimated_T = None
 
     def get_command(self, t, state, outer_loop=True, log=True, mecoshift=0.0):
-        position = state[:3]
-        velocity = state[3:6]
-        mass = state[6]
+        # First call sets up the terminal time T
 
-        if outer_loop == True:
-            self._openmdao_problem['run_outer_loop'] = True
-            self._openmdao_problem['sample_t'] = t
-            self._openmdao_problem['sample_x'] = position
-            self._openmdao_problem['sample_v'] = velocity
+        # Does not reference 'T' in openmdao_problem directly as it is 
+        # undefined before the first call to get_command
+        if (self._estimated_T == None or 
+            t <= self._estimated_T + mecoshift):
+
+            position = state[:3]
+            velocity = state[3:6]
+            mass = state[6]
+
+            if outer_loop == True:
+                self._openmdao_problem['run_outer_loop'] = True
+                self._openmdao_problem['sample_t'] = t
+                self._openmdao_problem['sample_x'] = position
+                self._openmdao_problem['sample_v'] = velocity
+            else:
+                self._openmdao_problem['run_outer_loop'] = False
+
+            self._openmdao_problem['query_t'] = t
+            self._openmdao_problem['query_x'] = position
+            self._openmdao_problem['query_v'] = velocity
+
+            self._openmdao_problem.run_model()
+
+            self._estimated_T = self._openmdao_problem['T']
+            thrust_magnitude = 1
+
         else:
-            self._openmdao_problem['run_outer_loop'] = False
-
-        self._openmdao_problem['query_t'] = t
-        self._openmdao_problem['query_x'] = position
-        self._openmdao_problem['query_v'] = velocity
-
-        self._openmdao_problem.run_model()
-
-        thrust_magnitude = 1
-        if t > self._openmdao_problem['T'] + mecoshift:
             thrust_magnitude = 0
+
         thrust_pitch = self._openmdao_problem['cmd_pitch'][0]
         thrust_heading = self._openmdao_problem['cmd_heading'][0]
 
@@ -109,6 +123,7 @@ class OrbitTargetingAscent(OpenMDAOGuidanceBase):
 
         self.log = GuidanceLog()
         self.log.init_problem(self._openmdao_problem)
+        super().__init__(config)
 
     def get_command(self, t, state, outer_loop=True, **kwargs):
         # TODO: tidy up with args and kwargs
@@ -162,6 +177,7 @@ class DebugAscent1(OpenMDAOGuidanceBase):
 
         self.log = GuidanceLog()
         self.log.init_problem(self._openmdao_problem)
+        super().__init__(config)
 
     # See OpenMDAOGuidanceBase
     # def get_command(self, t, state, outer_loop=True, log=True)
