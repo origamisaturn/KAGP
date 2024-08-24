@@ -457,7 +457,7 @@ class LogAnalyzer:
         return pd.DataFrame(derived)
 
     def get_shared_derived_values(self, t_interp=None):
-        """ Obtains values calculated from state history. 
+        """ Derived values dependent on both guidance and state logs. 
         
         Args:
             t_interp: Optional. If not None, must be an iterable of
