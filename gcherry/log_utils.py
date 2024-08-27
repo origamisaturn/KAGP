@@ -42,13 +42,6 @@ def get_radius(pos):
     radius = np.linalg.norm(pos, axis=0)
     return radius
 
-def get_ground_distance(log, ref_pos):
-    # ref_pos determines ground radius and origin angle
-    # INCOMPLETE
-    radius_ref = np.linalg.norm(ref_pos)
-    angle_ref = np.arctan2(ref_pos[1], ref_pos[0])
-    distance_ref = radius_ref * angle_ref
-
 def get_r_hat(pos):
     """ Get radial unit vector.
 
@@ -294,7 +287,7 @@ def get_projected_true_anomaly(pos, target_lan, target_inc, target_argp):
 
     Returns:
         Length N 1-D array of true anomaly [rad.] as projected onto 
-        target orbit.
+        target orbit. Range [-pi, pi]
 
     """
     N = pos.shape[1]
@@ -336,7 +329,7 @@ def get_thrust_acc_PCF(pos, thrust_pitch, thrust_yaw, m, target_lan, target_inc,
     return thrust_acc_pcf
 
 def get_theta_hat_PCF(pos, vel, target_lan, target_inc):
-    """ Get circumferential unit vector. 
+    """ Get circumferential unit vector in Plane Control Frame. 
     
     Args:
         pos: 3xN array of position in the global frame.
@@ -384,7 +377,8 @@ def get_time_steps(t):
         t: 
     
     Returns:
-        Length N 1-D array of time steps.
+        Length N 1-D array of time steps. 0th element is 0, 1st element
+        is t[1] - t[0].
 
     """
     time_steps = np.zeros(len(t))
