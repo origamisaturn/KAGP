@@ -5,6 +5,7 @@ import pickle as pkl
 import matplotlib.pyplot as plt
 
 import gcherry.config as cfg
+from gcherry.guidance_components import InfeasibleError
 from gcherry.guidance_interface import generateGuidanceObj, GuidanceBase
 from gcherry.sim_interface import generateSimObj
 from gcherry.log import LogAnalyzer
@@ -29,7 +30,13 @@ def gcherry_cmd():
 
     args = parser.parse_args()
     if getattr(args, 'func', None):
-        args.func(args)
+        # Prevents a failed convergence from generating a traceback.
+        # Would prefer this be in _run_cmd, but test_cmd.py relies on 
+        # _run_cmd() passing on all exceptions
+        try:
+            args.func(args)
+        except InfeasibleError as inst:
+            print(inst)
     else:
         parser.print_help()
 
