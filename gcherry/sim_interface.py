@@ -309,42 +309,29 @@ class KRPCClient(SingleStageSimulatorBase):
 
     @override
     def run(self):
-        init_time = self._conn.space_center.ut
-        # guidance must start at time 0
-        guidance_time = 0
-        state = self._get_state()
-        # call get_command to initialize outer loop solution
-        self.guidance_obj.get_command(
-                        0, state, outer_loop=True, log=True)
-        self._mark_outer_loop_calc(guidance_time)
-        estimated_T = self.guidance_obj.estimated_final_time()
-
         # Default initial pitch and heading
         self._vessel.auto_pilot.attenuation_angle = (0.01, 0.01, 0.01)
         self._vessel.auto_pilot.target_pitch_and_heading(90, 90)
         self._vessel.auto_pilot.target_roll = 0
         self._vessel.auto_pilot.engage()
         self._vessel.control.throttle = 1
+
+        init_time = self._conn.space_center.ut
+        # guidance must start at time 0
+        guidance_time = 0
+        state = self._get_state()
+        # call get_command to initialize outer loop solution
+        thrust_cmd, pitch_cmd, heading_cmd = self.guidance_obj.get_command(
+                        0, state, outer_loop=True, log=False)
+        self._mark_outer_loop_calc(guidance_time)
+        estimated_T = self.guidance_obj.estimated_final_time()
  
         while guidance_time < estimated_T + self._post_guidance_measurement:
             state = self._get_state()
             self._log_state(state, guidance_time)
 
-            #TODO: move this to private function
             self.guidance_obj.set_thrust_acc_measurement(guidance_time, self._get_thrust_acc())
-            if (not self._is_outer_loop_cutoff(guidance_time) and 
-                self._is_outer_loop_scheduled(guidance_time)):
-                thrust_cmd, pitch_cmd, heading_cmd = (
-                    self.guidance_obj.get_command(
-                        guidance_time, state, outer_loop=True, log=True, 
-                        mecoshift=self._main_engine_cutoff_shift))
-                self._mark_outer_loop_calc(guidance_time)
-                print("Outer Loop Calculated")
-            else:
-                thrust_cmd, pitch_cmd, heading_cmd = (
-                    self.guidance_obj.get_command(
-                        guidance_time, state, outer_loop=False, log=True,
-                        mecoshift=self._main_engine_cutoff_shift))
+            thrust_cmd, pitch_cmd, heading_cmd = self._get_guidance_command(guidance_time, state)
 
             self._vessel.control.throttle = thrust_cmd
             self._vessel.auto_pilot.target_pitch_and_heading(
@@ -365,6 +352,22 @@ class KRPCClient(SingleStageSimulatorBase):
         
         self._vessel.control.throttle = 0
         self._vessel.auto_pilot.disengage()
+
+    def _get_guidance_command(self, guidance_time, state):
+        if (not self._is_outer_loop_cutoff(guidance_time) and 
+            self._is_outer_loop_scheduled(guidance_time)):
+            thrust_cmd, pitch_cmd, heading_cmd = (
+                self.guidance_obj.get_command(
+                    guidance_time, state, outer_loop=True, log=True, 
+                    mecoshift=self._main_engine_cutoff_shift))
+            self._mark_outer_loop_calc(guidance_time)
+            print("Outer Loop Calculated")
+        else:
+            thrust_cmd, pitch_cmd, heading_cmd = (
+                self.guidance_obj.get_command(
+                    guidance_time, state, outer_loop=False, log=True,
+                    mecoshift=self._main_engine_cutoff_shift))
+        return thrust_cmd, pitch_cmd, heading_cmd
 
     def _get_thrust_acc(self):
         return self._streams['thrust']()/self._streams['mass']()

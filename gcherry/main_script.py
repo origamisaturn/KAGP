@@ -88,8 +88,9 @@ def _save_log(config: cfg.Config, guidance_obj: GuidanceBase, sim_obj, log_obj: 
 def _plot_log(log_obj: LogAnalyzer):
     log_obj.plot_inputs()
     log_obj.plot_outputs()
-    log_obj.plot_error()
     log_obj.plot_derived()
+    log_obj.plot_error()
+    log_obj.plot_final_error(tspan=0.2)
     plt.show()
 
 

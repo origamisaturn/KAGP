@@ -884,7 +884,7 @@ class LogAnalyzer:
     def _common_error_values(self):
         # NOTE: Should be dataframe, but currently oe is stored as array.
         df_prob = self.guidance_log.problem.dataframe_log()
-        query_t = df_prob['inputs']['pitch_heading_query.query_t']
+        query_t = np.unique(df_prob['inputs']['pitch_heading_query.query_t'])
         df_deriv = self.get_derived_values(
             t_interp=query_t)
         input_prob_dict = {
