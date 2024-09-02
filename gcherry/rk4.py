@@ -1,6 +1,5 @@
 import numpy as np
 
-# callback added to give program opportunity to calculate outer loop every step.
 def rk4(fun, tspan, y0, max_step, callback=None):
     """ Runge-kutta fourth-order integrator.
     
@@ -24,9 +23,7 @@ def rk4(fun, tspan, y0, max_step, callback=None):
         corresponding to t_res. 
         
         The final result is given by y_res[:, -1]. 
-        
     """
-    # Make sure y0 is np
     y0 = np.array(y0)
 
     # hopefully calling a useless function is more performant than checking
@@ -47,12 +44,25 @@ def rk4(fun, tspan, y0, max_step, callback=None):
 
             t_new = t_res[i]
             y_new = y_res[:, i]
-            # add a test for the callback method
+            #TODO: add a test for the callback method
             callback(t_new, y_new)
 
     return t_res, y_res
 
 def rk4_step(fun, t, y, h):
+    """ Perform an RK4 step and get next state. 
+    
+    Args:
+        fun: Derivative function, with arguments t (float) and state (1-D 
+            array of state at time t). Returns derivative of state in 1-D
+            array, with length equal to that of state.
+        t: [s] Time at current step.
+        y: 1-D array, state at time t.
+        h: [s] Time step.
+    
+    Returns:
+        The next state y_next at time t + h.
+    """
     w1 = h*fun(t, y)
     w2 = h*fun(t + 1/2*h, y + 1/2*w1)
     w3 = h*fun(t + 1/2*h, y + 1/2*w2)
@@ -64,7 +74,6 @@ def _rk4_get_t_steps(tspan, max_step):
     d_tspan = tspan[1] - tspan[0]
     n_steps = int(np.floor(d_tspan/max_step))
     trunc_fin_t = tspan[0] + n_steps*max_step
-    # adjust_fin_t = d_tspan%max_step + trunc_fin_t
     true_fin_t = tspan[1]
 
     t_steps = np.linspace(tspan[0], trunc_fin_t, n_steps+1)
@@ -73,9 +82,6 @@ def _rk4_get_t_steps(tspan, max_step):
     else:
         t_steps[-1] = true_fin_t
 
-    # d_tspan = tspan[1] - tspan[0]
-    # n_steps = int(np.ceil(d_tspan/max_step))
-    # t_steps = np.linspace(tspan[0], tspan[1], n_steps+1)
     return t_steps
 
 def within_tol(val1, val2, tol=1e-8):

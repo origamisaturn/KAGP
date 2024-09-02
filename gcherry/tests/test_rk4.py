@@ -2,7 +2,6 @@ import numpy as np
 
 from gcherry.rk4 import rk4, within_tol
 
-
 # Following tests based on Ordinary Differential Equations, Tenenbaum and 
 # Pollard, p.656 - 658
 
@@ -105,7 +104,7 @@ def test_rk4_4():
     assert within_tol(y_expected_final, y_res_final[3, -1], tol=tol)
 
 
-
+# Uses pytest instead of unittest
 if __name__ == '__main__':
     test_rk4_1()
     test_rk4_2()

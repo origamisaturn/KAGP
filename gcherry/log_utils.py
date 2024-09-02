@@ -15,14 +15,20 @@ from gcherry.transform import (
 from poliastro.core.elements import rv2coe
 
 
-""" All args and returns are assumed to be in the global frame. The global frame
-is an inertial frame whose origin is fixed at the center of the major
-body.
+# All args and returns are assumed to be in the global frame. The global
+# frame is an inertial frame whose origin is fixed at the center of the 
+# major body.
 
-"""
 
 def col_mult(mat1, mat2):
-    """ multiply 2d arrays column by column. """
+    """ Multiply 2-D arrays column by column. 
+    
+    Args:
+        mat1, mat2: 2-D np.array objects. Must have same shape.
+
+    Returns:
+        1-D array with same length as mat1 has columns.
+    """
     samples = mat1.shape[1]
     mult = np.zeros(samples)
     for i in range(samples):
@@ -36,8 +42,7 @@ def get_radius(pos):
         pos: 3xN array of position in the global frame.
         
     Returns:
-        Length N 1-D array of radius at each column of pos.
-        
+        Length N 1-D array of radius at each column of pos. 
     """
     radius = np.linalg.norm(pos, axis=0)
     return radius
@@ -51,7 +56,6 @@ def get_r_hat(pos):
     Returns:
         3xN array representing radial unit vector at each column of 
         pos.
-
     """
     r_hat = pos/np.linalg.norm(pos, axis=0)
     return r_hat
@@ -66,7 +70,6 @@ def get_theta_hat(pos, vel):
     Returns:
         3xN array representing circumferential unit vector at each
         column of pos and vel. Will be NaN if pos and vel are parallel.
-
     """
     N = pos.shape[1]
     theta_hat = np.zeros((3, N))
@@ -85,7 +88,6 @@ def get_r_dot(pos, vel):
     Returns:
         Length N 1-D array representing rate of change of radius wrt time at each
         column of pos and vel.
-
     """
     r_hat = get_r_hat(pos)
     r_dot = col_mult(r_hat, vel)
@@ -100,11 +102,7 @@ def get_v_theta(pos, vel):
     Returns:
         Length N 1-D array representing velocity along circumferential unit vector
         at each column of pos and vel. Positive by definition.
-    
     """
-    # theta_hat = get_theta_hat(pos, vel)
-    # v_theta = col_mult(theta_hat, vel)
-    # more robust to theta_hat not existing
     r_dot = get_r_dot(pos, vel)
     v_mag = np.linalg.norm(vel, axis=0)
     v_theta = np.sqrt(v_mag**2 - r_dot**2)
@@ -120,7 +118,6 @@ def get_r_dot_dot(t, pos, vel):
     
     Returns:
         Length N 1-D array representing rate of change of r_dot wrt time.
-        
     """
     r_dot = get_r_dot(pos, vel)
     r_dot_dot = np.gradient(r_dot, t)
@@ -136,7 +133,6 @@ def get_a_theta(t, pos, vel):
 
     Returns:
         Length N 1-D array representing rate of change of v_theta wrt time.
-
     """
     v_theta = get_v_theta(pos, vel)
     a_theta = np.gradient(v_theta, t)
@@ -147,12 +143,10 @@ def get_acc(t, vel):
     
     Args:
         t: N-length 1-D array of time.
-        pos: 3xN array of position in the global frame.
         vel: 3xN array of velocity in the global frame.
     
     Returns:
         3xN array representing acceleration at each t element.
-
     """
     acc = np.gradient(vel, t, axis=1)
     return acc
@@ -162,12 +156,11 @@ def get_gravity(pos, mu):
     
     Args:
         pos: [m] 3xN array of position in the global frame.
-        mu: [m**3 s**-2] Gravitational parameter 
+        mu: [m**3 s**-2] Gravitational parameter.
     
     Returns:
         3xN array representing acceleration due to gravity at each pos
         column.
-    
     """
     r_hat = get_r_hat(pos)
     r = get_radius(pos)
@@ -185,7 +178,6 @@ def get_non_gravity_acc(t, pos, vel, mu):
     
     Returns:
         3xN array representing acceleration due to thrust.
-    
     """
     a_g = get_gravity(pos, mu)
     acc = get_acc(t, vel)
@@ -203,7 +195,6 @@ def get_non_gravity_acc_mag(t, pos, vel, mu):
 
     Returns:
         Length N 1-D array representing rate of change of v_theta wrt time.
-
     """
     perturb = get_non_gravity_acc(t, pos, vel, mu)
     perturb_mag = np.linalg.norm(perturb, axis=0)
@@ -229,7 +220,6 @@ def get_orbital_elements(pos, vel, mu):
 
         If velocity vector is 0 or colinear w/ radius, then orbital
         elements are NaN for that column.
-    
     """
     N = np.shape(pos)[1]
     orbital_elements = np.zeros((6, N))
@@ -242,7 +232,7 @@ def get_orbital_elements(pos, vel, mu):
         # If orbital elements exist
         if (np.linalg.norm(v) > 1e-8 and
             np.linalg.norm(np.cross(r, v)) > 1e-8):
-        # p [km], ecc, inc [rad.], raan [rad.], argp [rad.], nu [rad.]
+            # p [km], ecc, inc [rad.], raan [rad.], argp [rad.], nu [rad.]
             p, ecc, inc, raan, argp, nu = rv2coe(k, r, v)
             # convert semi-latus rectum [km] to semi-major axis [m]
             a = p/(1 - ecc**2) * 1/m_to_km
@@ -257,15 +247,14 @@ def get_thrust_pitch(t, pos, vel, mu):
     thrust acceleration.
     
     Args:
-        t:
-        pos:
-        vel:
-        mu:
+        t: [s] N-length 1-D array of time.
+        pos: [m] 3xN array of position in the global frame.
+        vel: [m/s] 3xN array of velocity in the global frame.
+        mu: [m**3 s**-2] Gravitational parameter 
 
     Returns:
         Length N 1-D array representing pitch of thrust relative to
         local horizon.
-
     """
     thrust_acc = get_non_gravity_acc(t, pos, vel, mu)
     thrust_acc_topo = np.zeros(np.shape(thrust_acc))
@@ -287,8 +276,7 @@ def get_projected_true_anomaly(pos, target_lan, target_inc, target_argp):
 
     Returns:
         Length N 1-D array of true anomaly [rad.] as projected onto 
-        target orbit. Range [-pi, pi]
-
+        target orbit. Range [-pi, pi].
     """
     N = pos.shape[1]
     nu_proj = np.zeros(N)
@@ -315,7 +303,6 @@ def get_thrust_acc_PCF(pos, thrust_pitch, thrust_yaw, m, target_lan, target_inc,
     Returns:
         3xN array of acceleration [m/s**2] due to thrust in Plane 
         Control Frame.
-
     """
     F_thrust = F_thrust_max
     thrust_vector_body = np.array([F_thrust, 0, 0])
@@ -332,8 +319,8 @@ def get_theta_hat_PCF(pos, vel, target_lan, target_inc):
     """ Get circumferential unit vector in Plane Control Frame. 
     
     Args:
-        pos: 3xN array of position in the global frame.
-        vel: 3xN array of velocity in the global frame.
+        pos: [m] 3xN array of position in the global frame.
+        vel: [m/s] 3xN array of velocity in the global frame.
         target_lan: [rad.] N-length 1-D array of target longitude of
           ascending node.
         target_inc: [rad.] N-length 1-D array of target inclination.
@@ -341,7 +328,6 @@ def get_theta_hat_PCF(pos, vel, target_lan, target_inc):
     Returns:
         3xN array representing circumferential unit vector at each
         column of pos and vel.
-
     """
     N = pos.shape[1]
     theta_hat = np.zeros((3, N))
@@ -353,18 +339,48 @@ def get_theta_hat_PCF(pos, vel, target_lan, target_inc):
     return theta_hat
 
 def get_target_normal_position(pos, target_lan, target_inc):
+    """ Gets position along normal of target orbital plane.
+
+    Args:
+        pos: [m] 3xN array of position in the global frame.
+        target_lan: [rad.] float, target longitude of ascending node.
+        target_inc: [rad.] float, target inclination.
+
+    Returns:
+        1-D array of normal position at each column of pos.
+    """
     target_normal_vec = (perifocal2global_rot(target_lan, target_inc, 0) @ 
                         np.array([0, 0, 1]))
     target_normal_position = target_normal_vec@pos
     return target_normal_position
 
 def get_target_normal_velocity(vel, target_lan, target_inc):
+    """ Gets velocity along normal of target orbital plane.
+
+    Args:
+        vel: [m/s] 3xN array of velocity in the global frame.
+        target_lan: [rad.] float, target longitude of ascending node.
+        target_inc: [rad.] float, target inclination.
+
+    Returns:
+        1-D array of normal velocity at each column of vel.
+    """    
     target_normal_vec = (perifocal2global_rot(target_lan, target_inc, 0) @ 
                         np.array([0, 0, 1]))
     target_normal_velocity = target_normal_vec@vel
     return target_normal_velocity
 
 def get_target_normal_acceleration(t, vel, target_lan, target_inc):
+    """ Gets acceleration along normal of target orbital plane.
+
+    Args:
+        vel: [m/s] 3xN array of acceleration in the global frame.
+        target_lan: [rad.] float, target longitude of ascending node.
+        target_inc: [rad.] float, target inclination.
+
+    Returns:
+        1-D array of normal acceleration at each column of vel.
+    """    
     target_normal_velocity = get_target_normal_velocity(vel, target_lan, target_inc)
     target_normal_acceleration = np.gradient(target_normal_velocity, t)
     return target_normal_acceleration
@@ -374,12 +390,11 @@ def get_time_steps(t):
     """ Get step between each time entry. 
     
     Args:
-        t: 
+        t: [s] N-length 1-D array of time.
     
     Returns:
         Length N 1-D array of time steps. 0th element is 0, 1st element
         is t[1] - t[0].
-
     """
     time_steps = np.zeros(len(t))
     for i, t_val in enumerate(t):
@@ -398,10 +413,11 @@ def plot_vars(vars, t, columns=3, keys=None, plotkwargs=None):
         t: 1-dimensional array-like containing x-axis variables.
         columns: Number of columns in plot grid.
         keys: Keys in vars to plot.
+        plotkwargs: Dictionary, will be unpacked as key word arguments
+            for the plot function, for each subplot.
 
     Returns:
         2-tuple containing matplotlib figure and axes.
-        
     """
     if plotkwargs is None:
         plotkwargs={}
@@ -428,13 +444,6 @@ def plot_vars(vars, t, columns=3, keys=None, plotkwargs=None):
                 axs[i, j].plot(t, var_val, **plotkwargs)
                 axs[i, j].set_title(var_name)
     return fig, axs
-
-def almost_equal(val1, val2, tol=1e-8):
-    arr_type = type(np.ndarray([]))
-    if type(val1) == arr_type or type(val2) == arr_type:
-        return (val1-val2 > -tol).all() and (val1-val2 < tol).all()
-    else:
-        return val1-val2 > -tol and val1-val2 < tol
     
 def interp_table(x, xkey, table):
     """ Interpolate dictionary or dataframe.
@@ -453,3 +462,10 @@ def interp_table(x, xkey, table):
     for key in table:
         new_table[key] = np.interp(x, table[xkey], table[key])
     return new_table
+
+def almost_equal(val1, val2, tol=1e-8):
+    arr_type = type(np.ndarray([]))
+    if type(val1) == arr_type or type(val2) == arr_type:
+        return (val1-val2 > -tol).all() and (val1-val2 < tol).all()
+    else:
+        return val1-val2 > -tol and val1-val2 < tol

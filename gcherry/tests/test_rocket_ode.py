@@ -181,8 +181,6 @@ class TestRocketOde(unittest.TestCase):
         print("final", y_res[:, -1])
         print("rmag: {}".format(res_r_mag))
 
-    def test_funct__rocket_ode__5(self):
-        ...
 
 
 if __name__ == '__main__':

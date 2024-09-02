@@ -11,28 +11,25 @@ from pathlib import Path
 import numpy as np
 
 
-class GuidanceName(Enum):
-    DEFAULT = "default"
-
 class SpacecraftConfig(BaseModel):
     """ Spacecraft parameters for a single stage. """
-    specific_impulse: PositiveFloat
-    thrust: PositiveFloat
-    wet_mass: PositiveFloat
+    specific_impulse: PositiveFloat # s
+    thrust: PositiveFloat # N
+    wet_mass: PositiveFloat # kg
 
 class CelestialBodyConfig(BaseModel):
-    gravitational_parameter: PositiveFloat
+    gravitational_parameter: PositiveFloat # m^3/s^2
 
 class OrbitTargetingAscentConfig(BaseModel):
-    apoapsis: PositiveFloat
-    periapsis: PositiveFloat
+    apoapsis: PositiveFloat # m
+    periapsis: PositiveFloat # m
     longitude_of_ascending_node: NonNegativeFloat # rad. [0, 2pi]
     inclination: NonNegativeFloat # rad. [0, pi]
     argument_of_periapsis: NonNegativeFloat # rad. [0, 2pi]
 
     enable_estimator: bool = True
-    estimator_ignore_time: NonNegativeFloat = 5
-    estimator_output_time: NonNegativeFloat = 50
+    estimator_ignore_time: NonNegativeFloat = 5 # s
+    estimator_output_time: NonNegativeFloat = 50 # s
 
     @field_validator('longitude_of_ascending_node', 'inclination', 
                      'argument_of_periapsis')
@@ -47,9 +44,9 @@ class OrbitTargetingAscentConfig(BaseModel):
         return val
 
 class DebugAscent1Config(BaseModel):
-    terminal_time: PositiveFloat
-    radius: PositiveFloat
-    radial_velocity: float
+    terminal_time: PositiveFloat # s
+    radius: PositiveFloat # m
+    radial_velocity: float # m/s
     longitude_of_ascending_node: NonNegativeFloat # rad. [0, 2pi]
     inclination: NonNegativeFloat # rad. [0, pi]
 
@@ -65,12 +62,12 @@ class DebugAscent1Config(BaseModel):
         return val
 
 class IntegratorConfig(BaseModel):
-    simulation_end_time: PositiveFloat
-    initial_position: conlist(float, min_length=3, max_length=3)
-    initial_velocity: conlist(float, min_length=3, max_length=3)
+    simulation_end_time: PositiveFloat # s
+    initial_position: conlist(float, min_length=3, max_length=3) # [m, m, m]
+    initial_velocity: conlist(float, min_length=3, max_length=3) # [m/s, m/s, m/s]
     # TODO: Check what happens when outer_loop_interval is zero.
-    outer_loop_interval: NonNegativeFloat = 7
-    outer_loop_cutoff: NonNegativeFloat = 10
+    outer_loop_interval: NonNegativeFloat = 7 # s
+    outer_loop_cutoff: NonNegativeFloat = 10 # s
 
     @model_validator(mode='after')
     def check_init_position_nonzero(self) -> Self:
@@ -81,10 +78,10 @@ class IntegratorConfig(BaseModel):
 
 class KRPCClientConfig(BaseModel):
     name: str = "gcherry"
-    outer_loop_interval: PositiveFloat = 7
-    outer_loop_cutoff: PositiveFloat = 10
-    post_guidance_measurement: NonNegativeFloat = 5
-    main_engine_cutoff_shift: float = -0.061
+    outer_loop_interval: PositiveFloat = 7 # s
+    outer_loop_cutoff: PositiveFloat = 10 # s
+    post_guidance_measurement: NonNegativeFloat = 5 # s
+    main_engine_cutoff_shift: float = -0.061 # s
 
 class Config(BaseModel):
     """ Main settings class.
@@ -137,10 +134,8 @@ def load_config(filenames):
 
     Returns:
         A Config object.
-    
     """
     input_data = {}
-    # Add functions for checking yaml input and if filename exists
     for filename in filenames:
         p = Path(filename)
         if not (p.exists() and p.is_file()):

@@ -13,15 +13,6 @@ from gcherry.log_utils import almost_equal
 
 class TestRot(unittest.TestCase):
     def test_funct__body2global_rot__1(self):
-        """ Tests:
-        - body2global_rot()
-            - get_ra_decl()
-            - body2topo_rot()
-            - topo2global_rot()
-                - Rx
-                - Ry
-                - Rz
-        """
         pos_global = [0.5, 0.5, np.sin(np.deg2rad(45))]
         roll = np.deg2rad(90)
         pitch = np.deg2rad(45)

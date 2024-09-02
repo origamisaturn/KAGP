@@ -1,7 +1,30 @@
 import numpy as np
 
+""" 
+Frames used in this file:
+    Body: Frame fixed to vehicle CoM, rotates with the vehicle. X is 
+        forward, Y to the right, Z down.
+    Topocentric: Frame origin at vehicle CoM, axes direction dependent 
+        on global location. X is North, Y is East, Z is toward the global origin.
+    Global: Frame origin at center of celestial body. Is inertial.
+        X is RA 0 decl 0, Y is RA 90 decl 0, Z is decl 90.
+    Perifocal: Frame origin at center of celestial body. X points to 
+        periapsis, Y is true anomaly 90 degrees in orbital plane, Z is
+        normal to orbital plane.
+    Radial-Circumferential-Normal: Frame origin at vehicle CoM, X is 
+        radial, Y points to the local horizon toward the direction
+        of vehicle travel, Z is normal, parallel with angular
+        momentum vector.
+    Plane Control Frame: Frame origin at vehicle CoM, X is radial, Y is
+        along the cross of the normal vector of desired orbital plane and X,
+        Z points to the local horizon toward the direction of the normal
+        vector of the desired orbital plane.
+
+"""
+
 
 def Rx(angle: float):
+    """ Counter-clockwise rotation matrix about the x-axis. """
     c1 = np.cos(angle)
     s1 = np.sin(angle)
     return np.array([[1, 0, 0], 
@@ -9,6 +32,7 @@ def Rx(angle: float):
                      [0, s1, c1]])
 
 def Ry(angle: float):
+    """ Counter-clockwise rotation matrix about the y-axis. """
     c1 = np.cos(angle)
     s1 = np.sin(angle)
     return np.array([[c1, 0, s1], 
@@ -16,6 +40,7 @@ def Ry(angle: float):
                      [-s1, 0, c1]])
 
 def Rz(angle: float):
+    """ Counter-clockwise rotation matrix about the z-axis. """
     c1 = np.cos(angle)
     s1 = np.sin(angle)
     return np.array([[c1, -s1, 0], 
@@ -35,25 +60,6 @@ def unit_vector(vec, axis=0):
     """
     return vec/np.linalg.norm(vec, axis=axis)
 
-""" Body: Frame fixed to vehicle CoM, rotates with the vehicle. X is 
-        forward, Y to the right, Z down.
-    Topocentric: Frame origin at vehicle CoM, axes direction dependent 
-        on global location. X is North, Y is East, Z is toward the global origin.
-    Global: Frame origin at center of celestial body. Is inertial.
-        X is RA 0 decl 0, Y is RA 90 decl 0, Z is decl 90.
-    Perifocal: Frame origin at center of celestial body. X points to 
-        periapsis, Y is true anomaly 90 degrees in orbital plane, Z is
-        normal to orbital plane.
-    Radial-Circumferential-Normal: Frame origin at vehicle CoM, X is 
-        radial, Y points to the local horizon toward the direction
-        of vehicle travel, Z is normal, parallel with angular
-        momentum vector.
-    Plane Control Frame: Frame origin at vehicle CoM, X is radial, Y is
-        along the cross of the normal vector of desired orbital plane and X,
-        Z points to the local horizon toward the direction of the normal
-        vector of the desired orbital plane.
-
-    """
 
 def perifocal2global_rot(lan, inc, argp):
     """ Rotation from perifocal to global axes. 

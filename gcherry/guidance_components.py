@@ -14,10 +14,6 @@ from gcherry.rk4 import rk4
 from gcherry.transform import global2perifocal_rot
 from gcherry.log_utils import almost_equal
 
-# NOTE: Any reference to equation numbers is in reference to 
-#   "A general, explicit, optimizing guidance law for rocket-propelled spaceflight"
-#   By George W. Gcherry
-#
 
 class InfeasibleError(Exception):
     pass
@@ -139,7 +135,6 @@ class RadialYawGuidance(om.ExplicitComponent):
         a0, a1, a2: Coefficients of p equation.
         c1_radial, c2_radial: Coefficients for radial guidance equation.
         c1_yaw, c2_yaw: Coefficients for yaw guidance equation.
-    
     """
 
     def setup(self):
@@ -182,7 +177,6 @@ class RadialYawGuidance(om.ExplicitComponent):
 
         target_normal_vec = (perifocal2global_rot(target_lan, target_inc, 0) @ 
                             np.array([0, 0, 1]))
-        # y is normal distance from target orbital plane
         y0 = np.dot(x0, target_normal_vec)
         y_dot_0 = np.dot(v0, target_normal_vec)
         y_T = 0
@@ -227,7 +221,6 @@ def _get_F_mat(t, T, a0, a1, a2):
     
     Column 0 and 1 are p1 and p2 polynomials, while row 0 and 1 are 
     first and second integral with respect to time. Bounds are t to T.
-    Described by equations (71) to (73).
     
     Args:
         t: [s] Time at which q0 and q_dot_0 were measured.
@@ -318,8 +311,10 @@ class PitchHeadingQuery(om.ExplicitComponent):
         c1_yaw, c2_yaw: Coefficients for yaw guidance equation.
 
         --- DEBUG ---
-        target_r_T: [m] Target final radial position.
-        target_r_dot_T: [m/s] Target final radial velocity.
+        target_r_T: [m] Target final radial position. Used only for 
+            calculating output debug values.
+        target_r_dot_T: [m/s] Target final radial velocity. Used only
+            for calculating output debug values.
 
     Outputs:
         --- User Output ---
@@ -334,9 +329,10 @@ class PitchHeadingQuery(om.ExplicitComponent):
                 query_t.
             y: [m] Expected normal distance from target orbital plane at
                 time query_t.
-            y_dot: [m/s] 
-            y_dot_dot: [m/s**2]
-
+            y_dot: [m/s] Expected velocity normal to target orbital 
+                plane at time query_t.
+            y_dot_dot: [m/s**2] Expected acceleration normal to target 
+                orbital plane at time query_t.
     """
     def setup(self):
         self.add_input('query_x', val=np.zeros((3)))
@@ -400,14 +396,12 @@ class PitchHeadingQuery(om.ExplicitComponent):
         cmd_pitch = math.asin(a_thrust_r/a_thrust_mag)
 
         # Find cmd_heading
-        # y is component along normal of target orbital plane
         target_normal_vec = (perifocal2global_rot(target_lan, target_inc, 0) @ 
                             np.array([0, 0, 1]))
         y_dot_dot = c1_yaw*p1 + c2_yaw*p2
         a_thrust_y = y_dot_dot - np.dot(g, target_normal_vec)
         a_thrust_global = _guidance_to_global(a_thrust_r, a_thrust_y, a_thrust_mag, x0, target_lan, target_inc)
         a_thrust_topo = global2topo_rot(*(get_ra_decl(x0)))@a_thrust_global
-        # heading from 0 deg to 360 deg.
         if not (almost_equal(a_thrust_topo[0], 0, 1e-8) and 
                 almost_equal(a_thrust_topo[1], 0, 1e-8)):
             cmd_heading = np.arctan2(a_thrust_topo[1], a_thrust_topo[0])%(2*np.pi)
@@ -520,7 +514,6 @@ class VThetaSolver(om.ExplicitComponent):
             lost to vertical thrusting by time T.
         delta_theta_T: [rad.] Estimated change in true anomaly from 
             sample_t to terminal time T.
-
     """
     def setup(self):
         self.add_input('sample_x', val=np.zeros((3)))
@@ -535,15 +528,11 @@ class VThetaSolver(om.ExplicitComponent):
         for name in input_names:
             self.add_input(name, val=0.0)
 
-        # self.add_input('query_t', val=0.0)
         self.add_discrete_input('permissive', val=True)
         
         output_names = ['v_theta_T', 'v_theta_loss_T', 'delta_theta_T']
         for name in output_names:
             self.add_output(name, val=0.0)
-
-        # self.add_discrete_output('_debug', val={
-        #     'v_theta_dot': 0 })
 
     def compute(self, inputs, outputs, discrete_inputs, discrete_outputs):
         pos = inputs['sample_x']
@@ -570,6 +559,8 @@ class VThetaSolver(om.ExplicitComponent):
         v_theta_0 = (np.linalg.norm(vel)**2 - np.dot(vel, r_hat)**2)**0.5
         
         def get_state_dot(t, state):
+            # state: [m/s, rad] circumferential velocity and the change
+            #   in true anomaly.
             v_theta = state[0]
             delta_theta = state[1]
 
@@ -614,8 +605,6 @@ class VThetaSolver(om.ExplicitComponent):
                 
             a_thrust_PCF = np.array([a_thrust_i, a_thrust_j, a_thrust_k])
 
-
-
             theta_hat_PCF = np.zeros(3)
             if v_theta != 0:
                 vel_i = r_dot
@@ -639,7 +628,6 @@ class VThetaSolver(om.ExplicitComponent):
             a_thrust_theta = np.dot(a_thrust_PCF, theta_hat_PCF)
             
             v_theta_dot = a_thrust_theta - r_dot * v_theta/r
-            # theta is angle on target orbital plane.
             return np.array([v_theta_dot, theta_dot])
         
         tspan = [t0, T]
@@ -649,9 +637,9 @@ class VThetaSolver(om.ExplicitComponent):
         T_go = T-t0
         estimated_v_theta_T = y_res[0, -1]
         estimated_delta_theta_T = y_res[1, -1]
-        # TODO: come up with more robust method of dealing with guidance
+        # TODO: Come up with more robust method of dealing with guidance
         # exceeding thrust requirements.
-        # Not immediately throwing an exception based on NaN v_theta_T,
+        # We don't immediately throw an exception based on NaN v_theta_T,
         # time-to-go estimator can work VThetaSolver out of the 
         # infeasible region sometimes.
         if np.isnan(estimated_v_theta_T):
@@ -663,8 +651,6 @@ class VThetaSolver(om.ExplicitComponent):
         outputs['v_theta_T'] = estimated_v_theta_T
         outputs['v_theta_loss_T'] = estimated_v_theta_loss_T
         outputs['delta_theta_T'] = estimated_delta_theta_T
-
-        # discrete_outputs['_debug']['v_theta_dot'] = get_v_theta_dot
 
 class TimeToGo(om.ExplicitComponent):
     """ Fixed-point iteration for terminal time T.
@@ -710,7 +696,6 @@ class TimeToGo(om.ExplicitComponent):
                        'v_e', 'm0', 'm_dot']
         for name in input_names:
             self.add_input(name, val=0.0)
-        # self.add_input('Q_n', val=1.0)
         
         self.add_output('T', val=0.0)
         self.add_output('Q_n', val=1.0)
@@ -746,9 +731,10 @@ class TimeToGo(om.ExplicitComponent):
         T_go_n_1 = tau0*(1 - P*Q_n_1)
         T_n_1 = T_go_n_1 + t0
 
-        # TODO: good metric for impossible trajectories is to use tau
-        # for T, and if it doesn't run it is bad. For getting VThetaSolver
-        # to output real values, there should be no upper bound on T.
+        # TODO: possible metric for impossible trajectories could be to 
+        # use T = tau and check if it runs. Might be a bad metric for
+        # highly elliptical or hyperbolic orbits, if commanded pitch 
+        # approaches -90deg as it tries to meet boundary conditions.
         self._Q_n = Q_n_1
         outputs['Q_n'] = Q_n_1
         outputs['T'] = T_n_1
@@ -998,6 +984,45 @@ class VThetaSolverTestGroup(om.Group):
 
 class VThetaSolverOuterLoop(om.ExplicitComponent):
     """ Component for debugging guidance without iterative solver components.
+
+    Note that guidance assumes a start time at t=0.
+    
+    Inputs:
+        --- User Input ---
+        sample_x: [m] (len(x) == 3) 3D position in global inertial 
+            frame. Origin is at gravitational body center.
+        sample_v: [m/s] (len(v) == 3) 3D velocity in global inertial 
+            frame.
+        sample_t: [s] Time at which sample_x and sample_v were collected.
+        permissive: (bool) If false, will throw exception upon encountering
+            an impossible thrust command.
+
+        --- Targeting ---
+        target_r_T: [m] Target final radial position.
+        target_r_dot_T: [m/s] Target final radial velocity.
+        target_lan: [rad.] Target longitude of ascending node.
+        target_inc: [rad.] Target inclination.
+
+        --- Constants ---
+        mu: [m^3/s^2] Gravitational parameter.
+        v_e: [m/s] Effective exhaust velocity of thruster.
+        m_dot: [kg/s] Thruster mass flow.
+        m0: [kg] Total mass of spacecraft at launch (sample_t == 0).
+
+        --- Component Connections ---
+        T: [s] Terminal time; main engine cut-off
+
+    Outputs:
+        --- Component Connections ---
+        v_theta_T: [m/s] Estimated tangential velocity at terminal time
+            T given radial rate control path.
+        v_theta_loss_T: [m/s] Estimated potential tangential velocity
+            lost to vertical thrusting by time T.
+        delta_theta_T: [rad.] Estimated change in true anomaly from 
+            sample_t to terminal time T.
+        a0, a1, a2: Coefficients of p equation.
+        c1_radial, c2_radial: Coefficients for radial guidance equation.
+        c1_yaw, c2_yaw: Coefficients for yaw guidance equation.
     """
     def setup(self):
         model = VThetaSolverTestGroup()
@@ -1044,13 +1069,12 @@ class VThetaSolverOuterLoop(om.ExplicitComponent):
             outputs[name] = self.prob[name]
 
 
-# TODO: Figure out what to do with this function.
 def _get_expected_guidance_values(t, T, F_mat, c1, c2, q_T, q_dot_T):
     """ Obtain expected coordinate and its derivative at time t.
 
     q is generalized distance coordinate. For radial guidance it is
     radius, for yaw guidance it is normal distance from desired 
-    orbital plane. Based on equations (24) and (25).
+    orbital plane.
     
     Args:
         t: [s] Time at which q0 and q_dot_0 were measured.

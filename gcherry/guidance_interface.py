@@ -2,33 +2,65 @@ import openmdao.api as om
 import gcherry.config as cfg
 
 from abc import ABC, abstractmethod
-from gcherry.log import LogAnalyzer, GuidanceLog
+from typing_extensions import override
+from gcherry.log import GuidanceLog
 from gcherry.guidance_components import (
     OrbitGuidanceComponent,
     PitchHeadingQuery,
     VThetaSolverOuterLoop,
-    EnginePropertyEstimator,
-    VThetaSolver,
-    InfeasibleError
+    EnginePropertyEstimator
 )
 
 # TODO: Add docs for this
 class GuidanceBase(ABC):
-    @abstractmethod
-    def __init__(self, config: cfg.Config): pass
+    """ Base class for all guidance objects. """
 
     @abstractmethod
-    def get_command(self, t, state, outer_loop=True, log=True, mecoshift=0.0): pass
+    def __init__(self, config: cfg.Config): 
+        """ Initializes guidance based on config. 
+        
+        Args:
+            config: Config object. Contains settings for guidance.
+        """
+        pass
 
     @abstractmethod
-    def set_thrust_acc_measurement(self, t, thrust_acc): pass
-    """ Given measurement only processed when 
-        1) get_command() is called
-        2) t differs from last t passed to set_thrust_acc_measurement().
-    """
+    def get_command(self, t, state, outer_loop=True, log=True, mecoshift=0.0):
+        """ Gets orientation and thrust command.
+
+        Args:
+            t: [s] Time, a float. Guidance assumed to start at t=0.
+            state: [m, m, m, m/s, m/s, m/s, kg] A list, with elements 
+                [x, y, z, xdot, ydot, zdot, m] representing position, 
+                velocity, and mass.
+            outer_loop: bool. If true, will run the outer loop of the
+                guidance algorithm.
+            log: bool. If true, will log values for current function
+                call.
+            mecoshift: float, short for 'main engine cutoff shift.' 
+
+        Returns:
+            (thrust_magnitude, thrust_pitch, thrust_heading) 
+            [n/a, rad., rad.] 3-tuple of floats.
+        """
+        pass
 
     @abstractmethod
-    def estimated_final_time(self): pass
+    def set_thrust_acc_measurement(self, t, thrust_acc):
+        """ Provides sample thrust acceleration measurement.
+
+        Measurement is processed when get_command() is called.
+
+        Args:
+            t: [s] Time, a float.
+            thrust_acc: [m/s^2] float, thrust acceleration at time t.
+        """
+        pass
+
+    @abstractmethod
+    def estimated_final_time(self): 
+        """ Gets estimated time at guidance cut-off. """
+        pass
 
 def generateGuidanceObj(config: cfg.Config) -> GuidanceBase:
     """ Returns GuidanceBase object selected by config
@@ -38,7 +70,6 @@ def generateGuidanceObj(config: cfg.Config) -> GuidanceBase:
         
     Returns:
         Subclass of GuidanceBase.
-
     """
     if config.orbit_targeting_ascent:
         model = OrbitTargetingAscent(config)
@@ -51,19 +82,27 @@ def generateGuidanceObj(config: cfg.Config) -> GuidanceBase:
 
 class OpenMDAOGuidanceBase(GuidanceBase):
     """ Abstract class for implementing methods common in guidance
-    objects using OpenMDAO. """
-    _openmdao_problem: om.Problem
+    objects using OpenMDAO. 
+    
+    Attributes:
+        log: GuidanceLog object for logging guidance values.
+    """
     log: GuidanceLog
+
+    _openmdao_problem: om.Problem
     _estimated_T: float
 
+    @abstractmethod
     def __init__(self, config: cfg.Config):
         self._estimated_T = None
 
+    @override
     def get_command(self, t, state, outer_loop=True, log=True, mecoshift=0.0):
         # First call sets up the terminal time T
 
-        # Does not reference 'T' in openmdao_problem directly as it is 
-        # undefined before the first call to get_command
+        # Uses self._estimated_T instead of self._openmdao_problem['T']
+        # directly as it is undefined in the openmdao problem before the
+        # first call to get_command.
         if (self._estimated_T == None or 
             t <= self._estimated_T + mecoshift):
 
@@ -95,11 +134,11 @@ class OpenMDAOGuidanceBase(GuidanceBase):
         thrust_heading = self._openmdao_problem['cmd_heading'][0]
 
         if log:
-            self.log.log_problem(self._openmdao_problem)
-            self.log.log_thrust_cmd(thrust_magnitude)
+            self.log.log_guidance(self._openmdao_problem, thrust_magnitude)
 
         return thrust_magnitude, thrust_pitch, thrust_heading
     
+    @override
     def estimated_final_time(self):
         return self._openmdao_problem['T'][0]
 
@@ -111,10 +150,10 @@ class OrbitTargetingAscentGroup(om.Group):
         self.add_subsystem('pitch_heading_query', PitchHeadingQuery(), promotes=['*'])
 
 class OrbitTargetingAscent(OpenMDAOGuidanceBase):
-    # _openmdao_problem: om.Problem
-    # log: GuidanceLog
+    """ Guidance object for targeting an orbit. """
     _enable_estimator: bool
 
+    @override
     def __init__(self, config: cfg.Config):
         model = OrbitTargetingAscentGroup()
         self._openmdao_problem = om.Problem(model)
@@ -125,8 +164,8 @@ class OrbitTargetingAscent(OpenMDAOGuidanceBase):
         self.log.init_problem(self._openmdao_problem)
         super().__init__(config)
 
+    @override
     def get_command(self, t, state, outer_loop=True, **kwargs):
-        # TODO: tidy up with args and kwargs
         if outer_loop == True and self._enable_estimator:
             self._openmdao_problem['run_estimator'] = True
         else:
@@ -134,12 +173,10 @@ class OrbitTargetingAscent(OpenMDAOGuidanceBase):
         return super().get_command(t, state, 
                             outer_loop=outer_loop, **kwargs)
     
+    @override
     def set_thrust_acc_measurement(self, t, thrust_acc):
         self._openmdao_problem['estimator_sample_t'] = t
         self._openmdao_problem['sample_thrust_acceleration'] = thrust_acc
-
-    # See OpenMDAOGuidanceBase
-    # def estimated_final_time(self)
 
     def _parse_input(self, config):
         self._enable_estimator = config.orbit_targeting_ascent.enable_estimator
@@ -167,8 +204,9 @@ class DebugAscent1Group(om.Group):
 
 
 class DebugAscent1(OpenMDAOGuidanceBase):
-    # _openmdao_problem: om.Problem
-    # log: GuidanceLog
+    """ Guidance object for debugging the VThetaSolver component. """
+
+    @override
     def __init__(self, config: cfg.Config):
         model = DebugAscent1Group()
         self._openmdao_problem = om.Problem(model)
@@ -179,9 +217,7 @@ class DebugAscent1(OpenMDAOGuidanceBase):
         self.log.init_problem(self._openmdao_problem)
         super().__init__(config)
 
-    # See OpenMDAOGuidanceBase
-    # def get_command(self, t, state, outer_loop=True, log=True)
-    # def estimated_final_time(self)
+    @override
     def set_thrust_acc_measurement(self, t, thrust_acc): pass
 
     def _parse_input(self, config):

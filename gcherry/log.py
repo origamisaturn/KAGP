@@ -15,10 +15,10 @@ class StateLog:
     """ Log for recording rocket state in simulations.
     
     Attributes:
-        state_vectors: list of 7-element lists. The seven elements are
-            [x[m], y[m], z[m], vx[m], vy[m], vz[m], m[kg]]
+        state_vectors: [m, m, m, m/s, m/s, m/s, kg] List of 7-element 
+            lists. The seven elements are [x, y, z, vx, vy, vz, m],
             measured in the global frame.
-        times: The time [s] corresponding to each state vector.
+        times: List of the time [s] corresponding to each state vector.
 
     """
     state_vectors: list
@@ -29,27 +29,62 @@ class StateLog:
         self.state_vectors = []
 
     def log_state(self, t, state):
+        """ Logs a single time sample.
+        
+        Args:
+            t: [s] Time, float.
+            state: [m, m, m, m/s, m/s, m/s, kg] 7-element list of state
+                at time t.
+        """
         if len(state) != 7:
             ValueError("State has incorrect length.")
         self.state_vectors.append(state)
         self.times.append(t)
 
     def get_position(self):
+        """ Gets array of positions.
+        
+        Returns:
+            3xN array of positions, where each row is a position
+            sample [x, y, z]. 
+        """
         np_state_vectors = np.array(self.state_vectors)
         return np_state_vectors[:, :3].T
 
     def get_velocity(self):
+        """ Gets array of velocities.
+        
+        Returns:
+            3xN array of velocities, where each row is a velocity
+            sample [vx, vy, vz]. 
+        """
         np_state_vectors = np.array(self.state_vectors)
         return np_state_vectors[:, 3:6].T
     
     def get_mass(self):
+        """ Gets array of masses.
+        
+        Returns:
+            Length N array of mass.     
+        """
         np_state_vectors = np.array(self.state_vectors)
         return np_state_vectors[:, 6].T
 
     def get_time(self):
+        """ Gets array of times.
+        
+        Returns:
+            Length N array of times.
+        """
         return np.array(self.times).T
     
     def dataframe_log(self):
+        """ Gets dataframe representation of StateLog.
+
+        Returns:
+            Dataframe containing columns for time, position, velocity,
+            and mass.
+        """
         t = self.get_time()
         pos = self.get_position()
         vel = self.get_velocity()
@@ -84,41 +119,53 @@ class StateLog:
 
 
 class SimulationLog:
+    """ Log used by SimulatorBase subclasses.
+    
+    Attributes:
+        state: A StateLog object for logging vehicle state over time.
+    """
     state: StateLog
     
     def __init__(self):
         self.state = StateLog()
 
     def save_pkl(self, save_path):
+        """ Convenience function for saving object as pickle file.
+        
+        Args:
+            save_path: path-like object, save location for pickle file.
+        """
         with open(save_path, 'wb') as fh:
             pkl.dump(self, fh)
 
 
 class OpenMDAOProblemLog:
-    """ 
+    """ Generic logging class for OpenMDAO problems.
+
     Attributes:
-        inputs and outputs are dicts where each value is a list. The 
-        list may contain elements of arbitrary type, but if the type of
-        each element is an array then each element must have the same 
-        shape. 
-        
+        inputs: dictionary. Keys are names of problem inputs, value of
+            each key is a list of logged problem values.
+        outputs: dictionary. Keys are names of problem outputs, value of
+            each key is a list of logged problem values.
     """
     inputs: dict
     outputs: dict
 
     def __init__(self):
+        """ Basic initialization. init_problem() must be called to setup
+        this object.
+        """
         self.inputs = {}
         self.outputs = {}
 
     def init_problem(self, openmdao_problem):
-        """ Sets log dicts based on structure of openmdao_problem.
+        """ Sets up attributes based on structure of openmdao_problem.
 
         Each key of self.inputs and self.outputs is a list. This must
         be called once before calling self.log_problem().
         
         Args:
             openmdao_problem: an OpenMDAO problem.
-
         """
         model = openmdao_problem.model
         inputs = model.list_inputs(val=False, out_stream=None)
@@ -134,11 +181,10 @@ class OpenMDAOProblemLog:
         """ Logs problem variables.
         
         Args:
-            openmdao_problem: an OpenMDAO problem.
-
-
+            openmdao_problem: an OpenMDAO problem. Must have same input
+                and output values as openmdao_problem passed to 
+                init_problem().
         """
-        
         input_names = self.inputs.keys()
         for var_name in input_names:
             var_val = deepcopy(openmdao_problem[var_name])
@@ -152,12 +198,10 @@ class OpenMDAOProblemLog:
     def dataframe_log(self):
         """ Returns dataframe version of log data. 
         
-        Dict entries are converted into list, and key names are 
-        incorporated into the column names.
-        
-        Array entries are converted into lists for each index, index
-        is incorporated into the column names.
-        
+        Returns:
+            Dictionary with keys ['inputs', 'outputs']. Each contains a
+            dataframe object corresponding to the key. See 
+            _flatten_dict() for format of column names.
         """
         df_log = {}
         flat_inputs, flat_outputs = self._flatten_log()
@@ -166,6 +210,12 @@ class OpenMDAOProblemLog:
         return df_log
     
     def plot_inputs(self, x_axis_key):
+        """ Plots inputs dataframe against x_axis_key values. 
+        
+        Args:
+            x_axis_key: Key in inputs dataframe log. Values of this key
+                becomes the x-axis of the plot.
+        """
         df_log = self.dataframe_log()
         inputs = df_log['inputs']
         t = inputs[x_axis_key]
@@ -174,6 +224,12 @@ class OpenMDAOProblemLog:
         return plot_vars(inputs, t, columns=4, keys=input_keys)
 
     def plot_outputs(self, x_axis_key):
+        """ Plots outputs dataframe against x_axis_key values.
+        
+        Args:
+            x_axis_key: Key in inputs dataframe log. Values of this key
+                becomes the x-axis of the plot.
+        """
         df_log = self.dataframe_log()
         t = df_log['inputs'][x_axis_key]
         return plot_vars(df_log['outputs'], t, columns=4)
@@ -184,7 +240,6 @@ class OpenMDAOProblemLog:
         Returns:
             tuple of flattened inputs and flattened outputs, 
             each one a dict.
-
         """
         flat_inputs = self._flatten_dict('', self.inputs)
         flat_outputs = self._flatten_dict('', self.outputs)
@@ -319,6 +374,12 @@ class OpenMDAOProblemLog:
 
 
 class GuidanceLog:
+    """ Log used by GuidanceBase subclasses with OpenMDAO problems.
+    
+    Attributes:
+        problem: OpenMDAOProblemLog object.
+        thrust_cmd: List of floats, representing thrust commands.
+    """
     problem: OpenMDAOProblemLog
     thrust_cmd: list[float]
 
@@ -327,23 +388,43 @@ class GuidanceLog:
         self.thrust_cmd = []
 
     def init_problem(self, openmdao_problem):
+        """ Initializes the problem object.
+        
+        Args:
+            openmdao_problem: an OpenMDAO problem.
+        """
         self.problem.init_problem(openmdao_problem)
 
-    def log_problem(self, openmdao_problem):
-        self.problem.log_problem(openmdao_problem)
+    def log_guidance(self, openmdao_problem, thrust_cmd):
+        """ Logs guidance values.
 
-    def log_thrust_cmd(self, thrust_cmd):
-        """ This function should be called at the same time as 
-        log_problem. The times for the thrust_cmd correspond to query_t
-        in the problem attribute. """
+        Args:
+            openmdao_problem: an OpenMDAO problem. Must have same input
+                and output values as openmdao_problem passed to 
+                init_problem().
+            thrust_cmd: float, the commanded thrust.
+        """
+        self.problem.log_problem(openmdao_problem)
         self.thrust_cmd.append(thrust_cmd)
 
     def save_pkl(self, save_path):
+        """ Convenience function for saving object as pickle file.
+        
+        Args:
+            save_path: path-like object, save location for pickle file.
+        """
         with open(save_path, 'wb') as fh:
             pkl.dump(self, fh)
 
 
 class LogAnalyzer:
+    """ Class for processing and plotting guidance and simulation logs.
+    
+    Attributes:
+        guidance_log: GuidanceLog
+        sim_log: SimulationLog
+        config: Config
+    """
     guidance_log: GuidanceLog
     sim_log: SimulationLog
     config: Config
@@ -359,11 +440,23 @@ class LogAnalyzer:
     _final_estimated_T_function: typing.Callable
 
     def __init__(self, config, guidance_log, sim_log):
+        """ Initializes log analyzer
+        
+        Args:
+            config: Config object, used to initialize guidance_log and 
+                sim_log.
+            guidance_log: GuidanceBase subclass. Must be contained in 
+                sim_log.
+            sim_log: SimulatorBase subclass.
+        """
         self.guidance_log = guidance_log
         self.sim_log = sim_log
         self.config = config
 
         # Change log function depending on guidance method.
+        # Using this instead of subclassing in the case that functions
+        # are dependent on both the guidance method and simulation 
+        # class.
         if config.orbit_targeting_ascent:
             self._set_analysis_attributes({
                 'target_lan': config.orbit_targeting_ascent.longitude_of_ascending_node,
@@ -404,13 +497,13 @@ class LogAnalyzer:
         self._final_estimated_T_function = input_dict['final_estimated_T']
 
     def get_derived_values(self, t_interp=None):
-        """ Derived values common across all guidance methods. 
+        """ Useful values calculated from the state log exclusively.
         
         Args:
             t_interp: [s] Array of time values to interpolate state at.
 
         Returns:
-            Dictionary of derived state values.
+            Dataframe of derived values.
             
         """
         if t_interp is None:
@@ -474,32 +567,55 @@ class LogAnalyzer:
     def get_error_values(self):
         """ Dataframe of error between predicted and actual values. 
         
-        Extracts data from guidance, and derives values based on stored
-        simulation state to make a table of error values.
+        Error values are the difference between values predicted by 
+        guidance and actual values derived from the recorded state.
 
         Returns:
-            Dataframe with independent column t and several
+            Dataframe with independent variable column t and several
             error columns.
-
         """
         return self._error_values_function()
     
     def get_final_error_values(self):
-        """ 
+        """ Dataframe of error between actual value at given time and
+        the target final value.
 
+        Returns:
+            Dataframe with independent variable column t and several
+            error columns.
         """
         return self._final_error_values_function()
     
     def get_final_estimated_T(self):
+        """ Returns predicted guidance cutoff time.
+        
+        Returns:
+            T [s], a float
+        """
         return self._final_estimated_T_function()
     
     def get_final_error_table(self):
+        """ Dictionary of error between actual and target values at 
+        guidance cutoff.
+        
+        Returns:
+            Dictionary with independent variable key t and several keys
+            of errors. Value of each key is a float with error at time
+            t. 
+        """
         df_final_err = self.get_final_error_values()
         T = self.get_final_estimated_T()
         final_err_table = interp_table(T, 't', df_final_err)
         return final_err_table
     
     def get_interpolated_state(self, t_interp):
+        """ Interpolates state log at given time.
+        
+        Returns:
+            4-element tuple: (t, pos, vel, mass). t [s] is interpolated
+            time, pos [m] is length 3 array of position, vel [m/s] is 
+            length 3 array of velocity, mass [kg] is a float.
+        """
         t = self.sim_log.state.get_time()
         pos = self.sim_log.state.get_position()
         vel = self.sim_log.state.get_velocity()
@@ -514,6 +630,11 @@ class LogAnalyzer:
         return t, pos, vel, mass
 
     def plot_derived(self):
+        """ Plots values calculated from state logs.
+        
+        Returns:
+            2-tuple containing plot figure and axes.
+        """
         df_derived = self.get_derived_values()
         t = df_derived['t']
         y_vars = list(df_derived.columns)
@@ -523,6 +644,12 @@ class LogAnalyzer:
         return fig, axs
 
     def plot_shared_derived(self):
+        """ Plots values calculated from both the guidance and state
+        logs.
+        
+        Returns:
+            2-tuple containing plot figure and axes.
+        """
         df_shared = self.get_shared_derived_values()
         t = df_shared['t']
         y_vars = list(df_shared.columns)
@@ -532,6 +659,11 @@ class LogAnalyzer:
         return fig, axs
     
     def plot_error(self):
+        """ Plots the error between predicted and actual values.
+        
+        Returns:
+            2-tuple containing plot figure and axes.
+        """
         df_err = self.get_error_values()
         t = df_err['t']
         y_vars = list(df_err.columns)
@@ -541,15 +673,14 @@ class LogAnalyzer:
         return fig, axs
     
     def plot_final_error(self, tspan=None):
-        """ Plots the error of spacecraft state vs final target value.
+        """ Plots the error based on actual state and final target value.
         
         Args:
             tspan: [s] float, length of x-axis when focusing plot around
                 final estimated time.
                 
         Returns:
-            matplotlib figure and axes.
-            
+            2-tuple containing plot figure and axes.
         """
         df_final_err = self.get_final_error_values()
         T = self.get_final_estimated_T()
@@ -570,11 +701,24 @@ class LogAnalyzer:
         return fig, axs
 
     def plot_inputs(self):
+        """ Plots guidance inputs. See OpenMDAOProblemLog.plot_inputs().
+        
+        Returns:
+            2-tuple containing plot figure and axes.
+        """
         fig, axs = self.guidance_log.problem.plot_inputs('pitch_heading_query.query_t')
         fig.suptitle("Guidance Inputs")
         return fig, axs
 
     def plot_outputs(self):
+        """ Plots guidance outputs. See OpenMDAOProblemLog.plot_outputs().
+        
+        Also plots the guidance thrust command across the guidance
+        cutoff time.
+
+        Returns:
+            2-tuple containing plot figure and axes.
+        """
         fig, axs = self.guidance_log.problem.plot_outputs('pitch_heading_query.query_t')
         fig.suptitle("Guidance Outputs")
 
@@ -592,11 +736,20 @@ class LogAnalyzer:
         return fig, axs
 
     def plot_state(self):
+        """ Plots the state logs.
+
+        Returns:
+            2-tuple containing plot figure and axes."""
         fig, axs = self.sim_log.state.plot_state()
         fig.suptitle("Guidance State")
         return fig, axs
 
     def save_csv(self, save_path):
+        """ Saves dataframes as csv files.
+        
+        Args:
+            save_path: path-like object, save directory for csv files.
+        """
         if not os.path.exists(save_path):
             os.makedirs(save_path)
         
@@ -710,6 +863,7 @@ class LogAnalyzer:
             mass,
             target_lan_list,
             target_inc_list, F_thrust_max)
+        
         shared_derived = {}
         shared_derived['t'] = t
         shared_derived['dt'] = log_utils.get_time_steps(t)
@@ -720,6 +874,7 @@ class LogAnalyzer:
         theta_hat_pcf = log_utils.get_theta_hat_PCF(
             pos, vel, target_lan_list, target_inc_list
         )
+
         shared_derived['theta_hat_i_pcf'] = theta_hat_pcf[0]
         shared_derived['theta_hat_j_pcf'] = theta_hat_pcf[1]
         shared_derived['theta_hat_k_pcf'] = theta_hat_pcf[2]
