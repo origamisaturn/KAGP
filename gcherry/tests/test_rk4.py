@@ -2,11 +2,13 @@ import numpy as np
 
 from gcherry.rk4 import rk4, within_tol
 
-# Following tests based on Ordinary Differential Equations, Tenenbaum and 
+# Following tests based on Ordinary Differential Equations, Tenenbaum and
 # Pollard, p.656 - 658
+
 
 def sample_ode(x, y):
     return x**2 + y
+
 
 # Nominal
 def test_rk4_1():
@@ -15,10 +17,11 @@ def test_rk4_1():
     h = 0.1
 
     t_res, y_res = rk4(sample_ode, xspan, y0, h)
-    
+
     assert t_res[0] == xspan[0] and t_res[-1] == xspan[-1]
     assert y_res[0, 0] == y0
     assert within_tol(y_res[0, -1], 1.2242081, tol=1e-7)
+
 
 # Tests t_res behavior with unequal step size
 def test_rk4_2():
@@ -28,13 +31,14 @@ def test_rk4_2():
     h = 0.095
 
     t_res, y_res = rk4(sample_ode, xspan, y0, h)
-    
+
     assert t_res[0] == xspan[0] and t_res[-1] == xspan[-1]
     assert within_tol(t_res[1], h)
     assert within_tol(t_res[2], 2*h)
 
     assert y_res[0, 0] == y0
     assert within_tol(y_res[0, -1], 1.2242081, tol=1e-7)
+
 
 # Tests single step
 def test_rk4_3():
@@ -44,12 +48,13 @@ def test_rk4_3():
     h = 0.3
 
     t_res, y_res = rk4(sample_ode, xspan, y0, h)
-    
+
     assert len(t_res) == 2
     assert t_res[0] == xspan[0] and t_res[-1] == xspan[-1]
     assert y_res[0, 0] == y0
 
     assert within_tol(y_res[0, -1], 1.2242067, tol=1e-7)
+
 
 # Following tests based on simple frictionless 2-dimensional ballistics.
 
@@ -63,11 +68,13 @@ def projectile_ode(t, state):
     state_dot = np.array([x_dot_dot, y_dot_dot, x_dot, y_dot])
     return state_dot
 
+
 def projectile_analytical(t, x_dot_0, y_dot_0, x0, y0):
     g = 9.81 # m/s**2
     y = -1/2*g*t**2 + y_dot_0*t + y0
     x = x_dot_0*t + x0
     return [x, y]
+
 
 def test_rk4_4():
     # Based on projectile under constant acceleration
@@ -91,10 +98,10 @@ def test_rk4_4():
     state_0 = [x_dot_0, y_dot_0, x0, y0]
     t_span_apex = [0, t_apex]
     h = 0.5
-    t_res_apex, y_res_apex = rk4(projectile_ode, t_span_apex, state_0, h)
+    _, y_res_apex = rk4(projectile_ode, t_span_apex, state_0, h)
 
     t_span_final = [0, t_final]
-    t_res_final, y_res_final = rk4(projectile_ode, t_span_final, state_0, h)
+    _, y_res_final = rk4(projectile_ode, t_span_final, state_0, h)
 
     # Comparing results
     tol = 1e-8

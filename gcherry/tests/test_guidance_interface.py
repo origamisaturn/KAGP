@@ -2,7 +2,7 @@ import unittest
 import numpy as np
 
 import gcherry.config as cfg
-from gcherry.guidance_interface import generateGuidanceObj
+from gcherry.guidance_interface import generate_guidance_obj
 
 
 class TestGuidance(unittest.TestCase):
@@ -15,16 +15,16 @@ class TestGuidance(unittest.TestCase):
         v0 = np.array([0.0, 0.0, 0.0])
         m0 = config.spacecraft.wet_mass
 
-        guidance_obj = generateGuidanceObj(config)
-        thrust_mag, thrust_pitch, thrust_heading = (
+        guidance_obj = generate_guidance_obj(config)
+        _, _, thrust_heading = (
         guidance_obj.get_command(0, np.concatenate((x0, v0, [m0]))))
         self.assertAlmostEqual(thrust_heading, np.deg2rad(90))
 
         config.orbit_targeting_ascent.inclination = np.deg2rad(90)
-        guidance_obj = generateGuidanceObj(config)
-        thrust_mag, thrust_pitch, thrust_heading = (
+        guidance_obj = generate_guidance_obj(config)
+        _, _, thrust_heading = (
         guidance_obj.get_command(0, np.concatenate((x0, v0, [m0]))))
-        self.assertAlmostEqual(thrust_heading, np.deg2rad(0))        
+        self.assertAlmostEqual(thrust_heading, np.deg2rad(0))
 
 
 if __name__ == '__main__':

@@ -1,13 +1,11 @@
-import numpy as np
-from gcherry.rk4 import rk4
-import gcherry.config as cfg
-import krpc
-
 from abc import ABC, abstractmethod
 from typing_extensions import override
+import numpy as np
+import krpc
+
+import gcherry.config as cfg
 from gcherry.guidance_interface import GuidanceBase
 from gcherry.log import SimulationLog
-from gcherry.log_utils import almost_equal
 from gcherry.transform import body2global_rot
 from gcherry.rk4 import rk4_step
 
@@ -16,22 +14,20 @@ class SimulatorBase(ABC):
     """ Base class for all simulator objects. """
 
     @abstractmethod
-    def __init__(self, config: cfg.Config, guidance_obj: GuidanceBase): 
+    def __init__(self, config: cfg.Config, guidance_obj: GuidanceBase):
         """ Initializes simulation based on config. 
         
         Args:
             config: Config object. Contains settings for the simulation.
             guidance_obj: GuidanceBase subclass used in the simulation loop.
         """
-        pass
 
     @abstractmethod
-    def run(self): 
+    def run(self):
         """ Runs and logs the simulation. """
-        pass
 
 
-def generateSimObj(config: cfg.Config, guidance_obj: GuidanceBase) -> SimulatorBase:
+def generate_sim_obj(config: cfg.Config, guidance_obj: GuidanceBase) -> SimulatorBase:
     """ Create SimulatorBase object selected by config. 
     
     Args:
@@ -47,7 +43,7 @@ def generateSimObj(config: cfg.Config, guidance_obj: GuidanceBase) -> SimulatorB
     elif config.krpc_client:
         sim_obj = KRPCClient(config, guidance_obj)
     else:
-        raise(RuntimeError("No simulation defined in config."))
+        raise RuntimeError("No simulation defined in config.")
     return sim_obj
 
 
@@ -77,7 +73,7 @@ class SingleStageSimulatorBase(SimulatorBase):
         """
         T = self.guidance_obj.estimated_final_time()
         return (T - t) < self._outer_loop_cutoff
-    
+
     def _is_outer_loop_scheduled(self, t):
         """ Checks if the simulator should run the guidance outer loop.
         
@@ -88,7 +84,7 @@ class SingleStageSimulatorBase(SimulatorBase):
             A boolean.
         """
         return (t - self._last_outer_loop_time) >= self._outer_loop_interval
-    
+
     def _mark_outer_loop_calc(self, t):
         """ Sets last time outer loop was calculated. 
         
@@ -118,7 +114,7 @@ class IntegratorSim(SingleStageSimulatorBase):
     _pitch_cmd_store: float
     _heading_cmd_store: float
 
-    # NOTE: outer loop interval will not be exact, will be slightly 
+    # NOTE: outer loop interval will not be exact, will be slightly
     # shifted forward due to the integration timestep
     _max_time_step: float
     _sim_end_time: float
@@ -129,7 +125,7 @@ class IntegratorSim(SingleStageSimulatorBase):
     _wet_mass: float
 
     @override
-    def __init__(self, config: cfg.Config, 
+    def __init__(self, config: cfg.Config,
                        guidance_obj: GuidanceBase):
         self._thrust_cmd_store = 0.0
         self._pitch_cmd_store = np.deg2rad(90)
@@ -164,11 +160,6 @@ class IntegratorSim(SingleStageSimulatorBase):
         self.log.state.log_state(sim_start_time, initial_state)
         # call get_command to initialize outer loop solution
         self.guidance_obj.get_command(0, initial_state, outer_loop=True, log=True)
-        ode_func = lambda t, state: rocket_ode(t, state, 
-                                               self._mu, 
-                                               self._isp, 
-                                               self._thrust_force_max, 
-                                               self._guidance_func_continuous)
         t_res = np.array([sim_start_time])
         y_res = np.array([initial_state]).T
         while t_res[-1] < self._sim_end_time - 1e-8:
@@ -176,20 +167,25 @@ class IntegratorSim(SingleStageSimulatorBase):
             y = y_res[:, -1]
             next_t = self._get_next_timestep(t)
             h = next_t - t
-            next_state = np.atleast_2d(rk4_step(ode_func, t, y, h)).T
+            next_state = np.atleast_2d(rk4_step(self._ode_func, t, y, h)).T
 
             y_res = np.concatenate((y_res, next_state), axis=1)
             t_res = np.append(t_res, next_t)
             self._integration_callback(next_t, y_res[:, -1])
 
         return t_res, y_res
-    
+
+    def _ode_func(self, t, state):
+        return rocket_ode(t, state, self._mu, self._isp,
+                          self._thrust_force_max,
+                          self._guidance_func_continuous)
+
     def _get_next_timestep(self, t):
         """ Gets time in the next default timestep, unless a time in 
         event_times will occur sooner. 
         """
         estimated_T = self.guidance_obj.estimated_final_time()
-        # Have integration steps near estimated_T to get a relatively 
+        # Have integration steps near estimated_T to get a relatively
         # sharp cutoff of the throttle by the integrator.
         event_times = [estimated_T - 1e-7, estimated_T + 1e-7, self._sim_end_time]
         next_time = t + self._max_time_step
@@ -198,12 +194,12 @@ class IntegratorSim(SingleStageSimulatorBase):
             if h > 0 and h <= next_time - t:
                 next_time = candidate_time
         return next_time
-        
+
     def _integration_callback(self, t, state):
         self.log.state.log_state(t, state)
         self.guidance_obj.set_thrust_acc_measurement(t, self._get_thrust_acc(t, state))
 
-        if (not self._is_outer_loop_cutoff(t) and 
+        if (not self._is_outer_loop_cutoff(t) and
             self._is_outer_loop_scheduled(t)):
             thrust_cmd, pitch_cmd, heading_cmd = (
                 self.guidance_obj.get_command(t, state, outer_loop=True, log=True))
@@ -212,18 +208,20 @@ class IntegratorSim(SingleStageSimulatorBase):
             thrust_cmd, pitch_cmd, heading_cmd = (
                 self.guidance_obj.get_command(t, state, outer_loop=False, log=True))
 
-        self._thrust_command_store = thrust_cmd
-        self._pitch_command_store = pitch_cmd
-        self._heading_command_store = heading_cmd
+        self._thrust_cmd_store = thrust_cmd
+        self._pitch_cmd_store = pitch_cmd
+        self._heading_cmd_store = heading_cmd
 
     def _guidance_func_continuous(self, t, state):
-        thrust_cmd, pitch_cmd, heading_cmd = self.guidance_obj.get_command(t, state, outer_loop=False, log=False)
+        thrust_cmd, pitch_cmd, heading_cmd = (
+            self.guidance_obj.get_command(t, state,
+                                          outer_loop=False, log=False))
         return thrust_cmd, pitch_cmd, heading_cmd
 
     def _guidance_func_discrete(self, t, state):
         """ Uses *_store variables updated by _integration_callback. """
         return self._thrust_cmd_store, self._pitch_cmd_store, self._heading_cmd_store
-    
+
     def _get_thrust_acc(self, t, state):
         m = state[6]
         thrust_acc = self._thrust_cmd_store * self._thrust_force_max/m
@@ -277,7 +275,7 @@ def rocket_ode(t, state, mu, Isp, F_thrust_max, guidance_func):
 
     F_thrust = F_thrust_max * thrust_mag
     thrust_vector_body = np.array([F_thrust, 0, 0])
-    thrust_vector_global = (body2global_rot(0, thrust_pitch, thrust_yaw, r) 
+    thrust_vector_global = (body2global_rot(0, thrust_pitch, thrust_yaw, r)
                             @ thrust_vector_body)
     ve = Isp * g_0
     mdot = F_thrust/ve
@@ -325,7 +323,7 @@ class KRPCClient(SingleStageSimulatorBase):
                         0, state, outer_loop=True, log=False)
         self._mark_outer_loop_calc(guidance_time)
         estimated_T = self.guidance_obj.estimated_final_time()
- 
+
         while guidance_time < estimated_T + self._post_guidance_measurement:
             state = self._get_state()
             self._log_state(state, guidance_time)
@@ -349,16 +347,16 @@ class KRPCClient(SingleStageSimulatorBase):
                 np.rad2deg(heading_cmd),
                 guidance_time,
                 estimated_T))
-        
+
         self._vessel.control.throttle = 0
         self._vessel.auto_pilot.disengage()
 
     def _get_guidance_command(self, guidance_time, state):
-        if (not self._is_outer_loop_cutoff(guidance_time) and 
+        if (not self._is_outer_loop_cutoff(guidance_time) and
             self._is_outer_loop_scheduled(guidance_time)):
             thrust_cmd, pitch_cmd, heading_cmd = (
                 self.guidance_obj.get_command(
-                    guidance_time, state, outer_loop=True, log=True, 
+                    guidance_time, state, outer_loop=True, log=True,
                     mecoshift=self._main_engine_cutoff_shift))
             self._mark_outer_loop_calc(guidance_time)
             print("Outer Loop Calculated")
@@ -394,7 +392,7 @@ class KRPCClient(SingleStageSimulatorBase):
         """ Connect to local KRPC server. """
         self._conn = krpc.connect(name=self.client_name)
         self._vessel = self._conn.space_center.active_vessel
-        
+
     def _init_streams(self):
         """ Initiate data streams from KRPC server. """
         conn = self._conn
@@ -406,7 +404,7 @@ class KRPCClient(SingleStageSimulatorBase):
         self._streams['mass'] = conn.add_stream(getattr, vessel, 'mass')
         self._streams['position'] = conn.add_stream(vessel.position, ref_frame)
         self._streams['velocity'] = conn.add_stream(vessel.velocity, ref_frame)
-        self._streams['time'] = conn.add_stream(getattr, conn.space_center, 'ut')   
+        self._streams['time'] = conn.add_stream(getattr, conn.space_center, 'ut')
         self._streams['thrust'] = conn.add_stream(getattr, vessel, 'thrust')
 
     def _parse_input(self, config):

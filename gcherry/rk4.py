@@ -1,5 +1,6 @@
 import numpy as np
 
+
 def rk4(fun, tspan, y0, max_step, callback=None):
     """ Runge-kutta fourth-order integrator.
     
@@ -28,7 +29,7 @@ def rk4(fun, tspan, y0, max_step, callback=None):
 
     # hopefully calling a useless function is more performant than checking
     # if callback is None every integration step
-    if callback==None:
+    if callback is None:
         callback = lambda t, y: None
 
     t_res = _rk4_get_t_steps(tspan, max_step)
@@ -48,6 +49,7 @@ def rk4(fun, tspan, y0, max_step, callback=None):
             callback(t_new, y_new)
 
     return t_res, y_res
+
 
 def rk4_step(fun, t, y, h):
     """ Perform an RK4 step and get next state. 
@@ -70,6 +72,7 @@ def rk4_step(fun, t, y, h):
     y_next = y + 1/6 * (w1 + 2*w2 + 2*w3 + w4)
     return y_next
 
+
 def _rk4_get_t_steps(tspan, max_step):
     d_tspan = tspan[1] - tspan[0]
     n_steps = int(np.floor(d_tspan/max_step))
@@ -84,8 +87,10 @@ def _rk4_get_t_steps(tspan, max_step):
 
     return t_steps
 
+
 def within_tol(val1, val2, tol=1e-8):
     if abs(val1-val2) < tol:
         return True
     else:
         return False
+    

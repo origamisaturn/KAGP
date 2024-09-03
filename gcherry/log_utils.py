@@ -1,22 +1,19 @@
 import numpy as np
 import matplotlib.pyplot as plt
-
-from gcherry.transform import (
-    rcn2global_rot,
-    global2topo_rot, 
-    get_ra_decl, 
-    perifocal2global_rot, 
-    body2global_rot, 
-    global2pcf_rot, 
-    global2perifocal_rot)
-
 # TODO: Would be nice to get rid of this, poliastro is holding the python
 # version back to 3.10.x.
 from poliastro.core.elements import rv2coe
 
-
+from gcherry.transform import (
+    rcn2global_rot,
+    global2topo_rot,
+    get_ra_decl,
+    perifocal2global_rot,
+    body2global_rot,
+    global2pcf_rot,
+    global2perifocal_rot)
 # All args and returns are assumed to be in the global frame. The global
-# frame is an inertial frame whose origin is fixed at the center of the 
+# frame is an inertial frame whose origin is fixed at the center of the
 # major body.
 
 
@@ -35,6 +32,7 @@ def col_mult(mat1, mat2):
         mult[i] = np.dot(mat1[:, i], mat2[:, i])
     return mult
 
+
 def get_radius(pos):
     """ Get radius.
     
@@ -46,6 +44,7 @@ def get_radius(pos):
     """
     radius = np.linalg.norm(pos, axis=0)
     return radius
+
 
 def get_r_hat(pos):
     """ Get radial unit vector.
@@ -59,6 +58,7 @@ def get_r_hat(pos):
     """
     r_hat = pos/np.linalg.norm(pos, axis=0)
     return r_hat
+
 
 def get_theta_hat(pos, vel):
     """ Get circumferential unit vector. 
@@ -78,6 +78,7 @@ def get_theta_hat(pos, vel):
                            @np.array([0, 1, 0]))
     return theta_hat
 
+
 def get_r_dot(pos, vel):
     """ Get rate of change of radius wrt time. 
     
@@ -92,6 +93,7 @@ def get_r_dot(pos, vel):
     r_hat = get_r_hat(pos)
     r_dot = col_mult(r_hat, vel)
     return r_dot
+
 
 def get_v_theta(pos, vel):
     """ Get velocity along circumferential unit vector.
@@ -108,6 +110,7 @@ def get_v_theta(pos, vel):
     v_theta = np.sqrt(v_mag**2 - r_dot**2)
     return v_theta
 
+
 def get_r_dot_dot(t, pos, vel):
     """ Get rate of change of r_dot wrt time.
     
@@ -122,6 +125,7 @@ def get_r_dot_dot(t, pos, vel):
     r_dot = get_r_dot(pos, vel)
     r_dot_dot = np.gradient(r_dot, t)
     return r_dot_dot
+
 
 def get_a_theta(t, pos, vel):
     """ Get rate of change of circumferential velocity wrt time.
@@ -138,6 +142,7 @@ def get_a_theta(t, pos, vel):
     a_theta = np.gradient(v_theta, t)
     return a_theta
 
+
 def get_acc(t, vel):
     """ Get acceleration.
     
@@ -150,6 +155,7 @@ def get_acc(t, vel):
     """
     acc = np.gradient(vel, t, axis=1)
     return acc
+
 
 def get_gravity(pos, mu):
     """ Get acceleration due to gravity. Assumes spherical major body.
@@ -166,6 +172,7 @@ def get_gravity(pos, mu):
     r = get_radius(pos)
     a_g = -mu/r**2 * r_hat
     return a_g
+
 
 def get_non_gravity_acc(t, pos, vel, mu):
     """ Get acceleration not due to gravity.
@@ -184,6 +191,7 @@ def get_non_gravity_acc(t, pos, vel, mu):
     perturb = acc - a_g
     return perturb
 
+
 def get_non_gravity_acc_mag(t, pos, vel, mu):
     """ Get magnitude of acceleration due to sources other than gravity.
     
@@ -199,6 +207,7 @@ def get_non_gravity_acc_mag(t, pos, vel, mu):
     perturb = get_non_gravity_acc(t, pos, vel, mu)
     perturb_mag = np.linalg.norm(perturb, axis=0)
     return perturb_mag
+
 
 def get_orbital_elements(pos, vel, mu):
     """ Get orbital elements.
@@ -264,6 +273,7 @@ def get_thrust_pitch(t, pos, vel, mu):
     alpha = np.arctan2(-thrust_acc_topo[2, :], np.linalg.norm(thrust_acc_topo[:2, :], axis=0))
     return alpha
 
+
 def get_projected_true_anomaly(pos, target_lan, target_inc, target_argp):
     """ Get true anomaly of position as projected onto target orbit.
     
@@ -284,6 +294,7 @@ def get_projected_true_anomaly(pos, target_lan, target_inc, target_argp):
         pos_perifocal = global2perifocal_rot(target_lan[i], target_inc[i], target_argp[i])@pos[:, i]
         nu_proj[i] = np.arctan2(pos_perifocal[1], pos_perifocal[0])
     return nu_proj
+
 
 def get_thrust_acc_PCF(pos, thrust_pitch, thrust_yaw, m, target_lan, target_inc, F_thrust_max):
     """ Get thrust acceleration in Plane Control Frame.
@@ -309,11 +320,17 @@ def get_thrust_acc_PCF(pos, thrust_pitch, thrust_yaw, m, target_lan, target_inc,
     N = len(m)
     thrust_acc_pcf = np.zeros((3, N))
     for i in range(N):
-        thrust_vector_global = (body2global_rot(0, thrust_pitch[i], thrust_yaw[i], pos[:, i]) 
-                                @ thrust_vector_body)
-        thrust_vector_pcf = global2pcf_rot(pos[:, i], target_lan[i], target_inc[i])@thrust_vector_global
+        thrust_vector_global = (
+            body2global_rot(
+                0, thrust_pitch[i], thrust_yaw[i], pos[:, i])
+                @ thrust_vector_body)
+        thrust_vector_pcf = (
+            global2pcf_rot(
+                pos[:, i], target_lan[i], target_inc[i])
+            @ thrust_vector_global)
         thrust_acc_pcf[:, i] = thrust_vector_pcf/m[i]
     return thrust_acc_pcf
+
 
 def get_theta_hat_PCF(pos, vel, target_lan, target_inc):
     """ Get circumferential unit vector in Plane Control Frame. 
@@ -338,6 +355,7 @@ def get_theta_hat_PCF(pos, vel, target_lan, target_inc):
             @np.array([0, 1, 0]))
     return theta_hat
 
+
 def get_target_normal_position(pos, target_lan, target_inc):
     """ Gets position along normal of target orbital plane.
 
@@ -349,10 +367,11 @@ def get_target_normal_position(pos, target_lan, target_inc):
     Returns:
         1-D array of normal position at each column of pos.
     """
-    target_normal_vec = (perifocal2global_rot(target_lan, target_inc, 0) @ 
+    target_normal_vec = (perifocal2global_rot(target_lan, target_inc, 0) @
                         np.array([0, 0, 1]))
     target_normal_position = target_normal_vec@pos
     return target_normal_position
+
 
 def get_target_normal_velocity(vel, target_lan, target_inc):
     """ Gets velocity along normal of target orbital plane.
@@ -364,11 +383,12 @@ def get_target_normal_velocity(vel, target_lan, target_inc):
 
     Returns:
         1-D array of normal velocity at each column of vel.
-    """    
-    target_normal_vec = (perifocal2global_rot(target_lan, target_inc, 0) @ 
+    """
+    target_normal_vec = (perifocal2global_rot(target_lan, target_inc, 0) @
                         np.array([0, 0, 1]))
     target_normal_velocity = target_normal_vec@vel
     return target_normal_velocity
+
 
 def get_target_normal_acceleration(t, vel, target_lan, target_inc):
     """ Gets acceleration along normal of target orbital plane.
@@ -380,12 +400,12 @@ def get_target_normal_acceleration(t, vel, target_lan, target_inc):
 
     Returns:
         1-D array of normal acceleration at each column of vel.
-    """    
+    """
     target_normal_velocity = get_target_normal_velocity(vel, target_lan, target_inc)
     target_normal_acceleration = np.gradient(target_normal_velocity, t)
     return target_normal_acceleration
 
-    
+
 def get_time_steps(t):
     """ Get step between each time entry. 
     
@@ -404,15 +424,16 @@ def get_time_steps(t):
             time_steps[i] = t_val - t[i-1]
     return time_steps
 
-def plot_vars(vars, t, columns=3, keys=None, plotkwargs=None):
+
+def plot_vars(variables, t, columns=3, keys=None, plotkwargs=None):
     """ Plot several variables on a grid.
     
     Args:
-        vars: Dictionary whose entries contain 1-dimensional 
+        variables: Dictionary whose entries contain 1-dimensional 
             array-likes to plot on y-axes. All entries must be same length.
         t: 1-dimensional array-like containing x-axis variables.
         columns: Number of columns in plot grid.
-        keys: Keys in vars to plot.
+        keys: Keys in variables to plot.
         plotkwargs: Dictionary, will be unpacked as key word arguments
             for the plot function, for each subplot.
 
@@ -424,7 +445,7 @@ def plot_vars(vars, t, columns=3, keys=None, plotkwargs=None):
     if keys:
         var_names = keys
     else:
-        var_names = list(vars.keys())
+        var_names = list(variables.keys())
     plot_total = len(var_names)
     rows = int(np.ceil(plot_total/columns))
     fig, axs = plt.subplots(rows, columns, sharex=True)
@@ -435,16 +456,17 @@ def plot_vars(vars, t, columns=3, keys=None, plotkwargs=None):
                 continue
             else:
                 var_name = var_names[plot_index]
-                var_val = vars[var_name]
+                var_val = variables[var_name]
                 print("var_name: {}".format(var_name))
                 # ignore _debug dictionary
-                if type(var_val) == type(dict()):
+                if isinstance(var_val, dict):
                     continue
 
                 axs[i, j].plot(t, var_val, **plotkwargs)
                 axs[i, j].set_title(var_name)
     return fig, axs
-    
+
+
 def interp_table(x, xkey, table):
     """ Interpolate dictionary or dataframe.
     
@@ -456,16 +478,16 @@ def interp_table(x, xkey, table):
     Returns:
         dictionary containing each key in table and the interpolated
         value at x.
-    
     """
     new_table = {}
     for key in table:
         new_table[key] = np.interp(x, table[xkey], table[key])
     return new_table
 
+
 def almost_equal(val1, val2, tol=1e-8):
-    arr_type = type(np.ndarray([]))
-    if type(val1) == arr_type or type(val2) == arr_type:
+    if isinstance(val1, np.ndarray) or isinstance(val2, np.ndarray):
         return (val1-val2 > -tol).all() and (val1-val2 < tol).all()
     else:
         return val1-val2 > -tol and val1-val2 < tol
+    
