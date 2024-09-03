@@ -6,31 +6,37 @@ import matplotlib.pyplot as plt
 
 import gcherry.config as cfg
 from gcherry.guidance_components import InfeasibleError
-from gcherry.guidance_interface import generateGuidanceObj, GuidanceBase
-from gcherry.sim_interface import generateSimObj
+from gcherry.guidance_interface import generate_guidance_obj, GuidanceBase
+from gcherry.sim_interface import generate_sim_obj
 from gcherry.log import LogAnalyzer
 
 
 def gcherry_cmd():
     """ Main command for performing ascent guidance. """
-    parser = argparse.ArgumentParser(prog='gcherry',
-                                     description='A single-stage iterative ascent guidance program')
+    parser = argparse.ArgumentParser(
+        prog='gcherry',
+        description='A single-stage iterative ascent guidance program')
     subparsers = parser.add_subparsers()
 
     parser_run = subparsers.add_parser('run', help='runs ascent guidance')
-    parser_run.add_argument('config_paths', nargs='+', help='YAML configuration file path(s)')
-    parser_run.add_argument('--nolog', action='store_true', help='does not save log files after run')
-    parser_run.add_argument('--plotlog', action='store_true', help='runs plotlog subcommand after run')
+    parser_run.add_argument('config_paths', nargs='+',
+                            help='YAML configuration file path(s)')
+    parser_run.add_argument('--nolog', action='store_true',
+                            help='does not save log files after run')
+    parser_run.add_argument('--plotlog', action='store_true',
+                            help='runs plotlog subcommand after run')
     parser_run.set_defaults(func=_run_cmd)
-    
-    parser_plotlog = subparsers.add_parser('plotlog', help='plots log files')
-    parser_plotlog.add_argument('log_dir', help='path of directory containing log files')
+
+    parser_plotlog = subparsers.add_parser('plotlog',
+                                           help='plots log files')
+    parser_plotlog.add_argument('log_dir',
+                                help='path of directory containing log files')
     parser_plotlog.set_defaults(func=_plotlog_cmd)
 
     args = parser.parse_args()
     if getattr(args, 'func', None):
         # Prevents a failed convergence from generating a traceback.
-        # Would prefer this be in _run_cmd, but test_cmd.py relies on 
+        # Would prefer this be in _run_cmd, but test_cmd.py relies on
         # _run_cmd() passing on all exceptions
         try:
             args.func(args)
@@ -43,8 +49,8 @@ def gcherry_cmd():
 def _run_cmd(args):
     """ The 'run' subcommand. """
     config = cfg.load_config(args.config_paths)
-    guidance_obj = generateGuidanceObj(config)
-    sim_obj = generateSimObj(config, guidance_obj)
+    guidance_obj = generate_guidance_obj(config)
+    sim_obj = generate_sim_obj(config, guidance_obj)
     sim_obj.run()
     log_obj = LogAnalyzer(config, guidance_obj.log, sim_obj.log)
     if not args.nolog:
@@ -55,7 +61,7 @@ def _run_cmd(args):
 
 def _plotlog_cmd(args):
     """ The 'plotlog' subcommand. """
-    guidance_obj, sim_obj, log_obj = _load_obj(args.log_dir)
+    _, _, log_obj = _load_obj(args.log_dir)
     _plot_log(log_obj)
 
 

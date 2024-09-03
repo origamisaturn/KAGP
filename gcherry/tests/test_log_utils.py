@@ -1,24 +1,24 @@
 import unittest
-import numpy as np
 import math
+import numpy as np
 
 from gcherry.log_utils import (
     get_radius,
     get_r_hat,
     get_theta_hat,
-    get_acc, 
-    get_r_dot, 
-    get_v_theta, 
-    get_r_dot_dot, 
+    get_acc,
+    get_r_dot,
+    get_v_theta,
+    get_r_dot_dot,
     get_a_theta,
     get_gravity,
-    get_non_gravity_acc,
-    get_non_gravity_acc_mag,
+#    get_non_gravity_acc,
+#    get_non_gravity_acc_mag,
     get_orbital_elements,
-    get_thrust_pitch,
+#    get_thrust_pitch,
     get_projected_true_anomaly,
-    get_thrust_acc_PCF,
-    get_theta_hat_PCF,
+#    get_thrust_acc_PCF,
+#    get_theta_hat_PCF,
     get_target_normal_position,
     get_target_normal_velocity,
     get_target_normal_acceleration,
@@ -61,7 +61,7 @@ class TestConversions(unittest.TestCase):
                         [0, 0],
                         [0, 0]])
         theta_hat = get_theta_hat(pos, vel)
-        expected_theta_hat = np.array([[-np.cos(theta), -0.89442719], 
+        expected_theta_hat = np.array([[-np.cos(theta), -0.89442719],
                                    [np.sin(theta), 0.4472136],
                                    [0, 0]])
         error = np.linalg.norm(theta_hat - expected_theta_hat)
@@ -92,7 +92,7 @@ class TestConversions(unittest.TestCase):
         v_theta_expected = np.array([0, 5/(2)**0.5, 5])
         error = np.linalg.norm(v_theta - v_theta_expected)
         self.assertTrue(error < 1e-8)
-    
+
     def test_funct__get_r_dot_dot__(self):
         r0 = 1737e3
         pos = np.array([r0/(2)**0.5 * np.ones(3),
@@ -146,7 +146,7 @@ class TestConversions(unittest.TestCase):
         self.assertTrue(error < 1e-8)
 
     # def test_funct__get_non_gravity_acc__(self):
-    #     self.assertTrue(False)            
+    #     self.assertTrue(False)
 
     # def test_funct__get_non_gravity_acc_mag__(self):
     #     self.assertTrue(False)
@@ -231,6 +231,7 @@ class TestConversions(unittest.TestCase):
         t = [0, 0.1, 0.2, 0.5, 1]
         dt = get_time_steps(t)
         self.assertTrue(almost_equal(dt, [0, 0.1, 0.1, 0.3, 0.5]))
+
 
 if __name__ == '__main__':
     unittest.main()

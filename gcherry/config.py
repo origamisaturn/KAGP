@@ -1,13 +1,12 @@
-import yaml
 import pickle as pkl
-from enum import Enum
-from pydantic import (
-    BaseModel, ValidationInfo,
-    conlist, model_validator, field_validator, 
-    PositiveFloat, NonNegativeFloat)
 from typing import Optional
 from typing_extensions import Self
 from pathlib import Path
+from pydantic import (
+    BaseModel, ValidationInfo,
+    conlist, model_validator, field_validator,
+    PositiveFloat, NonNegativeFloat)
+import yaml
 import numpy as np
 
 
@@ -17,8 +16,10 @@ class SpacecraftConfig(BaseModel):
     thrust: PositiveFloat # N
     wet_mass: PositiveFloat # kg
 
+
 class CelestialBodyConfig(BaseModel):
     gravitational_parameter: PositiveFloat # m^3/s^2
+
 
 class OrbitTargetingAscentConfig(BaseModel):
     apoapsis: PositiveFloat # m
@@ -31,7 +32,7 @@ class OrbitTargetingAscentConfig(BaseModel):
     estimator_ignore_time: NonNegativeFloat = 5 # s
     estimator_output_time: NonNegativeFloat = 50 # s
 
-    @field_validator('longitude_of_ascending_node', 'inclination', 
+    @field_validator('longitude_of_ascending_node', 'inclination',
                      'argument_of_periapsis')
     @classmethod
     def convert_deg_to_rad(cls, val: float, info: ValidationInfo) -> NonNegativeFloat:
@@ -42,6 +43,7 @@ class OrbitTargetingAscentConfig(BaseModel):
             else:
                 val = np.deg2rad(val%360)
         return val
+
 
 class DebugAscent1Config(BaseModel):
     terminal_time: PositiveFloat # s
@@ -61,6 +63,7 @@ class DebugAscent1Config(BaseModel):
                 val = np.deg2rad(val%360)
         return val
 
+
 class IntegratorConfig(BaseModel):
     simulation_end_time: PositiveFloat # s
     initial_position: conlist(float, min_length=3, max_length=3) # [m, m, m]
@@ -76,12 +79,14 @@ class IntegratorConfig(BaseModel):
             raise ValueError("initial_position is zero.")
         return self
 
+
 class KRPCClientConfig(BaseModel):
     name: str = "gcherry"
     outer_loop_interval: PositiveFloat = 7 # s
     outer_loop_cutoff: PositiveFloat = 10 # s
     post_guidance_measurement: NonNegativeFloat = 5 # s
     main_engine_cutoff_shift: float = -0.061 # s
+
 
 class Config(BaseModel):
     """ Main settings class.
@@ -101,10 +106,10 @@ class Config(BaseModel):
 
     @model_validator(mode='after')
     def check_one_simulation_defined(self) -> Self:
-        sim_attr = ['integrator', 'krpc_client']        
+        sim_attr = ['integrator', 'krpc_client']
         _assert_single_config_attr(self, sim_attr, "simulation")
         return self
-        
+
     @model_validator(mode='after')
     def check_one_guidance_defined(self) -> Self:
         guidance_attr = ['orbit_targeting_ascent', 'debug_ascent_1']
@@ -115,6 +120,7 @@ class Config(BaseModel):
         with open(save_path, 'wb') as fh:
             pkl.dump(self, fh)
 
+
 def _assert_single_config_attr(config_model, attr_list, attr_kind):
     defined_sum = 0
     for attr in attr_list:
@@ -124,6 +130,7 @@ def _assert_single_config_attr(config_model, attr_list, attr_kind):
         raise ValueError("No {} attribute defined.".format(attr_kind))
     elif defined_sum != 1:
         raise ValueError("More than one {} attribute defined.".format(attr_kind))
+
 
 def load_config(filenames):
     """ Creates a Config object based on input files. 

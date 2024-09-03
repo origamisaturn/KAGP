@@ -1,14 +1,16 @@
+import os
+import typing
 import pickle as pkl
 from copy import deepcopy
+
+import matplotlib
 import pandas as pd
 import numpy as np
-import os
-from gcherry.config import Config
-import typing
-import matplotlib
 
+from gcherry.config import Config
 import gcherry.log_utils as log_utils
 from gcherry.log_utils import plot_vars, interp_table
+
 
 # TODO: Write documentation for this
 class StateLog:
@@ -37,7 +39,7 @@ class StateLog:
                 at time t.
         """
         if len(state) != 7:
-            ValueError("State has incorrect length.")
+            raise ValueError("State has incorrect length.")
         self.state_vectors.append(state)
         self.times.append(t)
 
@@ -60,7 +62,7 @@ class StateLog:
         """
         np_state_vectors = np.array(self.state_vectors)
         return np_state_vectors[:, 3:6].T
-    
+
     def get_mass(self):
         """ Gets array of masses.
         
@@ -77,7 +79,7 @@ class StateLog:
             Length N array of times.
         """
         return np.array(self.times).T
-    
+
     def dataframe_log(self):
         """ Gets dataframe representation of StateLog.
 
@@ -102,6 +104,7 @@ class StateLog:
         return pd.DataFrame(df_dict)
 
     def plot_state(self):
+        """ Plots all the state log data. """
         t = self.get_time()
         pos = self.get_position()
         vel = self.get_velocity()
@@ -125,7 +128,7 @@ class SimulationLog:
         state: A StateLog object for logging vehicle state over time.
     """
     state: StateLog
-    
+
     def __init__(self):
         self.state = StateLog()
 
@@ -208,7 +211,7 @@ class OpenMDAOProblemLog:
         df_log['inputs'] = pd.DataFrame(flat_inputs)
         df_log['outputs'] = pd.DataFrame(flat_outputs)
         return df_log
-    
+
     def plot_inputs(self, x_axis_key):
         """ Plots inputs dataframe against x_axis_key values. 
         
@@ -244,7 +247,7 @@ class OpenMDAOProblemLog:
         flat_inputs = self._flatten_dict('', self.inputs)
         flat_outputs = self._flatten_dict('', self.outputs)
         return (flat_inputs, flat_outputs)
-    
+
     def _flatten_dict(self, var_name, var_val):
         """ Flattens var_val into a depth-1 dictionary.
 
@@ -284,7 +287,7 @@ class OpenMDAOProblemLog:
             dictionary with depth of 1.
         """
         new_table = {}
-        if type(var_val) == type(dict()):
+        if isinstance(var_val, dict):
             for key, val in var_val.items():
                 if var_name != '':
                     new_var_name = var_name + "." + key
@@ -292,8 +295,8 @@ class OpenMDAOProblemLog:
                     new_var_name = key
                 out_table = self._flatten_dict(new_var_name, val)
                 new_table.update(out_table)
-        elif type(var_val) == type(list()):
-            if type(var_val[0]) == type(dict()):
+        elif isinstance(var_val, list):
+            if isinstance(var_val[0], dict):
                 # TODO: implement check that all dicts have same keys
                 new_var_val = self._lod2dol(var_val)
                 new_table = self._flatten_dict(var_name, new_var_val)
@@ -304,7 +307,7 @@ class OpenMDAOProblemLog:
         else:
             raise ValueError("Dict does not contain dict or list.")
         return new_table
-    
+
     @staticmethod
     def _lod2dol(lod):
         """ Transforms list of dicts to a dict of lists. 
@@ -356,7 +359,7 @@ class OpenMDAOProblemLog:
             new_val = list(np_var_val[:, i])
             new_table[new_key] = new_val
         return new_table
-    
+
     @staticmethod
     def _flatten_element_list(var_name, var_val):
         """ Assigns list of primitives into dict.
@@ -433,7 +436,7 @@ class LogAnalyzer:
     # TODO: remove target lan and inc values, extract from config.
     _target_lan: float
     _target_inc: float
-    
+
     _shared_derived_values_function: typing.Callable
     _error_values_function: typing.Callable
     _final_error_values_function: typing.Callable
@@ -455,7 +458,7 @@ class LogAnalyzer:
 
         # Change log function depending on guidance method.
         # Using this instead of subclassing in the case that functions
-        # are dependent on both the guidance method and simulation 
+        # are dependent on both the guidance method and simulation
         # class.
         if config.orbit_targeting_ascent:
             self._set_analysis_attributes({
@@ -478,7 +481,7 @@ class LogAnalyzer:
         else:
             raise NotImplementedError("No recognized guidance method " +
                 "found in config.")
-        
+
     def _set_analysis_attributes(self, input_dict):
         """ Sets attributes that depend on guidance method. 
         
@@ -575,7 +578,7 @@ class LogAnalyzer:
             error columns.
         """
         return self._error_values_function()
-    
+
     def get_final_error_values(self):
         """ Dataframe of error between actual value at given time and
         the target final value.
@@ -585,7 +588,7 @@ class LogAnalyzer:
             error columns.
         """
         return self._final_error_values_function()
-    
+
     def get_final_estimated_T(self):
         """ Returns predicted guidance cutoff time.
         
@@ -593,7 +596,7 @@ class LogAnalyzer:
             T [s], a float
         """
         return self._final_estimated_T_function()
-    
+
     def get_final_error_table(self):
         """ Dictionary of error between actual and target values at 
         guidance cutoff.
@@ -607,7 +610,7 @@ class LogAnalyzer:
         T = self.get_final_estimated_T()
         final_err_table = interp_table(T, 't', df_final_err)
         return final_err_table
-    
+
     def get_interpolated_state(self, t_interp):
         """ Interpolates state log at given time.
         
@@ -657,7 +660,7 @@ class LogAnalyzer:
         fig, axs = plot_vars(df_shared, t, columns=4, keys=y_vars)
         fig.suptitle("Derived Guidance/State Values")
         return fig, axs
-    
+
     def plot_error(self):
         """ Plots the error between predicted and actual values.
         
@@ -671,7 +674,7 @@ class LogAnalyzer:
         fig, axs = plot_vars(df_err, t, columns=4, keys=y_vars)
         fig.suptitle("Guidance vs. Sim Error Values")
         return fig, axs
-    
+
     def plot_final_error(self, tspan=None):
         """ Plots the error based on actual state and final target value.
         
@@ -687,7 +690,7 @@ class LogAnalyzer:
         # t_meco = self._get_commanded_meco()
         plotkwargs=None
         if tspan:
-            df_final_err = df_final_err[(df_final_err['t'] >= T-tspan/2) & 
+            df_final_err = df_final_err[(df_final_err['t'] >= T-tspan/2) &
                                         (df_final_err['t'] <= T+tspan/2)]
             plotkwargs={'marker': 'o'}
         t = df_final_err['t']
@@ -723,8 +726,8 @@ class LogAnalyzer:
         fig.suptitle("Guidance Outputs")
 
         df_prob = self.guidance_log.problem.dataframe_log()
-        fig2, ax2 = matplotlib.pyplot.subplots()
-        t = df_prob['inputs']['pitch_heading_query.query_t']
+        _, ax2 = matplotlib.pyplot.subplots()
+        t = np.unique(df_prob['inputs']['pitch_heading_query.query_t'])
         T = self.get_final_estimated_T()
         tspan = 0.5
         final_indices = (t>=T-tspan/2) & (t<=T+tspan/2)
@@ -752,7 +755,7 @@ class LogAnalyzer:
         """
         if not os.path.exists(save_path):
             os.makedirs(save_path)
-        
+
         inputs_name = "inputs.csv"
         outputs_name = "outputs.csv"
         state_name = "state.csv"
@@ -772,7 +775,7 @@ class LogAnalyzer:
         df_derived.to_csv(os.path.join(save_path, derived_name))
         df_shared_derived.to_csv(os.path.join(save_path, shared_derived_name))
         df_err.to_csv(os.path.join(save_path, err_name))
-    
+
     def _shared_derived_values_orbit_targeting_ascent(self, t_interp=None):
         derived = self._common_shared_derived_values()
         t_interp = derived['t']
@@ -785,14 +788,14 @@ class LogAnalyzer:
         ota_derived = {}
         ota_derived['projected_nu'] = log_utils.get_projected_true_anomaly(
             pos, target_lan_list, target_inc_list, target_argp)
-        
+
         derived.update(ota_derived)
         return pd.DataFrame(derived)
-    
+
     def _error_values_orbit_targeting_ascent(self):
         err_dict = self._common_error_values()
         return pd.DataFrame(err_dict)
-    
+
     def _final_error_values_orbit_targeting_ascent(self):
         derived = self.get_derived_values()
         final_err_dict = {
@@ -810,20 +813,20 @@ class LogAnalyzer:
                                 self.config.orbit_targeting_ascent.argument_of_periapsis)
         }
         return pd.DataFrame(final_err_dict)
-    
+
     def _final_estimated_T_orbit_targeting_ascent(self):
         df_prob = self.guidance_log.problem.dataframe_log()
         estimated_T_arr = df_prob['outputs']['outer_loop.T']
         return estimated_T_arr.iloc[-1]
-    
-    def _shared_derived_values_debug_ascent_1(self, t_interp=None):
+
+    def _shared_derived_values_debug_ascent_1(self):
         derived = self._common_shared_derived_values()
-        return pd.DataFrame(derived)    
-    
+        return pd.DataFrame(derived)
+
     def _error_values_debug_ascent_1(self):
         err_dict = self._common_error_values()
         return pd.DataFrame(err_dict)
-    
+
     def _final_error_values_debug_ascent_1(self):
         derived = self.get_derived_values()
         final_err_dict = {
@@ -847,9 +850,9 @@ class LogAnalyzer:
     def _common_shared_derived_values(self):
         """ Derived values common across all guidance methods. """
         df_prob = self.guidance_log.problem.dataframe_log()
-        t_interp = df_prob['inputs']['pitch_heading_query.query_t']
+        t_interp = np.unique(df_prob['inputs']['pitch_heading_query.query_t'])
         t, pos, vel, mass = self.get_interpolated_state(t_interp)
-        
+
         df_prob = self.guidance_log.problem.dataframe_log()
         target_lan_list = df_prob['inputs']['outer_loop.target_lan']
         target_inc_list = df_prob['inputs']['outer_loop.target_inc']
@@ -857,13 +860,13 @@ class LogAnalyzer:
         cmd_thrust_yaw = df_prob['outputs']['pitch_heading_query.cmd_heading']
         F_thrust_max = df_prob['inputs']['outer_loop.v_e'][0] * df_prob['inputs']['outer_loop.m_dot'][0]
         thrust_acc_pcf = log_utils.get_thrust_acc_PCF(
-            pos, 
-            cmd_thrust_pitch, 
+            pos,
+            cmd_thrust_pitch,
             cmd_thrust_yaw,
             mass,
             target_lan_list,
             target_inc_list, F_thrust_max)
-        
+
         shared_derived = {}
         shared_derived['t'] = t
         shared_derived['dt'] = log_utils.get_time_steps(t)
@@ -880,7 +883,7 @@ class LogAnalyzer:
         shared_derived['theta_hat_k_pcf'] = theta_hat_pcf[2]
 
         return shared_derived
-    
+
     def _common_error_values(self):
         # NOTE: Should be dataframe, but currently oe is stored as array.
         df_prob = self.guidance_log.problem.dataframe_log()
@@ -921,11 +924,10 @@ class LogAnalyzer:
                     df_deriv['thrust_pitch'])
             }
         return err_dict
-    
-    
+
     def _get_commanded_meco(self):
         df_prob = self.guidance_log.problem.dataframe_log()
-        query_t = df_prob['inputs']['pitch_heading_query.query_t']
+        query_t = np.unique(df_prob['inputs']['pitch_heading_query.query_t'])
         df_thrust_cmd = pd.DataFrame({
             't': query_t,
             'thrust_cmd': self.guidance_log.thrust_cmd
@@ -933,3 +935,4 @@ class LogAnalyzer:
         commanded_meco_index = np.where(df_thrust_cmd['thrust_cmd']==0)[0][0]
         #TODO:  WIP WIP
         return df_thrust_cmd[commanded_meco_index]
+    
