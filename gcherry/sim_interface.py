@@ -327,6 +327,8 @@ class KRPCClient(SingleStageSimulatorBase):
         while guidance_time < estimated_T + self._post_guidance_measurement:
             state = self._get_state()
             self._log_state(state, guidance_time)
+            # Only for KRPCClient
+            self._log_vessel(self._vessel, guidance_time)
 
             self.guidance_obj.set_thrust_acc_measurement(guidance_time, self._get_thrust_acc())
             thrust_cmd, pitch_cmd, heading_cmd = self._get_guidance_command(guidance_time, state)
@@ -418,6 +420,9 @@ class KRPCClient(SingleStageSimulatorBase):
 
     def _log_state(self, state, t):
         self.log.state.log_state(t, state)
+
+    def _log_vessel(self, vessel, t):
+        self.log.vessel.log_vessel(t, vessel)
 
 
 def ksp_to_rhs(coord):

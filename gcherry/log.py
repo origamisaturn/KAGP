@@ -120,6 +120,129 @@ class StateLog:
         }
         plot_vars(plot_dict, t, columns=4)
 
+class AutoPilotLog:
+    pitch_errors: list
+    heading_errors: list
+    roll_errors: list
+    errors: list
+    target_pitches: list
+    target_headings: list
+    target_rolls: list
+    # SpaceCenter TransformRotation
+    # rpy -> quaternion -> TransformRotation(from autopilot to global 
+    #   inertial) -> rpy
+    # the errors should be the same, but maybe calculate it manual
+
+    def __init__(self):
+        self.pitch_errors = list()
+        self.heading_errors = list()
+        self.roll_errors = list()
+        self.errors = list()
+        self.target_pitches = list()
+        self.target_headings = list()
+        self.target_rolls = list()
+
+    def log_autopilot(self, autopilot):
+        self.pitch_errors.append(autopilot.pitch_error)
+        self.heading_errors.append(autopilot.heading_error)
+        self.roll_errors.append(autopilot.roll_error)
+        self.errors.append(autopilot.error)
+        self.target_pitches.append(autopilot.target_pitch)
+        self.target_headings.append(autopilot.target_heading)
+        self.target_rolls.append(autopilot.target_roll)
+
+    def dataframe_log(self):
+        df_dict = {
+            'pitch_error': self.pitch_errors,
+            'heading_error': self.heading_errors,
+            'roll_error': self.roll_errors,
+            'error': self.errors,
+            'target_pitch': self.target_pitches,
+            'target_heading': self.target_headings,
+            'target_roll': self.target_rolls
+        }
+        return pd.DataFrame(df_dict)
+
+class VesselLog:
+    """I want:
+    - moments of inertia
+    - target rpy, actual rpy
+    - target inertial rpy, actual inertial rpy
+    - effected torque
+    """
+    # note the 'bounding_box' item, can be used for rendezvous pathfinding
+    # 'rotation' gives the quaternion rotation in a certain reference frame
+    # 'direction' unit vector of vehicle pointing in reference frame
+    # 'angular_velocity' in given reference frame
+    # the 'control' object can be use to directly affect the vehicle controls
+    #   this might be affected by the same kind of delay that made "mecoshift"
+    #   necessary. can also engage, disengage rcs
+    # the 'autopilot' can give the target direction and target rpy error.
+    #   have to set reference frame variable though.
+    autopilot: AutoPilotLog
+    times: list
+    inertia_tensors: list
+    rotations_surface: list
+    rotations_global: list
+    angular_velocities_body: list #worried about doing it in surface, if
+    # it will be relative to inertial in surface axes
+
+    def __init__(self):
+        self.autopilot = AutoPilotLog()
+        self.times = []
+        self.inertia_tensors = []
+        self.rotations_surface = []
+        self.rotations_global = []
+        self.angular_velocities_body = []
+
+    # NOTE: inconsistent with simulationlog not having a log
+    def log_vessel(self, t, vessel):
+        self.autopilot.log_autopilot(vessel.auto_pilot)
+        self.times.append(t)
+        self.inertia_tensors.append(vessel.inertia_tensor)
+        self.rotations_surface.append(list(
+            vessel.rotation(vessel.surface_reference_frame)
+        ))
+        self.rotations_global.append(list(
+            vessel.rotation(vessel.orbit.body.non_rotating_reference_frame)
+        ))
+        self.angular_velocities_body.append(list(
+            vessel.angular_velocity(vessel.reference_frame)
+        ))
+
+    def dataframe_log(self):
+        np_rot_global = np.array(self.rotations_global)
+        np_rot_surf = np.array(self.rotations_surface)
+        np_inert = np.array(self.inertia_tensors)
+        np_w = np.array(self.angular_velocities_body)
+        df_dict = {
+            't': self.times,
+            'q0': np_rot_global[:, 3],
+            'q1': np_rot_global[:, 0],
+            'q2': np_rot_global[:, 1],
+            'q3': np_rot_global[:, 2],
+            'q0_surf': np_rot_surf[:, 3],
+            'q1_surf': np_rot_surf[:, 0],
+            'q2_surf': np_rot_surf[:, 1],
+            'q3_surf': np_rot_surf[:, 2],
+            'I11': np_inert[:, 0],
+            'I12': np_inert[:, 1],
+            'I13': np_inert[:, 2],
+            'I21': np_inert[:, 3],
+            'I22': np_inert[:, 4],
+            'I23': np_inert[:, 5],
+            'I31': np_inert[:, 6],
+            'I32': np_inert[:, 7],
+            'I33': np_inert[:, 8],
+            'w_x': np_w[:, 0],
+            'w_y': np_w[:, 1],
+            'w_z': np_w[:, 2]
+        }
+        df_vessel = pd.DataFrame(df_dict)
+        df_autopilot = self.autopilot.dataframe_log()
+        df_combined = pd.concat((df_vessel, df_autopilot), axis=1)
+        return df_combined
+
 
 class SimulationLog:
     """ Log used by SimulatorBase subclasses.
@@ -128,9 +251,11 @@ class SimulationLog:
         state: A StateLog object for logging vehicle state over time.
     """
     state: StateLog
+    vessel: VesselLog
 
     def __init__(self):
         self.state = StateLog()
+        self.vessel = VesselLog()
 
     def save_pkl(self, save_path):
         """ Convenience function for saving object as pickle file.
@@ -775,6 +900,11 @@ class LogAnalyzer:
         df_derived.to_csv(os.path.join(save_path, derived_name))
         df_shared_derived.to_csv(os.path.join(save_path, shared_derived_name))
         df_err.to_csv(os.path.join(save_path, err_name))
+
+        # TODO: This might break for the integrator
+        vessel_name = "vessel.csv"
+        df_vessel = self.sim_log.vessel.dataframe_log()
+        df_vessel.to_csv(os.path.join(save_path, vessel_name))
 
     def _shared_derived_values_orbit_targeting_ascent(self, t_interp=None):
         derived = self._common_shared_derived_values()
