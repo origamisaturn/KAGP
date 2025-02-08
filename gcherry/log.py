@@ -727,7 +727,7 @@ class LogAnalyzer:
 
         df_prob = self.guidance_log.problem.dataframe_log()
         _, ax2 = matplotlib.pyplot.subplots()
-        t = np.unique(df_prob['inputs']['pitch_heading_query.query_t'])
+        t = df_prob['inputs']['pitch_heading_query.query_t']
         T = self.get_final_estimated_T()
         tspan = 0.5
         final_indices = (t>=T-tspan/2) & (t<=T+tspan/2)
