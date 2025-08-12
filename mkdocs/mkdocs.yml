@@ -1,0 +1,8 @@
+site_name: PLACEHOLDER PLACEHOLDER
+theme:
+  name: readthedocs
+  custom_dir: mathjax_template/
+markdown_extensions:
+  - toc:
+      permalink: True
+  

@@ -1,3 +1,8 @@
+---
+layout: default
+title: Documentation
+---
+
 ## Table of Contents
 
 - [1. Guidance Objects](#1-guidance-objects)
@@ -51,7 +56,7 @@ Simulation objects accept guidance objects and config objects during initializat
 All simulation objects objects use the state vector
 
 $$\begin{align}
-    \begin{bmatrix} x & y & z & \dot x & \dot y & \dot z & m \end{bmatrix}
+    \begin{bmatrix}\; x & y & z & \dot x & \dot y & \dot z & m \;\end{bmatrix}
 \end{align}$$
 
 Where $x$, $y$, $z$ are the components of the position vector $\vec r$ in the global inertial frame, and m is mass.
@@ -124,7 +129,7 @@ $$\begin{align}
 
 where the boundary conditions and $T_{go}$ are determined by input variables. 
 
-This module outputs $c_{1, radial}$, $c_{2, radial}$, $c_{1, yaw}$, $c_{2, yaw}$, $a_0$, $a_1$, and $a_2$.
+This module outputs $c_{1, \textrm{radial}}$, $c_{2, \textrm{radial}}$, $c_{1, \textrm{yaw}}$, $c_{2, \textrm{yaw}}$, $a_0$, $a_1$, and $a_2$.
 
 ### 3.2. TimeToGo
 
@@ -139,7 +144,7 @@ $$\begin{align}
 The next estimate of cut-off time $T_{n+1}$ is found using equation (C.5.8)
 
 $$\begin{align}
-    T = \tau_o \{1 - \exp [-(v_{\theta D} - v_{\theta o})/v_e]\, Q_{n+1}\} + t_o \tag{}
+    T = \tau_o \\{1 - \exp [-(v_{\theta D} - v_{\theta o})/v_e]\, Q_{n+1}\\} + t_o \tag{}
 \end{align}$$
 
 The outputs are $T$ and $Q_n$. This module must be the first component to run if other components require $T$ as input.
@@ -150,10 +155,10 @@ This module calculates the circumeferential velocity $v_\theta$ and change in tr
 
 A Runge-Kutta 4th order integrator is used to integrate the differential equations (C.6.1) and (C.8.4)
 
-$$\begin{align}
-    \dot v_{\theta}(t) = \vec a_T \cdot \hat \theta - \dot r v_\theta / r \tag{C.6.1} \\
-    \dot \nu_{peri} = \frac{\vec v \cdot \hat j}{r_{peri}}
-\end{align}$$
+$$\begin{gather}
+    \dot v_{\theta}(t) = \vec a_T \cdot \hat \theta - \dot r v_\theta / r \tag{C.6.1} \\\\
+    \dot \nu_{\textrm{peri}} = \frac{\vec v \cdot \hat j}{r_{\textrm{peri}}}
+\end{gather}$$
 
 Appendix C.6. outlines the calculation of $\vec a_T$, $\hat \theta$, $\dot r$, and $r$ based on the radial and plane control guidance laws.
 
