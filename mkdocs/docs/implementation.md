@@ -3,6 +3,20 @@ layout: default
 title: Documentation
 ---
 
+## TODO
+
+- potentially add radial and yaw subscripts to appendix table
+- look at self._last_time in guidance_components.py/EnginePropertyEstimator, might be a bug.
+- add orbital elements to symbol list, deconflict all other uses of symbols that are orbital elements.
+- add r and vectors
+- make definition of $\hat y$ more prominent
+Variables I have to take a look at,
+$$\begin{gather}
+v_{\theta t, \textrm{tgt}} \\
+v_{\theta T} \\
+\theta_T \textrm{ vs } \nu_T
+\end{gather}$$
+
 ## Table of Contents
 
 - [1. Guidance Objects](#1-guidance-objects)
@@ -31,22 +45,82 @@ title: Documentation
     - [C.8. Final True Anomaly](#c8-final-true-anomaly)
     - [C.9. Orbit Targeting](#c9-orbit-targeting)
 - [References](#references)
+## Misc
+
+All units are SI units, and angles are in radians, unless specified otherwise.
+
+<!-- gcherry/
+
+    - tests/ contains tests.
+    - config.py: Defines configuration files.
+    - guidance_components.py: Implementation of guidance algorithm components.
+    - guidance_interface.py: Defines guidance objects.
+    - log.py: Objects for logging simulation data.
+    - log_utils.py: Utility functions for logging.
+    - main_script.py: Command line script.
+    - rk4.py: Numerical integrator.
+    - sim_interface.py: Defines simulation objects.
+    - transform.py: Functions for transforming between reference frames. -->
+
+## OpenMDAO
+
+This library uses [openMDAO](https://openmdao.org/) to encapsulate components of the guidance algorithm.
+
+The primary use of openMDAO in this program is to organize the ascent guidance into separate blocks, using openMDAO's `ExplicitComponent` class. This exposes the intermediate variables for documentation, and allows testing of separate parts of the algorithm.
+
+The guidance components are then organized into groups, using openMDAO's `Group` class. Any blocks that have inputs/outputs that share the same name are automatically connected. 
+
+The guidance algorithm is implemented as a subclass of `Group`, and 
+
+```python
+import openmdao.api as om
+
+...
+
+class RadialYawGuidance(om.ExplicitComponent)
+""" Solves equation for pitch and yaw scheduling. 
+    ...
+
+""" 
+```
 
 ## 1. Guidance Objects
 
 Guidance objects use config objects during initialization.
 
+Guidance objects are objects that encapsulate guidance algorithms.  Guidance objects are defined in `guidance_interface.py`.
+
+`GuidanceBase` is the abstract base class that defines the interface for all guidance objects. All guidance objects subclass `GuidanceBase`. 
+
+The most important member function of `GuidanceBase` is `get_command()`, which returns the commanded thrust, pitch, and heading, given the current state.
+
+Guidance objects are used when initializing simulation objects.
+
+
 ### 1.1. OrbitTargetingAscent
 
-<p align="center">
-    <img src="OrbitTargetingAscentDiagram.svg">
-</p>
+Single-stage guidance algorithm that targets:
+
+- apoapsis
+- periapsis
+- longitude of ascending node
+- inclination
+- argument of periapsis
+
+This uses the `OrbitTargetingAscentGroup` model. The connections of the components within this model is shown in the following figure.
+
+
+<img src="../img/OrbitTargetingAscentDiagram.svg" />
+<figure>
+    <img alt="PLACEHOLDER" src="../img/OrbitTargetAscentChart.svg" style="width: 695px;" />
+    <figcaption>
+        Chart of interconnections in the OrbitTargetingAscentGroup object, omitting most user inputs.
+    </figcaption>
+</figure>
 
 ### 1.2. DebugAscent1
 
-<p align="center">
-    <img src="test2.svg">
-</p>
+<img src="../img/test2.svg"/>
 
 
 ## 2. Simulation Objects
@@ -79,6 +153,8 @@ Uses KRPC's internal autopilot to control pitch and heading.
 
 This module calculates the $c_1$ and $c_2$ constants for the radial guidance law (C.3.6) and the plane control guidance law (C.4.4).
 
+<img src="../img/RadialYawGuidanceChart.svg" style="width: 695px;"/>
+
 Vehicle thrust acceleration $a_T(t)$ is written as a second-order Taylor series of $a_T=v_e/(\tau-t)$ about terminal time T
 
 $$\begin{align}
@@ -88,8 +164,8 @@ $$\begin{align}
 where
 
 $$\begin{align}
-    a_0& = a_T(T) = v_e/(\tau - T) \\
-    a_1& = -\dot a_T(t) = -a_0^2/v_e \\
+    a_0& = a_T(T) = v_e/(\tau - T)\\\\
+    a_1& = -\dot a_T(t) = -a_0^2/v_e\\\\
     a_2& = 2 \ddot a_T(T) = a_0^3/v_e^2
 \end{align}$$
 
@@ -98,7 +174,7 @@ Equations (C.2.13-16) for the $F$ matrix then become
 $$\begin{align}
     f_{11} & = a_0 T_{go} + a_1 T_{go}^2/2 + a_2 T_{go}^3/3\\
     f_{12} & = a_0 T_{go}^2/2 + a_1 T_{go}^3/3 + a_2 T_{go}^4/4\\
-    f_{21} & = f_{12} \\
+    f_{21} & = f_{12}\\\\
     f_{22} & = a_0 T_{go}^3/3 + a_1 T_{go}^4/4 + a_2 T_{go}^5/5
 \end{align}$$
 
@@ -106,24 +182,24 @@ The following equations are solved for the $c_1$ and $c_2$ constants using a lin
 
 $$\begin{align}
     \begin{bmatrix}
-    \dot y_D - \dot y_0 \\
+    \dot y_D - \dot y_0\\\\
     y_D - (y_o + \dot y_o T_{go})
     \end{bmatrix}
     = F 
     \begin{bmatrix}
-    c_{1, yaw} \\
-    c_{2, yaw}
+    c_{1, \textrm{yaw}}\\\\
+    c_{2, \textrm{yaw}}
     \end{bmatrix}
 \end{align}$$
 $$\begin{align}
     \begin{bmatrix}
-    \dot r_D - \dot r_0 \\
+    \dot r_D - \dot r_0\\\\
     r_D - (r_o + \dot r_o T_{go})
     \end{bmatrix}
     = F 
     \begin{bmatrix}
-    c_{1, radial} \\
-    c_{2, radial}
+    c_{1, \textrm{radial}} \\\\
+    c_{2, \textrm{radial}}
     \end{bmatrix}
 \end{align}$$
 
@@ -135,10 +211,12 @@ This module outputs $c_{1, \textrm{radial}}$, $c_{2, \textrm{radial}}$, $c_{1, \
 
 This module iteratively estimates cut-off time $T$ when connected to the RadialYawGuidance and VThetaSolver modules. 
 
+<img src="../img/TimeToGoChart.svg" style="width: 695px;"/>
+
 A fixed-point iteration scheme is used where $Q_{n}$ is the variable iteratively being solved for (Equation (C.5.10))
 
 $$\begin{align}
-    Q_{n+1} = \exp \begin{bmatrix} \frac{-(v_{\theta D} - v_{\theta o})}{v_e} \end{bmatrix} \frac{Q_n}{H(T_n)} \tag{} \\
+    Q_{n+1} = \exp \begin{bmatrix} \frac{-(v_{\theta D} - v_{\theta o})}{v_e} \end{bmatrix} \frac{Q_n}{H(T_n)} \tag{}\\\\
 \end{align}$$
 
 The next estimate of cut-off time $T_{n+1}$ is found using equation (C.5.8)
@@ -151,13 +229,13 @@ The outputs are $T$ and $Q_n$. This module must be the first component to run if
 
 ### 3.3. VThetaSolver
 
-This module calculates the circumeferential velocity $v_\theta$ and change in true anomaly $\Delta \nu$ of the vehicle at cut-off time $T$.
+This module calculates the circumeferential velocity $v_\theta$ and change (TODO: compared to what? or when?) in true anomaly $\Delta \nu$ of the vehicle at cut-off time $T$.
 
 A Runge-Kutta 4th order integrator is used to integrate the differential equations (C.6.1) and (C.8.4)
 
 $$\begin{gather}
     \dot v_{\theta}(t) = \vec a_T \cdot \hat \theta - \dot r v_\theta / r \tag{C.6.1} \\\\
-    \dot \nu_{\textrm{peri}} = \frac{\vec v \cdot \hat j}{r_{\textrm{peri}}}
+    \dot \nu_{peri} = \frac{\vec v \cdot \hat j}{r_{peri}}
 \end{gather}$$
 
 Appendix C.6. outlines the calculation of $\vec a_T$, $\hat \theta$, $\dot r$, and $r$ based on the radial and plane control guidance laws.
@@ -171,8 +249,8 @@ TODO: Will I still include v_theta_loss_T in the final version?
 This module calculates commanded pitch and heading of the vehicle using (C.7.1) and (C.7.2)
 
 $$\begin{align}
-    \alpha & = \sin^{-1}(\frac{\vec a_T \cdot \hat r}{a_T}) \tag{C.7.1} \\
-    \psi & = \arctan2(a_{T_e},\, a_{T_n}) \tag{C.7.2}
+    \alpha & = \sin^{-1}\left(\frac{\vec a_T \cdot \hat r}{a_T}\right) \tag{C.7.1}\\\\
+    \psi & = \textrm{atan2}(a_{T_e},\, a_{T_n}) \tag{C.7.2}
 \end{align}$$
 
 This module uses $\vec a_T$ as calculated in Appendix C.6.
@@ -183,10 +261,11 @@ This module outputs $r_D$, $\dot r_D$ and $v_{\theta D}$ based on desired $r_p$,
 
 ### 3.6. EnginePropertyEstimator
 
-This module uses a least-squares estimator to find the variables $v_e$ and $m_dot$ based on the equation for rocket thrust (C.1.6)
+This module uses a least-squares estimator to find the variables $v_e$ and $\dot m$ based on the equation for rocket thrust (C.1.6)
 
 $$\begin{align}
-    a_T = v_e/(\frac{m_o}{\dot m} - t)
+    a_T = v_e/\left(\tau - t\right) 
+    = \frac{v_e}{\frac{m_o}{\dot m} - t}
 \end{align}$$
 
 ## Appendix A: Symbols
@@ -223,7 +302,7 @@ $$\begin{align}
 | $D$ | desired value at $t = T$ (cut-off time) |
 | $r$ | radial guidance constant |
 | $y$ | plane control guidance constant |
-| $peri$ | perifocal plane projection $\begin{bmatrix} \hat n & \hat e & 0 \end{bmatrix}$ |
+| $peri$ | perifocal plane projection $\begin{bmatrix}\, \hat n & \hat e & 0 \,\end{bmatrix}$ |
 
 ## Appendix B: Reference Frames
 
@@ -234,8 +313,8 @@ Axes are $\hat X$, $\hat Y$, $\hat Z$. Axes are inertial, origin is at center of
 ### Radial-Circumferential-Normal
 
 $$\begin{align}
-    \hat r = \frac{\vec r}{r} \tag{B.1} \\
-    \hat h = \frac{\vec r \times \vec v}{|\vec r \times \vec v|} \tag{B.2} \\
+    \hat r = \frac{\vec r}{r} \tag{B.1}\\\\
+    \hat h = \frac{\vec r \times \vec v}{|\vec r \times \vec v|} \tag{B.2}\\\\
     \hat \theta = \hat h \times \hat r \tag{B.3} 
 \end{align}$$
 
@@ -247,8 +326,8 @@ The following defines the perifocal axes in terms of the global frame.
 
 $$\begin{align}
     \begin{bmatrix}
-        & & \\
-        \hat p & \hat q & \hat w \\
+        & &\\\\
+        \hat p & \hat q & \hat w\\\\
         & &
     \end{bmatrix}
     = R_z(\Omega) R_x(i) R_z(\omega)
@@ -257,8 +336,8 @@ $$\begin{align}
 ### Plane Control
 
 $$\begin{align}
-    \hat i = \frac{\vec r}{r} \tag{B.7} \\
-    \hat j = \frac{\hat y \times \hat i}{|\hat y \times \hat i|} \tag{B.8} \\
+    \hat i = \frac{\vec r}{r} \tag{B.7}\\\\
+    \hat j = \frac{\hat y \times \hat i}{|\hat y \times \hat i|} \tag{B.8}\\\\
     \hat k = \hat i \times \hat j \tag{B.9} 
 \end{align}$$
 
@@ -272,8 +351,8 @@ The following defines the topocentric axes in terms of the global frame.
 
 $$\begin{align}
     \begin{bmatrix}
-        & & \\
-        \hat n & \hat e & \hat d \\
+        & &\\\\
+        \hat n & \hat e & \hat d\\\\
         & &
     \end{bmatrix}
     = R_z(RA) R_y(-DEC)
@@ -304,9 +383,9 @@ A numerical integrator is used here instead of a Taylor expansion mainly for con
 A constant-thrust model for a rocket, with constant mass flow and exhaust velocity, is defined as follows
 
 $$\begin{align}
-    v_e & = g_0I_{sp} = constant \tag{C.1.1} \\
-    \dot{m} & = constant \tag{C.1.2} \\
-    \dot{m} & > 0 \tag{C.1.3} \\
+    v_e & = g_0I_{sp} = constant \tag{C.1.1}\\\\
+    \dot{m} & = constant \tag{C.1.2}\\\\
+    \dot{m} & > 0 \tag{C.1.3}\\\\
     F_T & = \dot{m} v_e \tag{C.1.4} 
 \end{align}$$
 
@@ -335,28 +414,28 @@ $\tau$ can be interpreted as the time at which the rocket vehicle composed of on
 It will be helpful to have a general formula to solve the guidance laws that will be derived. A guidance law for generalized coordinate $q$ is defined:
 
 $$\begin{align}
-    \ddot q(t) & = c_1 p_1(t) + c_2 p_2(t) \tag{C.2.1} \\
+    \ddot q(t) & = c_1 p_1(t) + c_2 p_2(t) \tag{C.2.1}\\\\
 \end{align}$$
 
 where
 
 $$\begin{align}
-    p_1(t)&=a_T(t) \tag{C.2.2} \\
+    p_1(t)&=a_T(t) \tag{C.2.2}\\\\
     p_2(t)&=(T-t)a_T(t) \tag{C.2.3} 
 \end{align}$$
 
 where $T$ is the time of guidance termination. The thrust acceleration $a_T$ is written in the following form to accomodate a Taylor expansion
 
 $$\begin{align}
-    a_T(t) = a_0 + a_1(T-t) + a_2(T-t)^2 + ... + a_n(T-t)^n \tag{C.2.4} \\
+    a_T(t) = a_0 + a_1(T-t) + a_2(T-t)^2 + ... + a_n(T-t)^n \tag{C.2.4}\\\\
 \end{align}$$
 
 It is desirable to solve for $\ddot q(t)$. The constants $c_1$ and $c_2$ are unknown. $p_1(t)$ and $p_2(t)$ are given, and the following boundary conditions are provided
 
 $$\begin{align}
-    q_0 & = q(t_0) \tag{C.2.5} \\
-    \dot q_0 & = \dot q(t_0) \tag{C.2.6} \\
-    q_D & = q(T) \tag{C.2.7} \\
+    q_0 & = q(t_0) \tag{C.2.5}\\\\
+    \dot q_0 & = \dot q(t_0) \tag{C.2.6}\\\\
+    q_D & = q(T) \tag{C.2.7}\\\\
     \dot q_D & = \dot q(T) \tag{C.2.8} 
 \end{align}$$
 
@@ -365,9 +444,9 @@ where $t_0$ is the current time. Integrating equation (C.2.1) yields the equatio
 $$\begin{align}
     \dot q_D - \dot q_0 
         & = \int_{t_0}^T \ddot q(t) dt \tag{C.2.9}\\
-        &= c_1 \int_{t_0}^T p_1(t) dt + c_2 \int_{t_0}^T p_2(t) dt \nonumber \\
+        &= c_1 \int_{t_0}^T p_1(t) dt + c_2 \int_{t_0}^T p_2(t) dt \nonumber\\\\
     q_D - q_0 - \dot q(t_0)T_{go}
-        & = \int_{t_0}^T \int_{t_0}^t \ddot q(s) ds \; dt \tag{C.2.10} \\
+        & = \int_{t_0}^T \int_{t_0}^t \ddot q(s) ds \; dt \tag{C.2.10}\\\\
         &= c_1 \int_{t_0}^T \int_{t_0}^t p_1(s) ds \; dt
             + c_2 \int_{t_0}^T \int_{t_0}^t p_2(s) ds \; dt \nonumber
 \end{align}$$
@@ -375,19 +454,19 @@ $$\begin{align}
 where
 
 $$\begin{align}
-    T_{go} = T - t_0 \tag{C.2.11} \\
+    T_{go} = T - t_0 \tag{C.2.11}\\\\
 \end{align}$$
 
 The equations of constraint can be represented by the matrix equation
 
 $$\begin{align}
     \begin{bmatrix}
-    \dot q_D - \dot q_0 \\
+    \dot q_D - \dot q_0\\\\
     q_D - (q_o + \dot q_o T_{go})
     \end{bmatrix}
     = F 
     \begin{bmatrix}
-    c_1 \\
+    c_1\\\\
     c_2
     \end{bmatrix} \tag{C.2.12}
 \end{align}$$
@@ -395,9 +474,9 @@ $$\begin{align}
 where the $F$ matrix is a $2 \times 2$ matrix composed of the following entries
 
 $$\begin{align}
-    f_{11} & = a_0 T_{go} + a_1 T_{go}^2/2 + \dots + a_nT_{go}^{n+1}/(n+1) \tag{C.2.13} \\
-    f_{12} & = a_0 T_{go}^2/2 + a_1 T_{go}^3/3 + \dots + a_nT_{go}^{n+2}/(n+2) \tag{C.2.14} \\
-    f_{21} & = f_{12} \tag{C.2.15} \\
+    f_{11} & = a_0 T_{go} + a_1 T_{go}^2/2 + \dots + a_nT_{go}^{n+1}/(n+1) \tag{C.2.13}\\\\
+    f_{12} & = a_0 T_{go}^2/2 + a_1 T_{go}^3/3 + \dots + a_nT_{go}^{n+2}/(n+2) \tag{C.2.14}\\\\
+    f_{21} & = f_{12} \tag{C.2.15}\\\\
     f_{22} & = a_0 T_{go}^3/3 + a_1 T_{go}^4/4 + \dots + a_nT_{go}^{n+3}/(n+3) \tag{C.2.16}
 \end{align}$$
 
@@ -408,13 +487,13 @@ $c_1$ and $c_2$ is solved from (C.2.12) by inverting the $F$ matrix. This solves
 The linear tangent steering law [2] will be used to derive the radial guidance law
 
 $$\begin{align}
-    \tan \alpha = A + Bt \tag{C.3.1} \\
+    \tan \alpha = A + Bt \tag{C.3.1}\\\\
 \end{align}$$
 
 The differential equation of radial motion is 
 
 $$\begin{align}
-    \ddot r = \vec a_T \cdot \hat r + g_{eff} = a_T \sin \alpha + g_{eff} \tag{C.3.2} \\
+    \ddot r = \vec a_T \cdot \hat r + g_{eff} = a_T \sin \alpha + g_{eff} \tag{C.3.2}\\\\
 \end{align}$$
 
 where
@@ -426,7 +505,7 @@ $$\begin{align}
 The tangent law can be approximated by 
 
 $$\begin{align}
-    \sin \alpha = A + Bt - g_{eff}/a_T \tag{C.3.4} \\
+    \sin \alpha = A + Bt - g_{eff}/a_T \tag{C.3.4}\\\\
 \end{align}$$
 
 The approximation assumes that $\tan \alpha \approx \sin \alpha$, and that $g_{eff}/a_T \approx 0$. The latter approximation becomes more accurate near guidance termination: as the vehicle approaches the cut-off time $T$ when targeting a circular orbit, $g_{eff}$ approaches zero and $a_T$ continues increasing.
@@ -434,28 +513,28 @@ The approximation assumes that $\tan \alpha \approx \sin \alpha$, and that $g_{e
 Substituting (C.3.4) into (C.3.2) yields
 
 $$\begin{align}
-    \ddot r = A a_T + B a_T t \tag{C.3.5} \\
+    \ddot r = A a_T + B a_T t \tag{C.3.5}\\\\
 \end{align}$$
 
 If A and B are rewritten in terms of other constants as $A = c_{1,r} + c_{2,r} T$ and $B = -c_{2,r}$, then the equation can be written in the form of the generalized guidance law (C.2.1) as 
 
 $$\begin{align}
-    \ddot r = c_{1,r}p_1(t) + c_{2,r}p_2(t) \tag{C.3.6} \\
+    \ddot r = c_{1,r}p_1(t) + c_{2,r}p_2(t) \tag{C.3.6}\\\\
 \end{align}$$
 
 where
 
 $$\begin{align}
-    p_1(t) & = a_T \tag{C.3.7}  \\
+    p_1(t) & = a_T \tag{C.3.7} \\\\
     p_2(t) & = (T-t)a_T \tag{C.3.8} 
 \end{align}$$
 
 Given the following boundary conditions
 
 $$\begin{align}
-    r_0 & = r(t_0) \tag{C.3.9} \\
-    \dot r_0 & = \dot r(t_0) \tag{C.3.10} \\
-    r_D & = r(T) \tag{C.3.11} \\
+    r_0 & = r(t_0) \tag{C.3.9}\\\\
+    \dot r_0 & = \dot r(t_0) \tag{C.3.10}\\\\
+    r_D & = r(T) \tag{C.3.11}\\\\
     \dot r_D & = \dot r(T) \tag{C.3.12} 
 \end{align}$$
 
@@ -466,14 +545,14 @@ $c_{1,r}$ and $c_{2,r}$ can be solved using the matrix form of the equations of 
 The differential equation for $y$, the vehicle's distance from the target orbital plane along the plane's normal axis $\hat y$, is
 
 $$\begin{align}
-    \ddot y & = \vec a_T \cdot \hat y + \vec g \cdot \hat y \tag{C.4.1} \\
+    \ddot y & = \vec a_T \cdot \hat y + \vec g \cdot \hat y \tag{C.4.1}\\\\
     & = a_T \sin \alpha_y + \vec g \cdot \hat y \notag\\
 \end{align}$$
 
 The linear tangent law can be approximated as
 
 $$\begin{align}
-    \sin \alpha_y(t) = A+Bt - \vec g \cdot \hat y/a_T \tag{C.4.2} \\
+    \sin \alpha_y(t) = A+Bt - \vec g \cdot \hat y/a_T \tag{C.4.2}\\\\
 \end{align}$$
 
 The approximation assumes that $\tan \alpha \approx \sin \alpha$, and that $(\vec g \cdot \vec y)/a_T \approx 0$. $\vec g \cdot \vec y$ is small in general, and $(\vec g \cdot \vec y)/a_T$ is even more so.
@@ -481,28 +560,28 @@ The approximation assumes that $\tan \alpha \approx \sin \alpha$, and that $(\ve
 Substituting (C.4.2) in (C.4.1) yields 
 
 $$\begin{align}
-    \ddot y = A a_T + B a_T t \tag{C.4.3} \\
+    \ddot y = A a_T + B a_T t \tag{C.4.3}\\\\
 \end{align}$$
 
 If the constants are written in terms of $c_{1,y}$ and $c_{2,y}$ as $A = c_{1,y} + c_{2,y} T$ and $B = -c_{2,y}$, then the equation can be written in the form of the generalized guidance law (C.2.1) as 
 
 $$\begin{align}
-    \ddot y = c_{1,y}p_1(t) + c_{2,y}p_2(t) \tag{C.4.4} \\
+    \ddot y = c_{1,y}p_1(t) + c_{2,y}p_2(t) \tag{C.4.4}\\\\
 \end{align}$$
 
 where
 
 $$\begin{align}
-    p_1(t) & = a_T \tag{C.4.5} \\
+    p_1(t) & = a_T \tag{C.4.5}\\\\
     p_2(t) & = (T-t)a_T \tag{C.4.6} 
 \end{align}$$
 
 Given the following boundary conditions
 
 $$\begin{align}
-    y_0 & = y(t_0) \tag{C.4.7} \\
-    \dot y_0 & = \dot y(t_0) \tag{C.4.8} \\
-    y_D & = y(T) \tag{C.4.9} \\
+    y_0 & = y(t_0) \tag{C.4.7}\\\\
+    \dot y_0 & = \dot y(t_0) \tag{C.4.8}\\\\
+    y_D & = y(T) \tag{C.4.9}\\\\
     \dot y_D & = \dot y(T) \tag{C.4.10} 
 \end{align}$$
 
@@ -528,19 +607,19 @@ $$\begin{align}
 where
 
 $$\begin{align}
-    a_L = (1 - \cos \alpha) a_T + \frac{\dot r v_\theta }{r} \tag{C.5.3} \\
+    a_L = (1 - \cos \alpha) a_T + \frac{\dot r v_\theta }{r} \tag{C.5.3}\\\\
 \end{align}$$
 
 Integrating (C.5.2) and solving for $T_{go}$ yields
 
 $$\begin{align}
-    T_{go} = \tau _o \{ 1 - \exp[-(v_{\theta D} - v_{\theta o} + \Delta v_{\theta L})/v_e] \} \tag{C.5.4} \\
+    T_{go} = \tau _o \{ 1 - \exp[-(v_{\theta D} - v_{\theta o} + \Delta v_{\theta L})/v_e] \} \tag{C.5.4}\\\\
 \end{align}$$
 
 where
 
 $$\begin{align}
-    \Delta v_{\theta L} = \int_{t_0}^T a_L(t) dt \tag{C.5.5} \\
+    \Delta v_{\theta L} = \int_{t_0}^T a_L(t) dt \tag{C.5.5}\\\\
 \end{align}$$
 
 The time-to-go $T_{go}$ is calculated using an iterative method based on varying guesses of $\Delta v_{\theta L}$. The formula for the next estimate of $\Delta v_{\theta L}$ based on the previous one is 
@@ -570,12 +649,12 @@ $$\begin{align}
 
 where
 $$\begin{align}
-    Q_{n} = \exp(-\Delta v_{\theta L, n}/v_e) \tag{C.5.9} \\
+    Q_{n} = \exp(-\Delta v_{\theta L, n}/v_e) \tag{C.5.9}\\\\
 \end{align}$$
 
 Equation (C.5.6) then becomes
 $$\begin{align}
-    Q_{n+1} = \exp \begin{bmatrix} \frac{-(v_{\theta D} - v_{\theta o})}{v_e} \end{bmatrix} \frac{Q_n}{H(T_n)} \tag{C.5.10} \\
+    Q_{n+1} = \exp \begin{bmatrix} \frac{-(v_{\theta D} - v_{\theta o})}{v_e} \end{bmatrix} \frac{Q_n}{H(T_n)} \tag{C.5.10}\\\\
 \end{align}$$
 
 where
@@ -602,15 +681,15 @@ Both $\ddot r(t)$ and $\ddot y(t)$ are assumed given by the guidance laws.
 $\dot r(t)$ and $r(t)$ are both found by integrating the radial guidance law (C.3.6) and using $t$ and $T$ as the boundary conditions
 $$\begin{align}
     \begin{bmatrix}
-        \dot r(t) \\
+        \dot r(t)\\\\
         r(t)
     \end{bmatrix} =
     \begin{bmatrix}
-        \dot r_D \\
+        \dot r_D\\\\
         r_D - \dot r(t) T_{go}
     \end{bmatrix}
     - F \begin{bmatrix}
-        c_{1,r} \\
+        c_{1,r}\\\\
         c_{2, r}
     \end{bmatrix} \tag{C.6.2}
 \end{align}$$
@@ -618,15 +697,15 @@ $$\begin{align}
 Similarly, a solution exists for $\dot y(t)$ and $y(t)$ when integrating (C.4.4)
 $$\begin{align}
     \begin{bmatrix}
-        \dot y(t) \\
+        \dot y(t)\\\\
         y(t)
     \end{bmatrix} =
     \begin{bmatrix}
-        0 \\
+        0\\\\
         - \dot y(t) T_{go}
     \end{bmatrix}
     - F \begin{bmatrix}
-        c_{1,y} \\
+        c_{1,y}\\\\
         c_{2, y}
     \end{bmatrix} \tag{C.6.3}
 \end{align}$$
@@ -658,8 +737,8 @@ where $\dot y$ is given by (C.6.3). Define $\beta (t)$ as the angle of the vehic
 Based on the figure, $\hat y$ can be written in PCF axes as
 $$\begin{align}
     \hat y = \begin{bmatrix}
-        y/r \\
-        0 \\
+        y/r\\\\
+        0\\\\
         \sqrt{r^2 + y^2}/r
     \end{bmatrix} \tag{C.6.10}
 \end{align}$$
@@ -667,7 +746,7 @@ $$\begin{align}
 Substituting (C.6.10) into (C.6.9) and solving for $v_{k}$ yields
 
 $$\begin{align}
-    v_{ k} & = \frac{\dot y - v_{i} \hat y_{i}}{\hat y_{k}} \tag{C.6.11} \\
+    v_{ k} & = \frac{\dot y - v_{i} \hat y_{i}}{\hat y_{k}} \tag{C.6.11}\\\\
     & = \frac{\dot y - \dot r \hat y_{i}}{\hat y_{k}} \notag
 \end{align}$$
 
@@ -697,7 +776,7 @@ $$\begin{align}
 
 where
 $$\begin{align}
-    \vec a_T \cdot \hat y & = \ddot y - \vec g \cdot \hat y \tag{C.6.16} \\
+    \vec a_T \cdot \hat y & = \ddot y - \vec g \cdot \hat y \tag{C.6.16}\\\\
     & = \ddot y + \frac{\mu y}{r^3} \notag
 \end{align}$$
 
@@ -713,8 +792,8 @@ All the components of $\vec a_T(t)$ have been found. (C.6.1) can now be used in 
 The pitch and heading commands are found using the commanded thrust acceleration $a_T(t)$ (C.6.13). 
 
 $$\begin{align}
-    \alpha & = \sin^{-1}(\frac{\vec a_T \cdot \hat r}{a_T}) \tag{C.7.1} \\
-    \psi & = \arctan2(a_{T_e},\, a_{T_n}) \tag{C.7.2}
+    \alpha & = \sin^{-1}\left(\frac{\vec a_T \cdot \hat r}{a_T}\right) \tag{C.7.1}\\\\
+    \psi & = \textrm{atan2}(a_{T_e},\, a_{T_n}) \tag{C.7.2}
 \end{align}$$
 
 (C.7.2) uses the topocentric coordinates of $a_T$.
@@ -724,8 +803,8 @@ $$\begin{align}
 Finding the true anomaly $\nu(T)$ at cutoff time is necessary for targeting a series of orbital elements. The true anomaly at cutoff is with respect to the target orbit, but the true anomaly of the vehicle during ascent is with respect to an orbit that is constantly changing. Therefore, for the purpose of this calculation, it is assumed that the true anomaly of the launch vehicle at any point is given by its projection onto the perifocal plane of its target orbit.
 
 $$\begin{align}
-    \vec r_{peri} = r_q \hat q + r_p \hat p \tag{C.8.1} \\
-    \nu_{peri} = atan2(r_{q}, r_{p}) \tag{C.8.2} 
+    \vec r_{peri} = r_q \hat q + r_p \hat p \tag{C.8.1}\\\\
+    \nu_{peri} = \textrm{atan2}(r_{q}, r_{p}) \tag{C.8.2} 
 \end{align}$$
 
 where $\hat p$, $\hat q$, $\hat w$ are the perifocal axes.
@@ -775,15 +854,15 @@ True anomaly at cut-off $\nu(T) = \nu_{proj}(T)$ is given by (C.8.5).
 
 Intermediate orbit values are calculated
 $$\begin{align}
-    a = \frac{r_p + r_a}{2} \tag{C.9.3} \\
-    e = 1 - \frac{r_p}{a} \tag{C.9.4} \\
-    h = \sqrt{r_p \mu (1+e)} \tag{C.9.5} \\
+    a = \frac{r_p + r_a}{2} \tag{C.9.3}\\\\
+    e = 1 - \frac{r_p}{a} \tag{C.9.4}\\\\
+    h = \sqrt{r_p \mu (1+e)} \tag{C.9.5}\\\\
 \end{align}$$
 
 The desired values are found
 $$\begin{align}
-    r_D = a \frac{(1-e^2)}{1 + e\cos(\nu)} \tag{C.9.6} \\
-    v_{r D} = \mu/h e \sin(\nu) \tag{C.9.7} \\
+    r_D = a \frac{(1-e^2)}{1 + e\cos(\nu)} \tag{C.9.6}\\\\
+    v_{r D} = \mu/h e \sin(\nu) \tag{C.9.7}\\\\
     v_{\theta D} = \frac{h}{r} \tag{C.9.8}
 \end{align}$$
 
