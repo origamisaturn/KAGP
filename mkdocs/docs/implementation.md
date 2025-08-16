@@ -13,6 +13,8 @@ title: Documentation
 - note that diagram only shows outputs used in get_command(), many more outputs may be exposed to the log.
 - add example script for using log
 - remember to go back and add width/height/alt for all images
+- write a custom CSS class for centered figures.
+- Consider making the subheadings in C.6 stand out more, like underlining or prepending it with "finding X."
 
 Variables I have to take a look at,
 $$\begin{gather}
@@ -183,9 +185,9 @@ $$\begin{align}
 Equations (C.2.13-16) for the $F$ matrix then become 
 
 $$\begin{align}
-    f_{11} & = a_0 T_{go} + a_1 T_{go}^2/2 + a_2 T_{go}^3/3\\
-    f_{12} & = a_0 T_{go}^2/2 + a_1 T_{go}^3/3 + a_2 T_{go}^4/4\\
-    f_{21} & = f_{12}\\\\
+    f_{11} & = a_0 T_{go} + a_1 T_{go}^2/2 + a_2 T_{go}^3/3 \\\\
+    f_{12} & = a_0 T_{go}^2/2 + a_1 T_{go}^3/3 + a_2 T_{go}^4/4 \\\\
+    f_{21} & = f_{12} \\\\
     f_{22} & = a_0 T_{go}^3/3 + a_1 T_{go}^4/4 + a_2 T_{go}^5/5
 \end{align}$$
 
@@ -332,9 +334,9 @@ Axes are $\hat X$, $\hat Y$, $\hat Z$. Axes are inertial, origin is at center of
 ### Radial-Circumferential-Normal
 
 $$\begin{align}
-    \hat r = \frac{\vec r}{r} \tag{B.1}\\\\
-    \hat h = \frac{\vec r \times \vec v}{|\vec r \times \vec v|} \tag{B.2}\\\\
-    \hat \theta = \hat h \times \hat r \tag{B.3} 
+    \hat r &= \frac{\vec r}{r} \tag{B.1}\\\\
+    \hat h &= \frac{\vec r \times \vec v}{|\vec r \times \vec v|} \tag{B.2}\\\\
+    \hat \theta &= \hat h \times \hat r \tag{B.3} 
 \end{align}$$
 
 ### Perifocal
@@ -355,9 +357,9 @@ $$\begin{align}
 ### Plane Control
 
 $$\begin{align}
-    \hat i = \frac{\vec r}{r} \tag{B.7}\\\\
-    \hat j = \frac{\hat y \times \hat i}{|\hat y \times \hat i|} \tag{B.8}\\\\
-    \hat k = \hat i \times \hat j \tag{B.9} 
+    \hat i &= \frac{\vec r}{r} \tag{B.7}\\\\
+    \hat j &= \frac{\hat y \times \hat i}{|\hat y \times \hat i|} \tag{B.8}\\\\
+    \hat k &= \hat i \times \hat j \tag{B.9} 
 \end{align}$$
 
 Origin is at vehicle position $\vec r$. $\hat y$ is the normal vector of the target orbital plane, defined by $\Omega$ and $i$. Mainly used to simplify finding $v_\theta(T)$ and $\psi$.
@@ -384,6 +386,7 @@ where $RA$ and $DEC$ are right ascension and declination, respectively.
 The following is a derivation for the single-stage ascent guidance method implemented in this program. This is an abbreviated version of the derivation for fixed-thrust ascent guidance found in "A General, Explicit, Optimizing Guidance Law for Rocket-Propelled Spaceflight" by G. Cherry
 
 In broad terms, the guidance method is derived by
+
 - Applying the linear tangent law to the differential equation of radial motion, and to the differential equation of distance normal to the target orbital plane. This yields guidance laws for $\ddot r$ and $\ddot y$.
 - Determining an expression for predicting $v_{\theta}(T)$ based on the guidance laws.
 - Defining an iterative method for determining cut-off time $T$ based on the difference between the desired and predicted $v_\theta(T)$.
@@ -392,7 +395,9 @@ In broad terms, the guidance method is derived by
 This derivation is based completely on the paper by G.Cherry, with some modification:
 
 1) Cherry derives the guidance law by defining the law to have the minimum number of terms necessary to uniquely satisfy the boundary conditions, and defers optimization of the guidance law to the paper's appendix. The derivation here instead starts from the content in Appendix A of Cherry, deriving the guidance laws based on an approximation of the linear tangent steering law and the differential equations of motion.
+
 2) The method of predicting the final circumferential velocity derived in Cherry is a Taylor expansion, and it is designed exclusively for the radial guidance law. Here, the final circumferential velocity is predicted using a numerical integrator, and it incorporates both radial and plane control guidance.
+
 3) The orbit targeting method in Cherry has an unconstrained argument of periapsis. Here, the argument of periapsis is given.
 
 A numerical integrator is used here instead of a Taylor expansion mainly for convenience; the equation for $\dot v_{\theta}(t)$ derived here is large, and it was determined that a Taylor expansion would be much larger and more difficult to debug in the implemented program compared to using a numerical integrator.
@@ -632,7 +637,7 @@ $$\begin{align}
 Integrating (C.5.2) and solving for $T_{go}$ yields
 
 $$\begin{align}
-    T_{go} = \tau _o \{ 1 - \exp[-(v_{\theta D} - v_{\theta o} + \Delta v_{\theta L})/v_e] \} \tag{C.5.4}\\\\
+    T_{go} = \tau_o \\{ 1 - \exp[-(v_{\theta D} - v_{\theta o} + \Delta v_{\theta L})/v_e] \\} \tag{C.5.4}
 \end{align}$$
 
 where
@@ -648,9 +653,9 @@ $$\begin{align}
 \end{align}$$
 
 where $v_{\theta D}$ is the target $v_\theta$ at time $T$, and $v_{\theta F, n}$ is the estimated $v_\theta(T)$ for thrust loss estimate $v_{\theta L, n}$. The following figure illustrates the procedure for calculating $\Delta v_{\theta L}$.
-<p align="center">
-    <img width="600px" src="iterative_T_go_algo.svg">
-</p>
+<figure>
+    <img width="600px" src="../img/iterative_T_go_algo.svg">
+</figure>
 
 
 The estimates of $\Delta v_{\theta L}$ continue until the estimated final circumferential velocity is close enough to the desired final circumferential velocity
@@ -740,7 +745,7 @@ $$\begin{align}
 By definition, circumferential velocity $v_\theta$ in PCF axes has no $\hat i$ component ($\hat \theta$ is orthogonal to $\hat r$)
 
 $$\begin{align}
-    \vec v_\theta = \begin{bmatrix} 0 & v_{j} & v_{ k} \end{bmatrix} \tag{C.6.8}
+    \vec v_\theta = \begin{bmatrix}\, 0 & v_{j} & v_{ k} \,\end{bmatrix} \tag{C.6.8}
 \end{align}$$
 
 The $\hat k$ component of velocity will be calculated from the commanded velocity projected along the $\hat y$ axis
@@ -749,9 +754,9 @@ $$\begin{align}
 \end{align}$$
 
 where $\dot y$ is given by (C.6.3). Define $\beta (t)$ as the angle of the vehicle's position with respect to the target orbital plane.
-<p align="center">
-    <img src="B6_beta_angle.svg">
-</p>
+<figure style="display: flex; align-items: center; justify-content: center;">
+    <img src="../img/B6_beta_angle.svg" width=303px height=338px/>
+</figure>
 
 Based on the figure, $\hat y$ can be written in PCF axes as
 $$\begin{align}
@@ -785,7 +790,8 @@ $$\begin{align}
 
 $\vec a_T \cdot \hat i$ is given by rearranging the differential equation for radial motion (C.3.2)
 $$\begin{align}
-    \vec a_T \cdot \hat i = \vec a_T \cdot \hat r =  \ddot r - g_{eff}  \tag{C.6.14}
+    \vec a_T \cdot \hat i = \vec a_T \cdot \hat r \\\\
+    = \ddot r - g_{eff}  \tag{C.6.14}
 \end{align}$$
 
 $\vec a_T \cdot \hat k$ is found by substituting the expression for $\hat y$ (C.6.10) into the differential equation for $\ddot y$ (C.4.1)
@@ -822,8 +828,8 @@ $$\begin{align}
 Finding the true anomaly $\nu(T)$ at cutoff time is necessary for targeting a series of orbital elements. The true anomaly at cutoff is with respect to the target orbit, but the true anomaly of the vehicle during ascent is with respect to an orbit that is constantly changing. Therefore, for the purpose of this calculation, it is assumed that the true anomaly of the launch vehicle at any point is given by its projection onto the perifocal plane of its target orbit.
 
 $$\begin{align}
-    \vec r_{peri} = r_q \hat q + r_p \hat p \tag{C.8.1}\\\\
-    \nu_{peri} = \textrm{atan2}(r_{q}, r_{p}) \tag{C.8.2} 
+    \vec r_{peri} &= r_q\, \hat q + r_p\, \hat p \tag{C.8.1} \\\\
+    \nu_{peri} &= \textrm{atan2}(r_{q},\, r_{p}) \tag{C.8.2} 
 \end{align}$$
 
 where $\hat p$, $\hat q$, $\hat w$ are the perifocal axes.
@@ -872,18 +878,18 @@ The variables $r_p$, $r_a$, and $\omega$ must be converted into $r_D$, $\dot r_D
 True anomaly at cut-off $\nu(T) = \nu_{proj}(T)$ is given by (C.8.5).
 
 Intermediate orbit values are calculated
-$$\begin{align}
+$$\begin{gather}
     a = \frac{r_p + r_a}{2} \tag{C.9.3}\\\\
     e = 1 - \frac{r_p}{a} \tag{C.9.4}\\\\
     h = \sqrt{r_p \mu (1+e)} \tag{C.9.5}\\\\
-\end{align}$$
+\end{gather}$$
 
 The desired values are found
-$$\begin{align}
+$$\begin{gather}
     r_D = a \frac{(1-e^2)}{1 + e\cos(\nu)} \tag{C.9.6}\\\\
     v_{r D} = \mu/h e \sin(\nu) \tag{C.9.7}\\\\
     v_{\theta D} = \frac{h}{r} \tag{C.9.8}
-\end{align}$$
+\end{gather}$$
 
 The orbit targeting is placed outside the time-to-go calculation loop and solved iteratively until the change of $\nu(T)$ between iterations becomes smaller than a certain error value.
 

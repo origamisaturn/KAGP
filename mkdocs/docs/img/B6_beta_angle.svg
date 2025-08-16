@@ -2,18 +2,18 @@
 <!-- Created with Inkscape (http://www.inkscape.org/) -->
 
 <svg
-   width="302.3255"
-   height="337.98187"
-   viewBox="-50 -50 226.74419 253.48646"
+   width="303"
+   height="338"
+   viewBox="-50 -50 227.25006 253.50006"
    version="1.1"
    id="svg1"
    inkscape:version="1.3.2 (091e20e, 2023-11-25, custom)"
-   sodipodi:docname="test.svg"
+   sodipodi:docname="B6_beta_angle.svg"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns="http://www.w3.org/2000/svg"
    xmlns:svg="http://www.w3.org/2000/svg"
-   xmlns:ns8="http://www.iki.fi/pav/software/textext/">
+   xmlns:ns23="http://www.iki.fi/pav/software/textext/">
   <sodipodi:namedview
      id="namedview1"
      pagecolor="#c0bb9e"
@@ -25,8 +25,8 @@
      inkscape:deskcolor="#505050"
      inkscape:document-units="px"
      inkscape:zoom="2.0257997"
-     inkscape:cx="11.847173"
-     inkscape:cy="169.06904"
+     inkscape:cx="12.093989"
+     inkscape:cy="169.31585"
      inkscape:window-width="2560"
      inkscape:window-height="1351"
      inkscape:window-x="1591"
@@ -276,17 +276,17 @@
     </g>
     <g
        transform="matrix(1.1625,0,0,1.1625,12.311783,206.90237)"
-       ns8:version="1.10.2"
-       ns8:texconverter="pdflatex"
-       ns8:pdfconverter="inkscape"
-       ns8:text="Target Orbital Plane"
-       ns8:preamble="C:\Users\cvar\AppData\Roaming\inkscape\extensions\textext\default_packages.tex"
-       ns8:scale="1.0"
-       ns8:alignment="middle center"
-       ns8:stroke-to-path="0"
-       ns8:inkscapeversion="1.3.2"
+       ns23:version="1.10.2"
+       ns23:texconverter="pdflatex"
+       ns23:pdfconverter="inkscape"
+       ns23:text="Target Orbital Plane"
+       ns23:preamble="C:\Users\cvar\AppData\Roaming\inkscape\extensions\textext\default_packages.tex"
+       ns23:scale="1.0"
+       ns23:alignment="middle center"
+       ns23:stroke-to-path="0"
+       ns23:inkscapeversion="1.3.2"
        id="g6280"
-       ns8:jacobian_sqrt="1.33333"
+       ns23:jacobian_sqrt="1.33333"
        style="stroke-width:1.14695">
       <defs
          id="id-ab6a0d55-b218-4ccc-a0e7-9e173d95ba96">
@@ -559,17 +559,17 @@
     </g>
     <g
        transform="matrix(1.33333,0,0,1.33333,220.06366,16.009384)"
-       ns8:version="1.10.2"
-       ns8:texconverter="pdflatex"
-       ns8:pdfconverter="inkscape"
-       ns8:text="$$\\hat{i}$$"
-       ns8:preamble="C:\Users\cvar\AppData\Roaming\inkscape\extensions\textext\default_packages.tex"
-       ns8:scale="1.0"
-       ns8:alignment="middle center"
-       ns8:stroke-to-path="0"
-       ns8:inkscapeversion="1.3.2"
+       ns23:version="1.10.2"
+       ns23:texconverter="pdflatex"
+       ns23:pdfconverter="inkscape"
+       ns23:text="$$\\hat{i}$$"
+       ns23:preamble="C:\Users\cvar\AppData\Roaming\inkscape\extensions\textext\default_packages.tex"
+       ns23:scale="1.0"
+       ns23:alignment="middle center"
+       ns23:stroke-to-path="0"
+       ns23:inkscapeversion="1.3.2"
        id="g7996"
-       ns8:jacobian_sqrt="1.33333">
+       ns23:jacobian_sqrt="1.33333">
       <defs
          id="id-6607f75d-59a3-4a1d-a234-a01698c14da5">
         <g
@@ -617,17 +617,17 @@
     </g>
     <g
        transform="matrix(1.33333,0,0,1.33333,44.822902,15.497925)"
-       ns8:version="1.10.2"
-       ns8:texconverter="pdflatex"
-       ns8:pdfconverter="inkscape"
-       ns8:text="$$\\hat{y}$$"
-       ns8:preamble="C:\Users\cvar\AppData\Roaming\inkscape\extensions\textext\default_packages.tex"
-       ns8:scale="1.0"
-       ns8:alignment="middle center"
-       ns8:stroke-to-path="0"
-       ns8:inkscapeversion="1.3.2"
+       ns23:version="1.10.2"
+       ns23:texconverter="pdflatex"
+       ns23:pdfconverter="inkscape"
+       ns23:text="$$\\hat{y}$$"
+       ns23:preamble="C:\Users\cvar\AppData\Roaming\inkscape\extensions\textext\default_packages.tex"
+       ns23:scale="1.0"
+       ns23:alignment="middle center"
+       ns23:stroke-to-path="0"
+       ns23:inkscapeversion="1.3.2"
        id="g6969"
-       ns8:jacobian_sqrt="1.33333">
+       ns23:jacobian_sqrt="1.33333">
       <defs
          id="id-1809f4f9-20f8-45b0-b5ab-8309bd381f16">
         <g
@@ -675,17 +675,17 @@
     </g>
     <g
        transform="matrix(1.33333,0,0,1.33333,219.17206,39.152179)"
-       ns8:version="1.10.2"
-       ns8:texconverter="pdflatex"
-       ns8:pdfconverter="inkscape"
-       ns8:text="$$\\hat j$$"
-       ns8:preamble="C:\Users\cvar\AppData\Roaming\inkscape\extensions\textext\default_packages.tex"
-       ns8:scale="1.0"
-       ns8:alignment="middle center"
-       ns8:stroke-to-path="0"
-       ns8:inkscapeversion="1.3.2"
+       ns23:version="1.10.2"
+       ns23:texconverter="pdflatex"
+       ns23:pdfconverter="inkscape"
+       ns23:text="$$\\hat j$$"
+       ns23:preamble="C:\Users\cvar\AppData\Roaming\inkscape\extensions\textext\default_packages.tex"
+       ns23:scale="1.0"
+       ns23:alignment="middle center"
+       ns23:stroke-to-path="0"
+       ns23:inkscapeversion="1.3.2"
        id="g5821"
-       ns8:jacobian_sqrt="1.33333">
+       ns23:jacobian_sqrt="1.33333">
       <defs
          id="id-cb2d302c-c6ff-4fbf-91e7-8d09770560a9">
         <g
@@ -733,17 +733,17 @@
     </g>
     <g
        transform="matrix(1.33333,0,0,1.33333,138.70568,85.903975)"
-       ns8:version="1.10.2"
-       ns8:texconverter="pdflatex"
-       ns8:pdfconverter="inkscape"
-       ns8:text="$$r(t)$$"
-       ns8:preamble="C:\Users\cvar\AppData\Roaming\inkscape\extensions\textext\default_packages.tex"
-       ns8:scale="1.0"
-       ns8:alignment="middle center"
-       ns8:stroke-to-path="0"
-       ns8:inkscapeversion="1.3.2"
+       ns23:version="1.10.2"
+       ns23:texconverter="pdflatex"
+       ns23:pdfconverter="inkscape"
+       ns23:text="$$r(t)$$"
+       ns23:preamble="C:\Users\cvar\AppData\Roaming\inkscape\extensions\textext\default_packages.tex"
+       ns23:scale="1.0"
+       ns23:alignment="middle center"
+       ns23:stroke-to-path="0"
+       ns23:inkscapeversion="1.3.2"
        id="g9546"
-       ns8:jacobian_sqrt="1.33333">
+       ns23:jacobian_sqrt="1.33333">
       <defs
          id="id-ec92b7e5-480e-4b35-a368-8e6d40768208">
         <g
@@ -829,17 +829,17 @@
     </g>
     <g
        transform="matrix(1.33333,0,0,1.33333,131.36176,174.26414)"
-       ns8:version="1.10.2"
-       ns8:texconverter="pdflatex"
-       ns8:pdfconverter="inkscape"
-       ns8:text="$$\\beta (t)$$"
-       ns8:preamble="C:\Users\cvar\AppData\Roaming\inkscape\extensions\textext\default_packages.tex"
-       ns8:scale="1.0"
-       ns8:alignment="middle center"
-       ns8:stroke-to-path="0"
-       ns8:inkscapeversion="1.3.2"
+       ns23:version="1.10.2"
+       ns23:texconverter="pdflatex"
+       ns23:pdfconverter="inkscape"
+       ns23:text="$$\\beta (t)$$"
+       ns23:preamble="C:\Users\cvar\AppData\Roaming\inkscape\extensions\textext\default_packages.tex"
+       ns23:scale="1.0"
+       ns23:alignment="middle center"
+       ns23:stroke-to-path="0"
+       ns23:inkscapeversion="1.3.2"
        id="g9483"
-       ns8:jacobian_sqrt="1.33333">
+       ns23:jacobian_sqrt="1.33333">
       <defs
          id="id-2c581e49-12bf-4e10-a013-ef655525efb7">
         <g
@@ -930,17 +930,17 @@
        sodipodi:nodetypes="cc" />
     <g
        transform="matrix(1.33333,0,0,1.33333,183.53333,118.97361)"
-       ns8:version="1.10.2"
-       ns8:texconverter="pdflatex"
-       ns8:pdfconverter="inkscape"
-       ns8:text="$$y(t)$$"
-       ns8:preamble="C:\Users\cvar\AppData\Roaming\inkscape\extensions\textext\default_packages.tex"
-       ns8:scale="1.0"
-       ns8:alignment="middle center"
-       ns8:stroke-to-path="0"
-       ns8:inkscapeversion="1.3.2"
+       ns23:version="1.10.2"
+       ns23:texconverter="pdflatex"
+       ns23:pdfconverter="inkscape"
+       ns23:text="$$y(t)$$"
+       ns23:preamble="C:\Users\cvar\AppData\Roaming\inkscape\extensions\textext\default_packages.tex"
+       ns23:scale="1.0"
+       ns23:alignment="middle center"
+       ns23:stroke-to-path="0"
+       ns23:inkscapeversion="1.3.2"
        id="g6388"
-       ns8:jacobian_sqrt="1.33333">
+       ns23:jacobian_sqrt="1.33333">
       <defs
          id="id-4ab7629e-b34b-4e88-8476-d907104faa27">
         <g
@@ -1038,17 +1038,17 @@
        id="path1-5" />
     <g
        transform="matrix(1.33333,0,0,1.33333,200.43405,5.4726717)"
-       ns8:version="1.10.2"
-       ns8:texconverter="pdflatex"
-       ns8:pdfconverter="inkscape"
-       ns8:text="$$\\hat{y}$$"
-       ns8:preamble="C:\Users\cvar\AppData\Roaming\inkscape\extensions\textext\default_packages.tex"
-       ns8:scale="1.0"
-       ns8:alignment="middle center"
-       ns8:stroke-to-path="0"
-       ns8:inkscapeversion="1.3.2"
+       ns23:version="1.10.2"
+       ns23:texconverter="pdflatex"
+       ns23:pdfconverter="inkscape"
+       ns23:text="$$\\hat{y}$$"
+       ns23:preamble="C:\Users\cvar\AppData\Roaming\inkscape\extensions\textext\default_packages.tex"
+       ns23:scale="1.0"
+       ns23:alignment="middle center"
+       ns23:stroke-to-path="0"
+       ns23:inkscapeversion="1.3.2"
        id="g6969-7"
-       ns8:jacobian_sqrt="1.33333">
+       ns23:jacobian_sqrt="1.33333">
       <defs
          id="id-1809f4f9-20f8-45b0-b5ab-8309bd381f16-7">
         <g
@@ -1096,17 +1096,17 @@
     </g>
     <g
        transform="matrix(1.33333,0,0,1.33333,153.01295,-31.90727)"
-       ns8:version="1.10.2"
-       ns8:texconverter="pdflatex"
-       ns8:pdfconverter="inkscape"
-       ns8:text="$$\\beta (t)$$"
-       ns8:preamble="C:\Users\cvar\AppData\Roaming\inkscape\extensions\textext\default_packages.tex"
-       ns8:scale="1.0"
-       ns8:alignment="middle center"
-       ns8:stroke-to-path="0"
-       ns8:inkscapeversion="1.3.2"
+       ns23:version="1.10.2"
+       ns23:texconverter="pdflatex"
+       ns23:pdfconverter="inkscape"
+       ns23:text="$$\\beta (t)$$"
+       ns23:preamble="C:\Users\cvar\AppData\Roaming\inkscape\extensions\textext\default_packages.tex"
+       ns23:scale="1.0"
+       ns23:alignment="middle center"
+       ns23:stroke-to-path="0"
+       ns23:inkscapeversion="1.3.2"
        id="g9483-4"
-       ns8:jacobian_sqrt="1.33333">
+       ns23:jacobian_sqrt="1.33333">
       <defs
          id="id-2c581e49-12bf-4e10-a013-ef655525efb7-0">
         <g
@@ -1206,17 +1206,17 @@
   </g>
   <g
      transform="matrix(1.33333,0,0,1.33333,103.58689,10.095847)"
-     ns8:version="1.10.2"
-     ns8:texconverter="pdflatex"
-     ns8:pdfconverter="inkscape"
-     ns8:text="$$\\hat{k}$$"
-     ns8:preamble="C:\Users\cvar\AppData\Roaming\inkscape\extensions\textext\default_packages.tex"
-     ns8:scale="1.0"
-     ns8:alignment="middle center"
-     ns8:stroke-to-path="0"
-     ns8:inkscapeversion="1.3.2"
+     ns23:version="1.10.2"
+     ns23:texconverter="pdflatex"
+     ns23:pdfconverter="inkscape"
+     ns23:text="$$\\hat{k}$$"
+     ns23:preamble="C:\Users\cvar\AppData\Roaming\inkscape\extensions\textext\default_packages.tex"
+     ns23:scale="1.0"
+     ns23:alignment="middle center"
+     ns23:stroke-to-path="0"
+     ns23:inkscapeversion="1.3.2"
      id="g2498"
-     ns8:jacobian_sqrt="1.33333">
+     ns23:jacobian_sqrt="1.33333">
     <defs
        id="id-adbc7980-c77d-4220-beb0-f8cfaca376f7">
       <g
