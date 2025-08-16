@@ -10,12 +10,19 @@ title: Documentation
 - add orbital elements to symbol list, deconflict all other uses of symbols that are orbital elements.
 - add r and vectors
 - make definition of $\hat y$ more prominent
+- note that diagram only shows outputs used in get_command(), many more outputs may be exposed to the log.
+- add example script for using log
+- remember to go back and add width/height/alt for all images
+
 Variables I have to take a look at,
 $$\begin{gather}
 v_{\theta t, \textrm{tgt}} \\
 v_{\theta T} \\
 \theta_T \textrm{ vs } \nu_T
 \end{gather}$$
+
+- Do I chose $r_T$ or $r_{T,\textrm{tgt}}?
+- REally should consider whether or not to use $r_T$ or $r(T)$, this is confusing.
 
 ## Table of Contents
 
@@ -110,7 +117,6 @@ Single-stage guidance algorithm that targets:
 This uses the `OrbitTargetingAscentGroup` model. The connections of the components within this model is shown in the following figure.
 
 
-<img src="../img/OrbitTargetingAscentDiagram.svg" />
 <figure>
     <img alt="PLACEHOLDER" src="../img/OrbitTargetAscentChart.svg" style="width: 695px;" />
     <figcaption>
@@ -120,7 +126,12 @@ This uses the `OrbitTargetingAscentGroup` model. The connections of the componen
 
 ### 1.2. DebugAscent1
 
-<img src="../img/test2.svg"/>
+<figure>
+    <img alt="PLACEHOLDER" src="../img/DebugAscent1Chart.svg" style="width: 695px;" />
+    <figcaption>
+        Chart of interconnections in the DebugAscent1Group object, omitting most user inputs.
+    </figcaption>
+</figure>
 
 
 ## 2. Simulation Objects
@@ -231,6 +242,8 @@ The outputs are $T$ and $Q_n$. This module must be the first component to run if
 
 This module calculates the circumeferential velocity $v_\theta$ and change (TODO: compared to what? or when?) in true anomaly $\Delta \nu$ of the vehicle at cut-off time $T$.
 
+<img src="../img/VThetaSolverChart.svg" style="width: 695px;"/>
+
 A Runge-Kutta 4th order integrator is used to integrate the differential equations (C.6.1) and (C.8.4)
 
 $$\begin{gather}
@@ -248,6 +261,8 @@ TODO: Will I still include v_theta_loss_T in the final version?
 
 This module calculates commanded pitch and heading of the vehicle using (C.7.1) and (C.7.2)
 
+<img src="../img/PitchHeadingQueryChart.svg" style="width: 695px;"/>
+
 $$\begin{align}
     \alpha & = \sin^{-1}\left(\frac{\vec a_T \cdot \hat r}{a_T}\right) \tag{C.7.1}\\\\
     \psi & = \textrm{atan2}(a_{T_e},\, a_{T_n}) \tag{C.7.2}
@@ -259,9 +274,13 @@ This module uses $\vec a_T$ as calculated in Appendix C.6.
 
 This module outputs $r_D$, $\dot r_D$ and $v_{\theta D}$ based on desired $r_p$, $r_a$, and $\omega$. The method of calculation is outlined in Appendix C.9.
 
+<img src="../img/OrbitTargetingChart.svg" style="width: 695px;"/>
+
 ### 3.6. EnginePropertyEstimator
 
 This module uses a least-squares estimator to find the variables $v_e$ and $\dot m$ based on the equation for rocket thrust (C.1.6)
+
+<img src="../img/EnginePropertyEstimatorChart.svg" style="width: 695px;"/>
 
 $$\begin{align}
     a_T = v_e/\left(\tau - t\right) 

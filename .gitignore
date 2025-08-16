@@ -8,3 +8,6 @@ reports
 *.sql
 *.pkl
 *.pyc
+
+mkdocs/site/
+*Zone.Identifier
