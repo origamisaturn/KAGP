@@ -49,6 +49,7 @@ inclination                 | deg   | Yes       | `float`   |
 Uses internal integrator, intended for testing guidance.
 
 'integrator' sets the guidance to run on an internal integrator.
+
 Key                         | Units | Required  | Default   | Type      | Description
 ---                         | ---   | ---       | ---       | ---       | ---
 simulation_end_time         | s     | Yes       |           | `float`   | Length of time the simulation will run.

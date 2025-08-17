@@ -1,389 +1,7 @@
----
-layout: default
-title: Documentation
----
-
-## TODO
-
-- potentially add radial and yaw subscripts to appendix table
-- look at self._last_time in guidance_components.py/EnginePropertyEstimator, might be a bug.
-- add orbital elements to symbol list, deconflict all other uses of symbols that are orbital elements.
-- add r and vectors
-- make definition of $\hat y$ more prominent
-- note that diagram only shows outputs used in get_command(), many more outputs may be exposed to the log.
-- add example script for using log
-- remember to go back and add width/height/alt for all images
-- write a custom CSS class for centered figures.
-- Consider making the subheadings in C.6 stand out more, like underlining or prepending it with "finding X."
-
-Variables I have to take a look at,
-$$\begin{gather}
-v_{\theta t, \textrm{tgt}} \\
-v_{\theta T} \\
-\theta_T \textrm{ vs } \nu_T
-\end{gather}$$
-
-- Do I chose $r_T$ or $r_{T,\textrm{tgt}}?
-- REally should consider whether or not to use $r_T$ or $r(T)$, this is confusing.
-
-## Table of Contents
-
-- [1. Guidance Objects](#1-guidance-objects)
-    - [1.1. OrbitTargetingAscent](#11-orbittargetingascent)
-    - [1.2. DebugAscent1](#12-debugascent1)
-- [2. Simulation Objects](#2-simulation-objects)
-    - [2.1. Integrator Sim](#21-integratorsim)
-    - [2.2. KRPCClient](#22-krpcclient)
-- [3. Guidance Components](#3-guidance-components)
-    - [3.1. RadialYawGuidance](#31-radialyawguidance)
-    - [3.2. TimeToGo](#32-timetogo)
-    - [3.3. VThetaSolver](#33-vthetasolver)
-    - [3.4. PitchHeadingQuery](#34-pitchheadingquery)
-    - [3.5. OrbitTargeting](#35-orbittargeting)
-    - [3.6. EnginePropertyEstimator](#36-enginepropertyestimator)
-- [Appendix A: Symbols](#appendix-a-symbols)
-- [Appendix B: Reference Frames](#appendix-b-reference-frames)
-- [Appendix C: Abbreviated Derivation](#appendix-c-abbreviated-derivation)
-    - [C.1. Fixed-Thrust Model](#c1-fixed-thrust-model)
-    - [C.2. Generalized Guidance Law](#c2-generalized-guidance-law)
-    - [C.3. Radial Guidance Law](#c3-radial-guidance-law)
-    - [C.4. Plane Control Guidance Law](#c4-plane-control-guidance-law)
-    - [C.5. Time-to-Go](#c5-time-to-go)
-    - [C.6. Final Circumferential Velocity](#c6-final-circumferential-velocity)
-    - [C.7. Pitch and Heading](#c7-pitch-and-heading)
-    - [C.8. Final True Anomaly](#c8-final-true-anomaly)
-    - [C.9. Orbit Targeting](#c9-orbit-targeting)
-- [References](#references)
-## Misc
-
-All units are SI units, and angles are in radians, unless specified otherwise.
-
-<!-- gcherry/
-
-    - tests/ contains tests.
-    - config.py: Defines configuration files.
-    - guidance_components.py: Implementation of guidance algorithm components.
-    - guidance_interface.py: Defines guidance objects.
-    - log.py: Objects for logging simulation data.
-    - log_utils.py: Utility functions for logging.
-    - main_script.py: Command line script.
-    - rk4.py: Numerical integrator.
-    - sim_interface.py: Defines simulation objects.
-    - transform.py: Functions for transforming between reference frames. -->
-
-## OpenMDAO
-
-This library uses [openMDAO](https://openmdao.org/) to encapsulate components of the guidance algorithm.
-
-The primary use of openMDAO in this program is to organize the ascent guidance into separate blocks, using openMDAO's `ExplicitComponent` class. This exposes the intermediate variables for documentation, and allows testing of separate parts of the algorithm.
-
-The guidance components are then organized into groups, using openMDAO's `Group` class. Any blocks that have inputs/outputs that share the same name are automatically connected. 
-
-The guidance algorithm is implemented as a subclass of `Group`, and 
-
-```python
-import openmdao.api as om
-
-...
-
-class RadialYawGuidance(om.ExplicitComponent)
-""" Solves equation for pitch and yaw scheduling. 
-    ...
-
-""" 
-```
-
-## 1. Guidance Objects
-
-Guidance objects use config objects during initialization.
-
-Guidance objects are objects that encapsulate guidance algorithms.  Guidance objects are defined in `guidance_interface.py`.
-
-`GuidanceBase` is the abstract base class that defines the interface for all guidance objects. All guidance objects subclass `GuidanceBase`. 
-
-The most important member function of `GuidanceBase` is `get_command()`, which returns the commanded thrust, pitch, and heading, given the current state.
-
-Guidance objects are used when initializing simulation objects.
-
-
-### 1.1. OrbitTargetingAscent
-
-Single-stage guidance algorithm that targets:
-
-- apoapsis
-- periapsis
-- longitude of ascending node
-- inclination
-- argument of periapsis
-
-This uses the `OrbitTargetingAscentGroup` model. The connections of the components within this model is shown in the following figure.
-
-
-<figure>
-    <img alt="PLACEHOLDER" src="../img/OrbitTargetAscentChart.svg" style="width: 695px;" />
-    <figcaption>
-        Chart of interconnections in the OrbitTargetingAscentGroup object, omitting most user inputs.
-    </figcaption>
-</figure>
-
-### 1.2. DebugAscent1
-
-<figure>
-    <img alt="PLACEHOLDER" src="../img/DebugAscent1Chart.svg" style="width: 695px;" />
-    <figcaption>
-        Chart of interconnections in the DebugAscent1Group object, omitting most user inputs.
-    </figcaption>
-</figure>
-
-
-## 2. Simulation Objects
-
-Simulation objects accept guidance objects and config objects during initialization.
-
-All simulation objects objects use the state vector
-
-$$\begin{align}
-    \begin{bmatrix}\; x & y & z & \dot x & \dot y & \dot z & m \;\end{bmatrix}
-\end{align}$$
-
-Where $x$, $y$, $z$ are the components of the position vector $\vec r$ in the global inertial frame, and m is mass.
-
-Length is in $m$, mass in $kg$, time in $s$.
-
-### 2.1. IntegratorSim 
-
-Uses Runge-Kutta 4 integrator. Rocket modelled as being solely under the forces of gravity and acceleration. No turning dynamics are modelled, acceleration direction is determined each instant by the guidance commands.
-
-### 2.2. KRPCClient
-
-Uses the KRPC library to connect to KSP. Currently only works for locally-hosted KRPC servers.
-
-Uses KRPC's internal autopilot to control pitch and heading.
-
-## 3. Guidance Components
-
-### 3.1. RadialYawGuidance
-
-This module calculates the $c_1$ and $c_2$ constants for the radial guidance law (C.3.6) and the plane control guidance law (C.4.4).
-
-<img src="../img/RadialYawGuidanceChart.svg" style="width: 695px;"/>
-
-Vehicle thrust acceleration $a_T(t)$ is written as a second-order Taylor series of $a_T=v_e/(\tau-t)$ about terminal time T
-
-$$\begin{align}
-    a_T(t) = a_0 + a_1(T-t) + a_2(T-t)^2
-\end{align}$$
-
-where
-
-$$\begin{align}
-    a_0& = a_T(T) = v_e/(\tau - T)\\\\
-    a_1& = -\dot a_T(t) = -a_0^2/v_e\\\\
-    a_2& = 2 \ddot a_T(T) = a_0^3/v_e^2
-\end{align}$$
-
-Equations (C.2.13-16) for the $F$ matrix then become 
-
-$$\begin{align}
-    f_{11} & = a_0 T_{go} + a_1 T_{go}^2/2 + a_2 T_{go}^3/3 \\\\
-    f_{12} & = a_0 T_{go}^2/2 + a_1 T_{go}^3/3 + a_2 T_{go}^4/4 \\\\
-    f_{21} & = f_{12} \\\\
-    f_{22} & = a_0 T_{go}^3/3 + a_1 T_{go}^4/4 + a_2 T_{go}^5/5
-\end{align}$$
-
-The following equations are solved for the $c_1$ and $c_2$ constants using a linear matrix solver
-
-$$\begin{align}
-    \begin{bmatrix}
-    \dot y_D - \dot y_0\\\\
-    y_D - (y_o + \dot y_o T_{go})
-    \end{bmatrix}
-    = F 
-    \begin{bmatrix}
-    c_{1, \textrm{yaw}}\\\\
-    c_{2, \textrm{yaw}}
-    \end{bmatrix}
-\end{align}$$
-$$\begin{align}
-    \begin{bmatrix}
-    \dot r_D - \dot r_0\\\\
-    r_D - (r_o + \dot r_o T_{go})
-    \end{bmatrix}
-    = F 
-    \begin{bmatrix}
-    c_{1, \textrm{radial}} \\\\
-    c_{2, \textrm{radial}}
-    \end{bmatrix}
-\end{align}$$
-
-where the boundary conditions and $T_{go}$ are determined by input variables. 
-
-This module outputs $c_{1, \textrm{radial}}$, $c_{2, \textrm{radial}}$, $c_{1, \textrm{yaw}}$, $c_{2, \textrm{yaw}}$, $a_0$, $a_1$, and $a_2$.
-
-### 3.2. TimeToGo
-
-This module iteratively estimates cut-off time $T$ when connected to the RadialYawGuidance and VThetaSolver modules. 
-
-<img src="../img/TimeToGoChart.svg" style="width: 695px;"/>
-
-A fixed-point iteration scheme is used where $Q_{n}$ is the variable iteratively being solved for (Equation (C.5.10))
-
-$$\begin{align}
-    Q_{n+1} = \exp \begin{bmatrix} \frac{-(v_{\theta D} - v_{\theta o})}{v_e} \end{bmatrix} \frac{Q_n}{H(T_n)} \tag{}\\\\
-\end{align}$$
-
-The next estimate of cut-off time $T_{n+1}$ is found using equation (C.5.8)
-
-$$\begin{align}
-    T = \tau_o \\{1 - \exp [-(v_{\theta D} - v_{\theta o})/v_e]\, Q_{n+1}\\} + t_o \tag{}
-\end{align}$$
-
-The outputs are $T$ and $Q_n$. This module must be the first component to run if other components require $T$ as input.
-
-### 3.3. VThetaSolver
-
-This module calculates the circumeferential velocity $v_\theta$ and change (TODO: compared to what? or when?) in true anomaly $\Delta \nu$ of the vehicle at cut-off time $T$.
-
-<img src="../img/VThetaSolverChart.svg" style="width: 695px;"/>
-
-A Runge-Kutta 4th order integrator is used to integrate the differential equations (C.6.1) and (C.8.4)
-
-$$\begin{gather}
-    \dot v_{\theta}(t) = \vec a_T \cdot \hat \theta - \dot r v_\theta / r \tag{C.6.1} \\\\
-    \dot \nu_{peri} = \frac{\vec v \cdot \hat j}{r_{peri}}
-\end{gather}$$
-
-Appendix C.6. outlines the calculation of $\vec a_T$, $\hat \theta$, $\dot r$, and $r$ based on the radial and plane control guidance laws.
-
-The outputs are $v_\theta(T)$ and $\Delta \theta(T)$.
-
-TODO: Will I still include v_theta_loss_T in the final version?
-
-### 3.4. PitchHeadingQuery
-
-This module calculates commanded pitch and heading of the vehicle using (C.7.1) and (C.7.2)
-
-<img src="../img/PitchHeadingQueryChart.svg" style="width: 695px;"/>
-
-$$\begin{align}
-    \alpha & = \sin^{-1}\left(\frac{\vec a_T \cdot \hat r}{a_T}\right) \tag{C.7.1}\\\\
-    \psi & = \textrm{atan2}(a_{T_e},\, a_{T_n}) \tag{C.7.2}
-\end{align}$$
-
-This module uses $\vec a_T$ as calculated in Appendix C.6.
-
-### 3.5. OrbitTargeting
-
-This module outputs $r_D$, $\dot r_D$ and $v_{\theta D}$ based on desired $r_p$, $r_a$, and $\omega$. The method of calculation is outlined in Appendix C.9.
-
-<img src="../img/OrbitTargetingChart.svg" style="width: 695px;"/>
-
-### 3.6. EnginePropertyEstimator
-
-This module uses a least-squares estimator to find the variables $v_e$ and $\dot m$ based on the equation for rocket thrust (C.1.6)
-
-<img src="../img/EnginePropertyEstimatorChart.svg" style="width: 695px;"/>
-
-$$\begin{align}
-    a_T = v_e/\left(\tau - t\right) 
-    = \frac{v_e}{\frac{m_o}{\dot m} - t}
-\end{align}$$
-
-## Appendix A: Symbols
-
-| Symbol | Description |
-| ---   | ---   |
-| $A$, $B$ | steering constants |
-| $a_0$, $a_1$, ... $a_n$ | thrust acceleration coefficients |
-| $a_T$ | thrust acceleration, $m/s^2$ |
-| $\alpha$ | pitch angle, $rad.$ |
-| $\alpha_y$ | yaw angle, $rad.$ |
-| $c_1$, $c_2$ | steering constants, <br> [nondimensional, $s^{-1}$] |
-| $F$ | F matrix |
-| $F_T$ | thrust, $N$ |
-| $f_{11}$, $f_{12}$, $f_{21}$, $f_{22}$ | F matrix entries |
-| $g$ | gravity at major body, $m/s^2$ |
-| $g_0$ | standard gravity, $m/s^2$  |
-| $g_{eff}$ | effective gravity, $m/s^2$ |
-| $I_{sp}$ | specific impulse, $s$ |
-| $m$ | mass, $kg$ |
-| $p_1$, $p_2$ | steering polynomials , <br> ($m/s^2$, $m/s$) |
-| $\psi$ | heading, $rad.$ |
-| $q$ | general distance coordinate, $m$ |
-| $t$ | time, $s$ |
-| $T$ | cutoff time, $s$ |
-| $\tau$ | ($\equiv \frac{m_o}{\dot m}$), $s$ |
-| $T_{go}$ | time-to-go, $s$ |
-| $v$ | velocity, $m/s$ |
-| $v_e$ | exhaust velocity, $m/s$ |
-
-| Subscript | Description |
-| ---   | ---   |
-| $o$ | value at $t = t_o$ (the current time) |
-| $D$ | desired value at $t = T$ (cut-off time) |
-| $r$ | radial guidance constant |
-| $y$ | plane control guidance constant |
-| $peri$ | perifocal plane projection $\begin{bmatrix}\, \hat n & \hat e & 0 \,\end{bmatrix}$ |
-
-## Appendix B: Reference Frames
-
-### Global Frame
-
-Axes are $\hat X$, $\hat Y$, $\hat Z$. Axes are inertial, origin is at center of the celestial body. In terms of (right ascension, declination), $\hat X$ is at $(0, 0)$, $\hat Y$ is at $(\frac{\pi}{2}, 0)$, and $\hat Z$ is at $(0, \frac{\pi}{2})$.
-
-### Radial-Circumferential-Normal
-
-$$\begin{align}
-    \hat r &= \frac{\vec r}{r} \tag{B.1}\\\\
-    \hat h &= \frac{\vec r \times \vec v}{|\vec r \times \vec v|} \tag{B.2}\\\\
-    \hat \theta &= \hat h \times \hat r \tag{B.3} 
-\end{align}$$
-
-### Perifocal
-
-Origin is at center of celestial body. $\hat p$ points to orbit periapsis, $\hat q$ on orbital plane at $\nu = \frac{\pi}{2}$, and $\hat w = \hat p \times \hat q$.
-
-The following defines the perifocal axes in terms of the global frame.
-
-$$\begin{align}
-    \begin{bmatrix}
-        & &\\\\
-        \hat p & \hat q & \hat w\\\\
-        & &
-    \end{bmatrix}
-    = R_z(\Omega) R_x(i) R_z(\omega)
-\end{align}$$
-
-### Plane Control
-
-$$\begin{align}
-    \hat i &= \frac{\vec r}{r} \tag{B.7}\\\\
-    \hat j &= \frac{\hat y \times \hat i}{|\hat y \times \hat i|} \tag{B.8}\\\\
-    \hat k &= \hat i \times \hat j \tag{B.9} 
-\end{align}$$
-
-Origin is at vehicle position $\vec r$. $\hat y$ is the normal vector of the target orbital plane, defined by $\Omega$ and $i$. Mainly used to simplify finding $v_\theta(T)$ and $\psi$.
-
-### Topocentric
-
-Origin is at vehicle position $\vec r$. $\hat n$ points North, $\hat e$ points East, $\hat d$ points downwards.
-
-The following defines the topocentric axes in terms of the global frame.
-
-$$\begin{align}
-    \begin{bmatrix}
-        & &\\\\
-        \hat n & \hat e & \hat d\\\\
-        & &
-    \end{bmatrix}
-    = R_z(RA) R_y(-DEC)
-\end{align}$$
-
-where $RA$ and $DEC$ are right ascension and declination, respectively.
 
 ## Appendix C: Abbreviated Derivation
 
-The following is a derivation for the single-stage ascent guidance method implemented in this program. This is an abbreviated version of the derivation for fixed-thrust ascent guidance found in "A General, Explicit, Optimizing Guidance Law for Rocket-Propelled Spaceflight" by G. Cherry
+The following is a derivation for the single-stage ascent guidance method implemented in this program. This is an abbreviated version of the derivation for fixed-thrust ascent guidance found in "A General, Explicit, Optimizing Guidance Law for Rocket-Propelled Spaceflight" by G. Cherry [\[1\]](#ref_gcherry).
 
 In broad terms, the guidance method is derived by
 
@@ -404,11 +22,11 @@ A numerical integrator is used here instead of a Taylor expansion mainly for con
 
 ### C.1. Fixed-Thrust Model
 
-A constant-thrust model for a rocket, with constant mass flow and exhaust velocity, is defined as follows
+A constant-thrust model for a rocket, with constant mass flow and exhaust velocity, is defined as follows:
 
 $$\begin{align}
-    v_e & = g_0I_{sp} = constant \tag{C.1.1}\\\\
-    \dot{m} & = constant \tag{C.1.2}\\\\
+    v_e & = g_0I_{sp} = \textrm{constant} \tag{C.1.1}\\\\
+    \dot{m} & = \textrm{constant} \tag{C.1.2}\\\\
     \dot{m} & > 0 \tag{C.1.3}\\\\
     F_T & = \dot{m} v_e \tag{C.1.4} 
 \end{align}$$
@@ -431,7 +49,7 @@ $$\begin{align}
     \tau \equiv m_o/ \dot m \tag{C.1.7}
 \end{align}$$
 
-$\tau$ can be interpreted as the time at which the rocket vehicle composed of only fuel and no structure will reach 0 mass. 
+$\tau$ can be interpreted as the time at which the rocket vehicle composed of only fuel and no structure will reach $0$ mass. 
 
 ### C.2. Generalized Guidance Law
 
@@ -467,10 +85,10 @@ where $t_0$ is the current time. Integrating equation (C.2.1) yields the equatio
 
 $$\begin{align}
     \dot q_D - \dot q_0 
-        & = \int_{t_0}^T \ddot q(t) dt \tag{C.2.9}\\
-        &= c_1 \int_{t_0}^T p_1(t) dt + c_2 \int_{t_0}^T p_2(t) dt \nonumber\\\\
+        & = \int_{t_0}^T \ddot q(t) dt \tag{C.2.9} \\\\
+        &= c_1 \int_{t_0}^T p_1(t) dt + c_2 \int_{t_0}^T p_2(t) dt \nonumber \\\\
     q_D - q_0 - \dot q(t_0)T_{go}
-        & = \int_{t_0}^T \int_{t_0}^t \ddot q(s) ds \; dt \tag{C.2.10}\\\\
+        & = \int_{t_0}^T \int_{t_0}^t \ddot q(s) ds \; dt \tag{C.2.10} \\\\
         &= c_1 \int_{t_0}^T \int_{t_0}^t p_1(s) ds \; dt
             + c_2 \int_{t_0}^T \int_{t_0}^t p_2(s) ds \; dt \nonumber
 \end{align}$$
@@ -504,11 +122,11 @@ $$\begin{align}
     f_{22} & = a_0 T_{go}^3/3 + a_1 T_{go}^4/4 + \dots + a_nT_{go}^{n+3}/(n+3) \tag{C.2.16}
 \end{align}$$
 
-$c_1$ and $c_2$ is solved from (C.2.12) by inverting the $F$ matrix. This solves the general guidance equation.
+Given the boundary conditions in (C.2.5-8), the constants $c_1$ and $c_2$ is solved from (C.2.12) by inverting the $F$ matrix. This solves the general guidance equation.
 
 ### C.3. Radial Guidance Law
 
-The linear tangent steering law [2] will be used to derive the radial guidance law
+The linear tangent steering law [\[2\]](#ref_bryson_ho) will be used to derive the radial guidance law
 
 $$\begin{align}
     \tan \alpha = A + Bt \tag{C.3.1}\\\\
@@ -540,7 +158,7 @@ $$\begin{align}
     \ddot r = A a_T + B a_T t \tag{C.3.5}\\\\
 \end{align}$$
 
-If A and B are rewritten in terms of other constants as $A = c_{1,r} + c_{2,r} T$ and $B = -c_{2,r}$, then the equation can be written in the form of the generalized guidance law (C.2.1) as 
+If A and B are rewritten in terms of other arbitrary constants as $A = c_{1,r} + c_{2,r} T$ and $B = -c_{2,r}$, then the equation can be written in the form of the generalized guidance law (C.2.1) as 
 
 $$\begin{align}
     \ddot r = c_{1,r}p_1(t) + c_{2,r}p_2(t) \tag{C.3.6}\\\\
@@ -579,7 +197,7 @@ $$\begin{align}
     \sin \alpha_y(t) = A+Bt - \vec g \cdot \hat y/a_T \tag{C.4.2}\\\\
 \end{align}$$
 
-The approximation assumes that $\tan \alpha \approx \sin \alpha$, and that $(\vec g \cdot \vec y)/a_T \approx 0$. $\vec g \cdot \vec y$ is small in general, and $(\vec g \cdot \vec y)/a_T$ is even more so.
+The approximation assumes that $\tan \alpha \approx \sin \alpha$, and that $(\vec g \cdot \vec y)/a_T \approx 0$. $\vec g \cdot \hat y$ is small in general, as the launch vehicle is usually a few degrees off of the target orbital plane at launch.
 
 Substituting (C.4.2) in (C.4.1) yields 
 
@@ -587,7 +205,7 @@ $$\begin{align}
     \ddot y = A a_T + B a_T t \tag{C.4.3}\\\\
 \end{align}$$
 
-If the constants are written in terms of $c_{1,y}$ and $c_{2,y}$ as $A = c_{1,y} + c_{2,y} T$ and $B = -c_{2,y}$, then the equation can be written in the form of the generalized guidance law (C.2.1) as 
+If the constants are written in terms of arbitrary constants $c_{1,y}$ and $c_{2,y}$ as $A = c_{1,y} + c_{2,y} T$ and $B = -c_{2,y}$, then the equation can be written in the form of the generalized guidance law (C.2.1) as 
 
 $$\begin{align}
     \ddot y = c_{1,y}p_1(t) + c_{2,y}p_2(t) \tag{C.4.4}\\\\
@@ -654,7 +272,7 @@ $$\begin{align}
 
 where $v_{\theta D}$ is the target $v_\theta$ at time $T$, and $v_{\theta F, n}$ is the estimated $v_\theta(T)$ for thrust loss estimate $v_{\theta L, n}$. The following figure illustrates the procedure for calculating $\Delta v_{\theta L}$.
 <figure>
-    <img width="600px" src="../img/iterative_T_go_algo.svg">
+    <img width="600px" src="../../img/iterative_T_go_algo.svg">
 </figure>
 
 
@@ -666,7 +284,7 @@ $$\begin{align}
 
 where $\epsilon$ is the tolerable guidance scheme error.
 
-The following rewrites the time-to-go equation (C.5.4) into the final form found in Cherry's [1] derivation, which is also the form currently used in the program
+The following rewrites the time-to-go equation (C.5.4) into the final form found in Cherry's [\[1\]](#ref_gcherry) derivation, which is also the form currently used in the program
 $$\begin{align}
     T_{go, n} = \tau_o \{1 - \exp [-(v_{\theta D} - v_{\theta o})/v_e]\, Q_n\} \tag{C.5.8} 
 \end{align}$$
@@ -742,7 +360,7 @@ $$\begin{align}
     \hat \theta(t) = \frac{\vec v_\theta(t)}{v_\theta(t)} \tag{C.6.7}
 \end{align}$$
 
-By definition, circumferential velocity $v_\theta$ in PCF axes has no $\hat i$ component ($\hat \theta$ is orthogonal to $\hat r$)
+By definition, circumferential velocity $v_\theta$ in Plane Control Frame (PCF) axes has no $\hat i$ component ($\hat \theta$ is orthogonal to $\hat r$)
 
 $$\begin{align}
     \vec v_\theta = \begin{bmatrix}\, 0 & v_{j} & v_{ k} \,\end{bmatrix} \tag{C.6.8}
@@ -755,7 +373,7 @@ $$\begin{align}
 
 where $\dot y$ is given by (C.6.3). Define $\beta (t)$ as the angle of the vehicle's position with respect to the target orbital plane.
 <figure style="display: flex; align-items: center; justify-content: center;">
-    <img src="../img/B6_beta_angle.svg" width=303px height=338px/>
+    <img src="../../img/B6_beta_angle.svg" width=303px height=338px/>
 </figure>
 
 Based on the figure, $\hat y$ can be written in PCF axes as
@@ -785,7 +403,7 @@ Equation (C.6.7) can now be solved to yield $\hat \theta(t)$.
 
 $a_T$ is given by 
 $$\begin{align}
-    \vec a_T = \begin{bmatrix} a_{T \hat i} & a_{T \hat j} & a_{T \hat k} \end{bmatrix} \tag{C.6.13}
+    \vec a_T = \begin{bmatrix}\, a_{T \hat i} & a_{T \hat j} & a_{T \hat k} \,\end{bmatrix} \tag{C.6.13}
 \end{align}$$
 
 $\vec a_T \cdot \hat i$ is given by rearranging the differential equation for radial motion (C.3.2)
@@ -794,7 +412,7 @@ $$\begin{align}
     = \ddot r - g_{eff}  \tag{C.6.14}
 \end{align}$$
 
-$\vec a_T \cdot \hat k$ is found by substituting the expression for $\hat y$ (C.6.10) into the differential equation for $\ddot y$ (C.4.1)
+$\vec a_T \cdot \hat k$ is found by substituting the expression for $\hat y$ (C.6.10) into the differential equation for $\ddot y$ (C.4.1):
 $$\begin{align}
     \vec a_T \cdot \hat k = \frac{\vec a_T \cdot \hat y - (\vec a_T \cdot \hat r)(\hat y_{\hat i})}{\hat y_{\hat k}} \tag{C.6.15}
 \end{align}$$
@@ -805,7 +423,7 @@ $$\begin{align}
     & = \ddot y + \frac{\mu y}{r^3} \notag
 \end{align}$$
 
-$\vec a_T \cdot \hat j$ is given by
+$\vec a_T \cdot \hat j$ is given by rearranging the definition of magnitude for a vector,
 $$\begin{align}
     \vec a_T \cdot \hat j = \sqrt{a_T^2 - (\vec a_T \cdot \hat i)^2 - (\vec a_T \cdot \hat k)} \tag{C.6.17}
 \end{align}$$
@@ -895,6 +513,9 @@ The orbit targeting is placed outside the time-to-go calculation loop and solved
 
 
 ## References
-[1] G. W. Cherry, "A General, Explicit, Optimizing Guidance Law for Rocket-Propelled Spaceflight," in *Astrodynamics Guidance and Control Conference, August 24-26, 1964, Los Angeles, CA, USA* [Online]. Available: ARC, https://arc.aiaa.org/doi/10.2514/6.1964-638
-
-[2] A.E. Bryson, Jr. and Y. Ho, "Optimization Problems for Dynamic Systems," in *Applied Optimal Control,* Waltham, MA, USA: Ginn, 1969, pp. 61.
+<div id="ref_gcherry">
+    <a href="#ref_gcherry">[1]</a> G. W. Cherry, "A General, Explicit, Optimizing Guidance Law for Rocket-Propelled Spaceflight," in <i>Astrodynamics Guidance and Control Conference, August 24-26, 1964, Los Angeles, CA, USA</i> [Online]. Available: ARC, https://arc.aiaa.org/doi/10.2514/6.1964-638
+</div>
+<div id="ref_bryson_ho">
+    <a href="#ref_bryson_ho">[2]</a> A.E. Bryson, Jr. and Y. Ho, "Optimization Problems for Dynamic Systems," in <i>Applied Optimal Control,</i> Waltham, MA, USA: Ginn, 1969, pp. 61.
+</div>
