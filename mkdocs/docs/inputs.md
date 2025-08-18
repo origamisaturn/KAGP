@@ -59,13 +59,13 @@ outer_loop_interval         | s     | No        | 7         | `float`   | Time b
 outer_loop_cutoff           | s     | No        | 10        | `float`   | Outer loop calculation will be disabled outer_loop_cutoff seconds before the estimated terminal time. An outer loop iteration calculated less than 10 seconds before terminal time may fail to converge.
 
 ## krpc_client
-Connects to KRPC server for guidance.
+Connects to kRPC server for guidance.
 
-'krpc_client' connects to a locally hosted KRPC server in KSP and transmits guidance commands to the active spacecraft.
+'krpc_client' connects to a locally hosted kRPC server in KSP and transmits guidance commands to the active spacecraft.
 
 Key                         | Units | Required  | Default   | Type      | Description
 ---                         | ---   | ---       | ---       | ---       | ---
-name                        | N/A   | No        | `gcherry` | `string`  | Name of this program when displayed on KRPC server.
+name                        | N/A   | No        | `gcherry` | `string`  | Name of this program when displayed on kRPC server.
 outer_loop_interval         | s     | No        | 7         | `float`   | Time between successive outer loop calculations.
 outer_loop_cutoff           | s     | No        | 10        | `float`   | Outer loop calculation will be disabled outer_loop_cutoff seconds before the estimated terminal time. An outer loop iteration calculated less than 10 seconds before terminal time may fail to converge.
 post_guidance_measurement   | s     | No        | 5         | `float`   | Client will continue to run and log data until post_guidance_measurement seconds after guidance termination.

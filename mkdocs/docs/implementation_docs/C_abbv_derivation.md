@@ -286,7 +286,7 @@ where $\epsilon$ is the tolerable guidance scheme error.
 
 The following rewrites the time-to-go equation (C.5.4) into the final form found in Cherry's [\[1\]](#ref_gcherry) derivation, which is also the form currently used in the program
 $$\begin{align}
-    T_{go, n} = \tau_o \{1 - \exp [-(v_{\theta D} - v_{\theta o})/v_e]\, Q_n\} \tag{C.5.8} 
+    T_{go, n} = \tau_o \\{1 - \exp [-(v_{\theta D} - v_{\theta o})/v_e]\, Q_n\\} \tag{C.5.8} 
 \end{align}$$
 
 where
@@ -436,7 +436,7 @@ The pitch and heading commands are found using the commanded thrust acceleration
 
 $$\begin{align}
     \alpha & = \sin^{-1}\left(\frac{\vec a_T \cdot \hat r}{a_T}\right) \tag{C.7.1}\\\\
-    \psi & = \textrm{atan2}(a_{T_e},\, a_{T_n}) \tag{C.7.2}
+    \psi & = \textrm{atan2}(a_{T}\cdot \hat e,\, a_{T} \cdot \hat n) \tag{C.7.2}
 \end{align}$$
 
 (C.7.2) uses the topocentric coordinates of $a_T$.
@@ -482,7 +482,7 @@ $$\begin{align}
 The target orbit is described by 
 $$
 \begin{matrix} 
-r_p& r_a & i & \Omega & \omega \tag{C.9.1}
+r_{pe}& r_{ap} & i & \Omega & \omega \tag{C.9.1}
 \end{matrix}
 $$
 
@@ -491,31 +491,31 @@ $$\begin{matrix}
     r_D & \dot r_D & v_\theta & i & \Omega \tag{C.9.2}
 \end{matrix}$$
 
-The variables $r_p$, $r_a$, and $\omega$ must be converted into $r_D$, $\dot r_D$, and $v_{\theta D}$ to be used in the radial guidance law, and in the calculation of cut-off time.
+The variables $r_{pe}$, $r_{ap}$, and $\omega$ must be converted into $r_D$, $\dot r_D$, and $v_{\theta D}$ to be used in the radial guidance law, and in the calculation of cut-off time.
 
 True anomaly at cut-off $\nu(T) = \nu_{proj}(T)$ is given by (C.8.5).
 
 Intermediate orbit values are calculated
 $$\begin{gather}
-    a = \frac{r_p + r_a}{2} \tag{C.9.3}\\\\
-    e = 1 - \frac{r_p}{a} \tag{C.9.4}\\\\
-    h = \sqrt{r_p \mu (1+e)} \tag{C.9.5}\\\\
+    a = \frac{r_{pe} + r_{ap}}{2} \tag{C.9.3}\\\\
+    e = 1 - \frac{r_{pe}}{a} \tag{C.9.4}\\\\
+    h = \sqrt{r_{pe} \mu (1+e)} \tag{C.9.5}\\\\
 \end{gather}$$
 
 The desired values are found
 $$\begin{gather}
     r_D = a \frac{(1-e^2)}{1 + e\cos(\nu)} \tag{C.9.6}\\\\
-    v_{r D} = \mu/h e \sin(\nu) \tag{C.9.7}\\\\
+    \dot r_D = \mu/h e \sin(\nu) \tag{C.9.7}\\\\
     v_{\theta D} = \frac{h}{r} \tag{C.9.8}
 \end{gather}$$
 
 The orbit targeting is placed outside the time-to-go calculation loop and solved iteratively until the change of $\nu(T)$ between iterations becomes smaller than a certain error value.
 
 
-## References
-<div id="ref_gcherry">
+### References
+<div id="ref_gcherry" style="margin: 10px">
     <a href="#ref_gcherry">[1]</a> G. W. Cherry, "A General, Explicit, Optimizing Guidance Law for Rocket-Propelled Spaceflight," in <i>Astrodynamics Guidance and Control Conference, August 24-26, 1964, Los Angeles, CA, USA</i> [Online]. Available: ARC, https://arc.aiaa.org/doi/10.2514/6.1964-638
 </div>
-<div id="ref_bryson_ho">
+<div id="ref_bryson_ho" style="margin: 10px">
     <a href="#ref_bryson_ho">[2]</a> A.E. Bryson, Jr. and Y. Ho, "Optimization Problems for Dynamic Systems," in <i>Applied Optimal Control,</i> Waltham, MA, USA: Ginn, 1969, pp. 61.
 </div>

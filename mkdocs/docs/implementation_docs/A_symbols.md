@@ -8,17 +8,23 @@
 | $\alpha$ | pitch angle, $rad.$ |
 | $\alpha_y$ | yaw angle, $rad.$ |
 | $c_1$, $c_2$ | steering constants, <br> [nondimensional, $s^{-1}$] |
-| $F$ | F matrix |
+| $F$ | F matrix (C.2.13-16) |
 | $F_T$ | thrust, $N$ |
 | $f_{11}$, $f_{12}$, $f_{21}$, $f_{22}$ | F matrix entries |
 | $g$ | gravity at major body, $m/s^2$ |
 | $g_0$ | standard gravity, $m/s^2$  |
 | $g_{eff}$ | effective gravity, $m/s^2$ |
+| $i$ | inclination, $rad.$ |
 | $I_{sp}$ | specific impulse, $s$ |
 | $m$ | mass, $kg$ |
+| $\Omega$ | longitude of ascending node, $rad.$ |
+| $\omega$ | argument of periapsis, $rad.$ |
 | $p_1$, $p_2$ | steering polynomials , <br> ($m/s^2$, $m/s$) |
 | $\psi$ | heading, $rad.$ |
 | $q$ | general distance coordinate, $m$ |
+| $r$ | radial distance, or position if vector, $m$ |
+| $r_{pe}$ | periapsis, $m$ |
+| $r_{ap}$ | apoapsis, $m$ |
 | $t$ | time, $s$ |
 | $T$ | cutoff time, $s$ |
 | $\tau$ | ($\equiv \frac{m_o}{\dot m}$), $s$ |

@@ -1,3 +1,7 @@
+## Note
+
+NOTE: The documentation refers to true anomaly as $\nu$, but the program uses $\theta$.
+
 ## OpenMDAO
 
 This library uses [openMDAO](https://openmdao.org/) to encapsulate components of the guidance algorithm.
@@ -20,6 +24,16 @@ class RadialYawGuidance(om.ExplicitComponent)
 """ 
 ```
 
+
+Test equation:
+$$
+\begin{align}
+    mx + b = y\label{eq1}
+\end{align}
+$$
+
+You can go to the equation \ref{eq1}.
+
 ## 3. Guidance Components
 
 ### 3.1. RadialYawGuidance
@@ -28,7 +42,7 @@ This module calculates the $c_1$ and $c_2$ constants for the radial guidance law
 
 <img src="../../img/RadialYawGuidanceChart.svg" style="width: 695px;"/>
 
-Vehicle thrust acceleration $a_T(t)$ is written as a second-order Taylor series of $a_T=v_e/(\tau-t)$ about terminal time T
+Vehicle thrust acceleration $a_T(t)$ is written as a second-order Taylor series of $a_T=v_e/(\tau-t)$ about terminal time $T$
 
 $$\begin{align}
     a_T(t) = a_0 + a_1(T-t) + a_2(T-t)^2
@@ -55,7 +69,7 @@ The following equations are solved for the $c_1$ and $c_2$ constants using a lin
 
 $$\begin{align}
     \begin{bmatrix}
-    \dot y_D - \dot y_0\\\\
+    \dot y_D - \dot y_o\\\\
     y_D - (y_o + \dot y_o T_{go})
     \end{bmatrix}
     = F 
@@ -66,7 +80,7 @@ $$\begin{align}
 \end{align}$$
 $$\begin{align}
     \begin{bmatrix}
-    \dot r_D - \dot r_0\\\\
+    \dot r_D - \dot r_o\\\\
     r_D - (r_o + \dot r_o T_{go})
     \end{bmatrix}
     = F 
@@ -82,27 +96,28 @@ This module outputs $c_{1, \textrm{radial}}$, $c_{2, \textrm{radial}}$, $c_{1, \
 
 ### 3.2. TimeToGo
 
-This module iteratively estimates cut-off time $T$ when connected to the RadialYawGuidance and VThetaSolver modules. 
+This module iteratively estimates cut-off time $T$ when connected to the `RadialYawGuidance` and `VThetaSolver` modules. 
 
 <img src="../../img/TimeToGoChart.svg" style="width: 695px;"/>
 
-A fixed-point iteration scheme is used where $Q_{n}$ is the variable iteratively being solved for (Equation (C.5.10))
+A fixed-point iteration scheme is used where $Q_{n}$ is the variable iteratively being solved for, as in Equation (C.5.10):
 
 $$\begin{align}
-    Q_{n+1} = \exp \begin{bmatrix} \frac{-(v_{\theta D} - v_{\theta o})}{v_e} \end{bmatrix} \frac{Q_n}{H(T_n)} \tag{}\\\\
+    Q_{n+1} = \exp \begin{bmatrix} \frac{-(v_{\theta D} - v_{\theta o})}{v_e} \end{bmatrix} \frac{Q_n}{H(T_n)} \tag{C.5.10} \\\\
 \end{align}$$
 
-The next estimate of cut-off time $T_{n+1}$ is found using equation (C.5.8)
+The next estimate of cut-off time $T_{n+1}$ is found from $Q_{n+1}$ using Equation (C.5.8):
 
 $$\begin{align}
-    T = \tau_o \\{1 - \exp [-(v_{\theta D} - v_{\theta o})/v_e]\, Q_{n+1}\\} + t_o \tag{}
+    T_{n+1} &= T_{go,n+1} + t_0 \\\\
+    &= \tau_o \\{1 - \exp [-(v_{\theta D} - v_{\theta o})/v_e]\, Q_{n+1}\\} + t_o
 \end{align}$$
 
-The outputs are $T$ and $Q_n$. This module must be the first component to run if other components require $T$ as input.
+The output is $T$. This module must be the first component to run if other components require $T$ as input.
 
 ### 3.3. VThetaSolver
 
-This module calculates the circumeferential velocity $v_\theta$ and change (TODO: compared to what? or when?) in true anomaly $\Delta \nu$ of the vehicle at cut-off time $T$.
+This module calculates the circumferential velocity $v_\theta$ at final time $T$, and the change in true anomaly $\Delta \nu$ of the vehicle from current time $t_o$ to cut-off time $T$.
 
 <img src="../../img/VThetaSolverChart.svg" style="width: 695px;"/>
 
@@ -110,14 +125,12 @@ A Runge-Kutta 4th order integrator is used to integrate the differential equatio
 
 $$\begin{gather}
     \dot v_{\theta}(t) = \vec a_T \cdot \hat \theta - \dot r v_\theta / r \tag{C.6.1} \\\\
-    \dot \nu_{peri} = \frac{\vec v \cdot \hat j}{r_{peri}}
+    \dot \nu_{peri} = \frac{\vec v \cdot \hat j}{r_{peri}} \tag{C.8.4}
 \end{gather}$$
 
 Appendix C.6. outlines the calculation of $\vec a_T$, $\hat \theta$, $\dot r$, and $r$ based on the radial and plane control guidance laws.
 
 The outputs are $v_\theta(T)$ and $\Delta \theta(T)$.
-
-TODO: Will I still include v_theta_loss_T in the final version?
 
 ### 3.4. PitchHeadingQuery
 
@@ -125,9 +138,11 @@ This module calculates commanded pitch and heading of the vehicle using (C.7.1) 
 
 <img src="../../img/PitchHeadingQueryChart.svg" style="width: 695px;"/>
 
+The commanded pitch and heading are calculated as in the following equations: 
+
 $$\begin{align}
     \alpha & = \sin^{-1}\left(\frac{\vec a_T \cdot \hat r}{a_T}\right) \tag{C.7.1}\\\\
-    \psi & = \textrm{atan2}(a_{T_e},\, a_{T_n}) \tag{C.7.2}
+    \psi & = \textrm{atan2}(a_{T}\cdot \hat e,\, a_{T} \cdot \hat n) \tag{C.7.2}
 \end{align}$$
 
 This module uses $\vec a_T$ as calculated in Appendix C.6.
@@ -140,11 +155,15 @@ This module outputs $r_D$, $\dot r_D$ and $v_{\theta D}$ based on desired $r_p$,
 
 ### 3.6. EnginePropertyEstimator
 
-This module uses a least-squares estimator to find the variables $v_e$ and $\dot m$ based on the equation for rocket thrust (C.1.6)
+TODO: Check current behavior and potential last time error before adding more documentation
+
+This module uses a least-squares estimator to find the variables $v_e$ and $\dot m$ based on the equation for rocket thrust (C.1.6):
+
+$$\begin{align}
+    a_T &= v_e/\left(\tau - t\right) \tag{C.1.6} \\\\ 
+    &= \frac{v_e}{\frac{m_o}{\dot m} - t}
+\end{align}$$
 
 <img src="../../img/EnginePropertyEstimatorChart.svg" style="width: 695px;"/>
 
-$$\begin{align}
-    a_T = v_e/\left(\tau - t\right) 
-    = \frac{v_e}{\frac{m_o}{\dot m} - t}
-\end{align}$$
+
