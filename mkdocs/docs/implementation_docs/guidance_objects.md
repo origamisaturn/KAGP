@@ -1,14 +1,35 @@
-## 1. Guidance Objects
+# Guidance and Simulation Objects
 
-Guidance objects use config objects during initialization.
+## Simulation Objects
+
+The base class for all simulator objects is `SingleStageSimulatorBase`. All simulator objects contain a `GuidanceBase` object and a `SimulationLog` object.
+
+There are currently two simulation objects in the program: `IntegratorSim` and `KRPCClient`.
+
+`IntegratorSim` uses a Runge-Kutta 4 integrator. The vehicle is only under the forces of gravity and acceleration. Changes in orientation are instantaneous and determined by the guidance object, there are no turning dynamics.
+
+`KRPCClient` uses the [kRPC](https://github.com/krpc/krpc) library to connect to Kerbal Space Program and send commands to the active vessel. This object only supports locally-hosted kRPC servers. kRPC's internal autopilot is used to control vehicle orientation.
+
+Simulation objects accept guidance objects and config objects during initialization.
+
+## Guidance Objects
 
 Guidance objects are objects that encapsulate guidance algorithms. They act as an interface between guidance implementations and simulation objects. Guidance objects are defined in `guidance_interface.py`.
 
-`GuidanceBase` is the abstract base class that defines the interface for all guidance objects. All guidance objects subclass `GuidanceBase`. 
+`GuidanceBase` is the abstract base class that defines the interface for all guidance objects. All guidance objects are a subclass of `GuidanceBase`. 
 
-The most important member function of `GuidanceBase` is `get_command()`, which returns the commanded thrust, pitch, and heading, given the current state.
+`OpenMDAOGuidanceBase` subclasses `GuidanceBase`, and contains methods and a logging object specific to OpenMDAO models. Since all guidance objects currently in the program are implemented with OpenMDAO, all guidance objects subclass `OpenMDAOGuidanceBase`.
 
-Guidance objects are used when initializing simulation objects.
+The most important member function of `GuidanceBase` is `get_command()`, which returns the commanded thrust, pitch, and heading, given the current state. All guidance objects use the state vector
+
+$$\begin{align}
+    \begin{bmatrix}\; x & y & z & \dot x & \dot y & \dot z & m \;\end{bmatrix}
+\end{align}$$
+
+where $x$, $y$, $z$ are the components of the position vector $\vec r$ in the global inertial frame, and $m$ is mass.
+
+Guidance objects are used when initializing simulation objects. Guidance objects use config objects during initialization.
+
 
 
 ### 1.1. OrbitTargetingAscent

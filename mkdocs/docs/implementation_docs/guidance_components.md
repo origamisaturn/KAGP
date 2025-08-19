@@ -1,40 +1,15 @@
-## Note
-
-NOTE: The documentation refers to true anomaly as $\nu$, but the program uses $\theta$.
-
-## OpenMDAO
-
-This library uses [openMDAO](https://openmdao.org/) to encapsulate components of the guidance algorithm.
-
-The primary use of openMDAO in this program is to organize the ascent guidance into separate blocks, using openMDAO's `ExplicitComponent` class. This exposes the intermediate variables for documentation, and allows testing of separate parts of the algorithm.
-
-The guidance components are then organized into groups, using openMDAO's `Group` class. Any blocks that have inputs/outputs that share the same name are automatically connected. 
-
-The guidance algorithm is implemented as a subclass of `Group`, and 
-
-```python
-import openmdao.api as om
-
-...
-
-class RadialYawGuidance(om.ExplicitComponent)
-""" Solves equation for pitch and yaw scheduling. 
-    ...
-
-""" 
-```
-
-
-Test equation:
-$$
-\begin{align}
-    mx + b = y\label{eq1}
-\end{align}
-$$
-
-You can go to the equation \ref{eq1}.
-
 ## 3. Guidance Components
+
+This library uses [OpenMDAO](https://openmdao.org/) to encapsulate components of the guidance algorithm.
+
+The primary use of OpenMDAO in this program is to organize the ascent guidance into separate blocks, using OpenMDAO's `ExplicitComponent` class. This exposes the intermediate variables for documentation, and allows testing of separate parts of the algorithm.
+
+The guidance components are then organized into groups, using OpenMDAO's `Group` class. Any blocks that have inputs/outputs that share the same name are automatically connected. 
+
+The final guidance algorithm is implemented as a subclass of `Group` before being used in a guidance object.
+
+NOTE: The documentation refers to true anomaly as $\nu$, but the program uses $\theta$ to represent true anomaly.
+
 
 ### 3.1. RadialYawGuidance
 
