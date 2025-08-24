@@ -1,0 +1,26 @@
+# Takeoff from lunar surface along equator to a position with 0 r_dot.
+# Only radial guidance, no yaw.    
+
+spacecraft:
+  specific_impulse: 397
+  # TEST: TWR < 1.0
+  thrust: 800
+  wet_mass: 500
+
+body:
+  gravitational_parameter: 4.9028e+12
+  # for calculating orbital radius from ap and pe
+
+debug_ascent_1:
+  terminal_time: 438
+  radius: 1785.00e+3
+  radial_velocity: 0
+  longitude_of_ascending_node: 0.0
+  inclination: 0.0
+
+integrator:
+  simulation_end_time: 450
+  initial_position: [1737.4E+3, 0.0, 0.0E+3]
+  initial_velocity: [0.0, 0.0, 0.0]
+  outer_loop_interval: 500
+  outer_loop_cutoff: 3

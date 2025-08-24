@@ -1,0 +1,25 @@
+# Takeoff from lunar surface along equator to a circular orbit.
+# Only radial guidance, no yaw.  
+
+spacecraft:
+  specific_impulse: 397
+  thrust: 1638
+  wet_mass: 500
+
+body:
+  gravitational_parameter: 4.9028e+12
+
+orbit_targeting_ascent:
+  apoapsis: 1785.00e+3
+  periapsis: 1785.00e+3
+  longitude_of_ascending_node: 0.0
+  inclination: 0.0
+  argument_of_periapsis: 0.0
+
+integrator:
+  simulation_end_time: 460
+  # TEST: Very small initial radius
+  initial_position: [1737.4, 0.0, 0.0E+3]
+  initial_velocity: [0.0, 0.0, 0.0]
+  outer_loop_interval: 500
+  outer_loop_cutoff: 3

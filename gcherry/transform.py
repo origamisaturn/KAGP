@@ -1,41 +1,7 @@
-import numpy as np
+""" File of transformation functions.
 
-
-def Rx(angle: float):
-    c1 = np.cos(angle)
-    s1 = np.sin(angle)
-    return np.array([[1, 0, 0], 
-                     [0, c1, -s1],
-                     [0, s1, c1]])
-
-def Ry(angle: float):
-    c1 = np.cos(angle)
-    s1 = np.sin(angle)
-    return np.array([[c1, 0, s1], 
-                     [0, 1, 0],
-                     [-s1, 0, c1]])
-
-def Rz(angle: float):
-    c1 = np.cos(angle)
-    s1 = np.sin(angle)
-    return np.array([[c1, -s1, 0], 
-                     [s1, c1, 0],
-                     [0, 0, 1]])
-
-def unit_vector(vec, axis=0):
-    """ Returns unit vector or array.
-    
-    Args:
-        vec: A 1-D vector or 2-D array
-        axis: Axis along which to take vector norm
-    
-    Returns:
-        Unit vector or array of unit vectors.
-        
-    """
-    return vec/np.linalg.norm(vec, axis=axis)
-
-""" Body: Frame fixed to vehicle CoM, rotates with the vehicle. X is 
+Frames used in this file:
+    Body: Frame fixed to vehicle CoM, rotates with the vehicle. X is 
         forward, Y to the right, Z down.
     Topocentric: Frame origin at vehicle CoM, axes direction dependent 
         on global location. X is North, Y is East, Z is toward the global origin.
@@ -52,8 +18,50 @@ def unit_vector(vec, axis=0):
         along the cross of the normal vector of desired orbital plane and X,
         Z points to the local horizon toward the direction of the normal
         vector of the desired orbital plane.
+"""
+import numpy as np
 
+
+def Rx(angle: float):
+    """ Counter-clockwise rotation matrix about the x-axis. """
+    c1 = np.cos(angle)
+    s1 = np.sin(angle)
+    return np.array([[1, 0, 0],
+                     [0, c1, -s1],
+                     [0, s1, c1]])
+
+
+def Ry(angle: float):
+    """ Counter-clockwise rotation matrix about the y-axis. """
+    c1 = np.cos(angle)
+    s1 = np.sin(angle)
+    return np.array([[c1, 0, s1],
+                     [0, 1, 0],
+                     [-s1, 0, c1]])
+
+
+def Rz(angle: float):
+    """ Counter-clockwise rotation matrix about the z-axis. """
+    c1 = np.cos(angle)
+    s1 = np.sin(angle)
+    return np.array([[c1, -s1, 0],
+                     [s1, c1, 0],
+                     [0, 0, 1]])
+
+
+def unit_vector(vec, axis=0):
+    """ Returns unit vector or array.
+    
+    Args:
+        vec: A 1-D vector or 2-D array
+        axis: Axis along which to take vector norm
+    
+    Returns:
+        Unit vector or array of unit vectors.
+        
     """
+    return vec/np.linalg.norm(vec, axis=axis)
+
 
 def perifocal2global_rot(lan, inc, argp):
     """ Rotation from perifocal to global axes. 
@@ -65,12 +73,14 @@ def perifocal2global_rot(lan, inc, argp):
     """
     return Rz(lan)@Rx(inc)@Rz(argp)
 
+
 def global2perifocal_rot(lan, inc, argp):
     """ Rotation from global to perifocal axes.
     See perifocal2global_rot().
     
     """
     return perifocal2global_rot(lan, inc, argp).T
+
 
 def pcf2global_rot(pos_global, lan, inc):
     """ Rotation from plane control frame to global axes. 
@@ -87,12 +97,14 @@ def pcf2global_rot(pos_global, lan, inc):
     z = unit_vector(np.cross(x, y))
     return np.stack((x, y, z), axis=-1)
 
+
 def global2pcf_rot(pos_global, lan, inc):
     """ Rotation from global axes to plane control axes. 
     See pcf2global_rot().
     
     """
     return pcf2global_rot(pos_global, lan, inc).T
+
 
 def get_ra_decl(pos_global):
     """ Gets right ascension and declination of given position. 
@@ -105,6 +117,7 @@ def get_ra_decl(pos_global):
     decl = np.arctan2(z, np.linalg.norm([x, y]))
     return ra, decl
 
+
 def body2topo_rot(roll, pitch, yaw):
     """ Rotation from body to topocentric axes. 
     Args:
@@ -115,12 +128,14 @@ def body2topo_rot(roll, pitch, yaw):
     """
     return Rz(yaw)@Ry(pitch)@Rx(roll)
 
+
 def topo2body_rot(roll, pitch, yaw):
     """ Rotation from topocentric to body axes. 
     See body2topo_rot().
     
     """
     return body2topo_rot(roll, pitch, yaw).T
+
 
 # TODO: Change input to be pos_global instead
 def topo2global_rot(ra, decl):
@@ -136,12 +151,14 @@ def topo2global_rot(ra, decl):
     # latitude negated as positive y rot is downwards
     return Rz(ra)@Ry(-decl)@axes_switch_rot
 
+
 def global2topo_rot(ra, decl):
     """ Rotation from global to topocentric axes. 
     See topo2global_rot().
     
     """
     return topo2global_rot(ra, decl).T
+
 
 def body2global_rot(roll, pitch, yaw, pos_global):
     """ Rotation from body to global axes. 
@@ -155,6 +172,7 @@ def body2global_rot(roll, pitch, yaw, pos_global):
     ra, decl = get_ra_decl(pos_global)
     return topo2global_rot(ra, decl) @ body2topo_rot(roll, pitch, yaw)
 
+
 def global2body_rot(roll, pitch, yaw, pos_global):
     """ Rotation from global to body axes.
     See global2body_rot().
@@ -162,12 +180,14 @@ def global2body_rot(roll, pitch, yaw, pos_global):
     """
     return body2global_rot(roll, pitch, yaw, pos_global).T
 
+
 def global2rcn_rot(pos_global, vel_global):
     """ Rotation from global to Radial-Circumferential-Normal axes.
     See rcn2global_rot().
     
     """
     return rcn2global_rot(pos_global, vel_global).T
+
 
 def rcn2global_rot(pos_global, vel_global):
     """ Rotation from Radial-Circumferential-Normal axes to global axes.
@@ -181,7 +201,7 @@ def rcn2global_rot(pos_global, vel_global):
         2) collinear with pos_global.
 
     """
-    if (not np.linalg.norm(vel_global) < 1e-8 and 
+    if (np.linalg.norm(vel_global) >= 1e-8 and
         not is_parallel(pos_global, vel_global)):
         i = unit_vector(pos_global)
         k = unit_vector(np.cross(pos_global, vel_global))
@@ -190,6 +210,7 @@ def rcn2global_rot(pos_global, vel_global):
     else:
         rot_mat = np.empty((3, 3)) * np.NaN
     return rot_mat
+
 
 def is_parallel(vec1, vec2, tol=1e-12):
     return np.linalg.norm(unit_vector(vec1) - unit_vector(vec2)) < tol

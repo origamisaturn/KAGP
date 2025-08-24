@@ -11,7 +11,7 @@ from gcherry.guidance_components import (
     OrbitTargetingGroup
 )
 from gcherry.transform import global2perifocal_rot
-from gcherry.log_utils import almost_equal 
+from gcherry.log_utils import almost_equal
 
 
 # See test_debug_ascent_1_scenario_1.yaml
@@ -39,6 +39,7 @@ def _set_radial_yaw_guidance_default(prob):
     for key, value in input_dict.items():
         prob[key] = value
 
+
 def _get_radial_guidance_coefficients(prob):
     """ Convenience function for getting RadialYawGuidance() output.
     
@@ -51,11 +52,8 @@ def _get_radial_guidance_coefficients(prob):
           radial acceleration of the spacecraft over time.
     
     """
-    coefficient_list = []
-    coefficient_keys = ['a0', 'a1', 'a2', 'c1_radial', 'c2_radial']
-    for key in coefficient_keys:
-        coefficient_list.append(prob[key])
-    return tuple(coefficient_list)
+    return (prob['a0'], prob['a1'], prob['a2'], prob['c1_radial'], prob['c2_radial'])
+
 
 def _calculate_final_radial_state(a0, a1, a2, c1_radial, c2_radial, Tgo, r0, r_dot_0):
     """ Finds radius and radial rate at end time for given coefficents.
@@ -82,10 +80,12 @@ def _calculate_final_radial_state(a0, a1, a2, c1_radial, c2_radial, Tgo, r0, r_d
 
     return r_T, r_dot_T
 
+
 class RadialYawGuidanceGroup(om.Group):
     def setup(self):
         self.add_subsystem('radial_yaw_guidance', RadialYawGuidance(), promotes=['*'])
-    
+
+
 class TestRadialYawGuidance(unittest.TestCase):
     def setUp(self):
         self.prob = om.Problem(RadialYawGuidanceGroup())
@@ -104,14 +104,13 @@ class TestRadialYawGuidance(unittest.TestCase):
         self.prob.run_model()
         a0, a1, a2, c1_radial, c2_radial = _get_radial_guidance_coefficients(self.prob)
 
-
         # Check radial guidance coefficents have expected final state.
         Tgo = self.prob['T'] - self.prob['sample_t']
         r_dot_0 = 0
 
         r_T_calculated, r_dot_T_calculated = _calculate_final_radial_state(
             a0, a1, a2, c1_radial, c2_radial, Tgo, r0, r_dot_0)
-        
+
         r_T_residual = r_T_calculated - self.prob['target_r_T']
         r_dot_T_residual = r_dot_T_calculated - self.prob['target_r_dot_T']
 
@@ -126,7 +125,7 @@ class TestRadialYawGuidance(unittest.TestCase):
         and r_dot_T.
 
         """
-        # Test mid-flight, compare target state against manually calculated values 
+        # Test mid-flight, compare target state against manually calculated values
         # for r_T and r_dot_T
         start_altitude = 9.0e3
         r0 = 1737.4e3
@@ -140,14 +139,13 @@ class TestRadialYawGuidance(unittest.TestCase):
         self.prob.run_model()
         a0, a1, a2, c1_radial, c2_radial = _get_radial_guidance_coefficients(self.prob)
 
-
         # Check radial guidance coefficents have expected final state.
         Tgo = self.prob['T'] - self.prob['sample_t']
         r_dot_0 = 0
 
         r_T_calculated, r_dot_T_calculated = _calculate_final_radial_state(
             a0, a1, a2, c1_radial, c2_radial, Tgo, r_t, r_dot_0)
-        
+
         r_T_residual = r_T_calculated - self.prob['target_r_T']
         r_dot_T_residual = r_dot_T_calculated - self.prob['target_r_dot_T']
 
@@ -164,7 +162,7 @@ def _set_pitch_query_scenario_1(prob):
         9.21320282887826E-06
     )
     c1_radial, c2_radial = (
-        -0.325367567512005,	
+        -0.325367567512005,
         0.00156271732299607
     )
     c1_yaw, c2_yaw = (0, 0)
@@ -192,6 +190,7 @@ def _set_pitch_query_scenario_1(prob):
     for key, value in input_dict.items():
         prob[key] = value
 
+
 # See test_debug_ascent_1_scenario_2.yaml
 def _set_pitch_query_scenario_2(prob):
     a0, a1, a2 = (
@@ -208,10 +207,10 @@ def _set_pitch_query_scenario_2(prob):
         0.000644824881978622
     )
     # Lunar radius
-    r0 = 1737.4e3
+    # r0 = 1737.4e3
     input_dict = {'query_x': [
-                    1481773.78741417, 
-                    -855502.4950417, 
+                    1481773.78741417,
+                    -855502.4950417,
                     301696.34387852],
                   'query_v': [0, 0, 0],
                   'query_t': 0,
@@ -233,7 +232,7 @@ def _set_pitch_query_scenario_2(prob):
                   'target_r_dot_T': 20.0}
     for key, value in input_dict.items():
         prob[key] = value
-    
+
 
 class PitchHeadingQueryGroup(om.Group):
     def setup(self):
@@ -260,13 +259,13 @@ class TestPitchQuery(unittest.TestCase):
         heading_expected_2 = np.deg2rad(90)
         prob['query_t'] = 100
         prob['query_x'] = [
-            1743371.45973407, 
-            9064.77377033883, 
+            1743371.45973407,
+            9064.77377033883,
             5.5505786640278E-13
         ]
         prob['query_v'] = [
-            108.553696158295, 
-            204.538775905435, 
+            108.553696158295,
+            204.538775905435,
             1.25244257082427E-14
         ]
         prob.run_model()
@@ -309,6 +308,7 @@ class TestPitchQuery(unittest.TestCase):
         self.assertTrue(almost_equal(pitch_calc_2, pitch_expected_2, tol))
         self.assertTrue(almost_equal(heading_calc_2, heading_expected_2))
 
+
 # See test_debug_ascent_1_scenario_1.yaml
 def set_time_to_go_scenario1(prob):
     r0 = 1737.4e3
@@ -324,13 +324,14 @@ def set_time_to_go_scenario1(prob):
                   'm_dot': 0.420729258654369,
                   'm0': 500,
                   'target_v_theta_T': 1549.78024878931}
-    
+
     for key, value in input_dict.items():
         prob[key] = value
 
+
 # See test_debug_ascent_1_scenario_2.yaml
 def set_time_to_go_scenario2(prob):
-    r0 = 1737.4e3
+    # r0 = 1737.4e3
     input_dict = {'sample_x': np.array([
                                 1481773.78741417,
                                 -855502.4950417 ,
@@ -346,9 +347,10 @@ def set_time_to_go_scenario2(prob):
                   'm_dot': 0.420729258654369,
                   'm0': 500,
                   'target_v_theta_T': 1725.02901332511}
-    
+
     for key, value in input_dict.items():
         prob[key] = value
+
 
 # Testing TimeToGo with the other components as it is
 # intended to iteratively find the terminal time T.
@@ -361,14 +363,16 @@ class TimeToGoGroup(om.Group):
         self.nonlinear_solver.options['maxiter'] = 100
         self.nonlinear_solver.options['atol'] = 1e-3
 
+
 class TestTimeToGo(unittest.TestCase):
+    def setUp(self):
+        self.prob = om.Problem(TimeToGoGroup())
+        self.prob.setup()
+
     # See set_time_to_go_scenario1()
     def test_case_1(self):
         # self.prob.model.time_to_go.is_first_entry = True
         T_expected = 438
-
-        self.prob = om.Problem(TimeToGoGroup())
-        self.prob.setup()
         set_time_to_go_scenario1(self.prob)
 
         # Test from stationary start
@@ -396,9 +400,6 @@ class TestTimeToGo(unittest.TestCase):
     # See set_time_to_go_scenario2()
     def test_case_2(self):
         T_expected = 470
-
-        self.prob = om.Problem(TimeToGoGroup())
-        self.prob.setup()
         set_time_to_go_scenario2(self.prob)
 
         # Test from stationary start
@@ -437,7 +438,7 @@ class TestTimeToGo(unittest.TestCase):
         # v_theta_solver becomes more accurate nearing the end of the
         # trajectory
         tol = 4e-3
-        self.assertTrue(almost_equal(T_residual, 0, tol))   
+        self.assertTrue(almost_equal(T_residual, 0, tol))
 
 
 # See test_debug_ascent_1_scenario_1.yaml
@@ -471,6 +472,7 @@ def set_v_theta_solver_scenario_1(prob):
     for key, value in input_dict.items():
         prob[key] = value
 
+
 # See test_debug_ascent_1_scenario_2.yaml
 def set_v_theta_solver_scenario_2(prob):
     a0, a1, a2 = (
@@ -500,7 +502,7 @@ def set_v_theta_solver_scenario_2(prob):
                   'v_e': 3893.24005,
                   'm_dot': 0.420729258654369,
                   'm0': 500}   
-    
+
     for key, value in input_dict.items():
         prob[key] = value
 
@@ -509,13 +511,15 @@ class VThetaSolverGroup(om.Group):
     def setup(self):
         self.add_subsystem('v_theta_solver', VThetaSolver(), promotes=['*'])
 
-class TestVThetaSolver(unittest.TestCase):   
-    # See set_v_theta_solver_scenario_1() 
-    def test_case_1(self):
-        v_theta_expected = 1549.78024878931
 
+class TestVThetaSolver(unittest.TestCase):
+    def setUp(self):
         self.prob = om.Problem(VThetaSolverGroup())
         self.prob.setup()
+
+    # See set_v_theta_solver_scenario_1()
+    def test_case_1(self):
+        v_theta_expected = 1549.78024878931
         set_v_theta_solver_scenario_1(self.prob)
 
         # Test from stationary start.
@@ -547,9 +551,6 @@ class TestVThetaSolver(unittest.TestCase):
     # See set_v_theta_solver_scenario_2()
     def test_case_2(self):
         v_theta_expected = 1725.02901332511
-
-        self.prob = om.Problem(VThetaSolverGroup())
-        self.prob.setup()
         set_v_theta_solver_scenario_2(self.prob)
 
         # Test from stationary start
@@ -561,7 +562,7 @@ class TestVThetaSolver(unittest.TestCase):
 
         # Test from mid-flight
         # Due to the approximation that the normal of the target orbital
-        # plane is orthogonal to the radial vector, it is expected that 
+        # plane is orthogonal to the radial vector, it is expected that
         # midway thru the trajectory the estimation will be less accurate.
         # Unsure why it is so accurate at start of trajectory.
         self.prob['sample_x'] = np.array([1490528.02411845,
@@ -594,7 +595,7 @@ class TestVThetaSolver(unittest.TestCase):
         self.assertTrue(almost_equal(v_theta_residual, 0, tol))
 
 
-# See test_debug_ascent_1_scenario_1.yaml  
+# See test_debug_ascent_1_scenario_1.yaml
 def _set_outer_loop_component_scenario1(prob):
     r0 = 1737.4e3
     input_dict = {'sample_x': np.array([r0, 0, 0]),
@@ -609,13 +610,14 @@ def _set_outer_loop_component_scenario1(prob):
                   'm_dot': 0.420729258654369,
                   'm0': 500,
                   'target_v_theta_T': 1549.78024878931}
-    
+
     for key, value in input_dict.items():
         prob[key] = value
 
+
 # See test_debug_ascent_1_scenario_2.yaml
 def _set_outer_loop_component_scenario2(prob):
-    r0 = 1737.4e3
+    # r0 = 1737.4e3
     input_dict = {'sample_x': np.array([
                                 1481773.78741417,
                                 -855502.4950417 ,
@@ -631,18 +633,19 @@ def _set_outer_loop_component_scenario2(prob):
                   'm_dot': 0.420729258654369,
                   'm0': 500,
                   'target_v_theta_T': 1725.02901332511}
-    
+
     for key, value in input_dict.items():
         prob[key] = value
 
 
 class TestOuterLoopComponent(unittest.TestCase):
+    def setUp(self):
+        self.prob = om.Problem(OuterLoopGroup())
+        self.prob.setup()
+
     # See _set_outer_loop_component_scenario1()
     def test_case_1(self):
         T_expected = 438
-
-        self.prob = om.Problem(OuterLoopGroup())
-        self.prob.setup()
         _set_outer_loop_component_scenario1(self.prob)
 
         # Test from stationary start
@@ -670,9 +673,6 @@ class TestOuterLoopComponent(unittest.TestCase):
         # See set_time_to_go_scenario2()
     def test_case_2(self):
         T_expected = 470
-
-        self.prob = om.Problem(OuterLoopGroup())
-        self.prob.setup()
         _set_outer_loop_component_scenario2(self.prob)
 
         # Test from stationary start
@@ -711,7 +711,7 @@ class TestOuterLoopComponent(unittest.TestCase):
         # v_theta_solver becomes more accurate nearing the end of the
         # trajectory
         tol = 4e-3
-        self.assertTrue(almost_equal(T_residual, 0, tol))   
+        self.assertTrue(almost_equal(T_residual, 0, tol))
 
 
 # See test_orbit_targeting_ascent_scenario_1.yaml
@@ -729,9 +729,10 @@ def set_orbit_targeting_scenario_1(prob):
                   'v_e': 3893.24005,
                   'm_dot': 0.420729258654369,
                   'm0': 500}
-    
+
     for key, value in input_dict.items():
         prob[key] = value
+
 
 # See test_orbit_targeting_ascent_scenario_2.yaml
 def set_orbit_targeting_scenario_2(prob):
@@ -747,11 +748,16 @@ def set_orbit_targeting_scenario_2(prob):
                   'v_e': 3893.24005,
                   'm_dot': 0.420729258654369,
                   'm0': 500}
-    
+
     for key, value in input_dict.items():
         prob[key] = value
 
+
 class TestOrbitTargetingGroup(unittest.TestCase):
+    def setUp(self):
+        self.prob = om.Problem(OrbitTargetingGroup())
+        self.prob.setup()
+
     def test_case_1(self):
         tol = 1e-6
         T_expected = 457.074553487163
@@ -759,9 +765,6 @@ class TestOrbitTargetingGroup(unittest.TestCase):
         r_T_expected = 1785000
         r_dot_T_expected = 0
         theta_T_expected = 0.179561310932418
-
-        self.prob = om.Problem(OrbitTargetingGroup())
-        self.prob.setup()
         set_orbit_targeting_scenario_1(self.prob)
 
         # Test from stationary start
@@ -777,13 +780,13 @@ class TestOrbitTargetingGroup(unittest.TestCase):
         self.assertTrue(almost_equal(
             r_dot_T_calc - r_dot_T_expected, 0, tol))
         sample_x_perifocal = global2perifocal_rot(
-            self.prob['target_lan'][0], 
-            self.prob['target_inc'][0], 
+            self.prob['target_lan'][0],
+            self.prob['target_inc'][0],
             self.prob['target_argp'][0])@self.prob['sample_x']
         theta_0 = np.arctan2(sample_x_perifocal[1], sample_x_perifocal[0])
         self.assertTrue(almost_equal(
             delta_theta_T_calc + theta_0, theta_T_expected, tol))
-        
+
         # Test from mid-flight
         self.prob['sample_x'] = np.array([1742947.08065715,
                                           9735.20110926976,
@@ -807,10 +810,10 @@ class TestOrbitTargetingGroup(unittest.TestCase):
             self.prob['target_lan'][0],
             self.prob['target_inc'][0],
             self.prob['target_argp'][0])@self.prob['sample_x']
-        theta_0 = np.arctan2(sample_x_perifocal[1], sample_x_perifocal[0])        
+        theta_0 = np.arctan2(sample_x_perifocal[1], sample_x_perifocal[0])
         self.assertTrue(almost_equal(
             delta_theta_T_calc + theta_0, theta_T_expected, tol))
-        
+
     def test_case_2(self):
         tol = 1e-2
         T_expected = 458.3449
@@ -836,19 +839,19 @@ class TestOrbitTargetingGroup(unittest.TestCase):
         self.assertTrue(almost_equal(
             r_dot_T_calc - r_dot_T_expected, 0, tol))
         sample_x_perifocal = global2perifocal_rot(
-            self.prob['target_lan'][0], 
-            self.prob['target_inc'][0], 
+            self.prob['target_lan'][0],
+            self.prob['target_inc'][0],
             self.prob['target_argp'][0])@self.prob['sample_x']
         theta_0 = np.arctan2(sample_x_perifocal[1], sample_x_perifocal[0])
         self.assertTrue(almost_equal(
             delta_theta_T_calc + theta_0, theta_T_expected, tol))
-        
+
         # Test from mid-flight
-        self.prob['sample_x'] = np.array([1490529.31431708,	
-                                          -849577.233607873,	
+        self.prob['sample_x'] = np.array([1490529.31431708,
+                                          -849577.233607873,
                                           305913.205755655])
-        self.prob['sample_v'] = np.array([178.316880048864,	
-                                          141.260380569038,	
+        self.prob['sample_v'] = np.array([178.316880048864,
+                                          141.260380569038,
                                           78.3699021132937])
         self.prob['sample_t'] = 100
         self.prob.run_model()
@@ -866,9 +869,10 @@ class TestOrbitTargetingGroup(unittest.TestCase):
             self.prob['target_lan'][0],
             self.prob['target_inc'][0],
             self.prob['target_argp'][0])@self.prob['sample_x']
-        theta_0 = np.arctan2(sample_x_perifocal[1], sample_x_perifocal[0])        
+        theta_0 = np.arctan2(sample_x_perifocal[1], sample_x_perifocal[0])
         self.assertTrue(almost_equal(
             delta_theta_T_calc + theta_0, theta_T_expected, tol))
+
 
 if __name__ == '__main__':
     unittest.main()

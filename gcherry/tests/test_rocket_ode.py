@@ -8,8 +8,6 @@ from gcherry.sim_interface import rocket_ode
 
 class TestRocketOde(unittest.TestCase):
     def setUp(self):
-        Isp = 300
-        F_thrust_max = 100 #
         self.lunar_radius = 1740e3   # m
         self.lunar_mu = 4.9048695e12 # m^3/s^2
         self.mu_earth = 3.986004418e14
@@ -50,7 +48,7 @@ class TestRocketOde(unittest.TestCase):
 
         guidance_func = lambda t, state: (0, 0, 0)
         ode_func = lambda t, y: rocket_ode(t, y, self.mu_earth, 1, 1, guidance_func)
-        t_res, y_res = rk4(ode_func, tspan, state, max_step)
+        _, y_res = rk4(ode_func, tspan, state, max_step)
 
         print(np.linalg.norm(y_res[0:2, -1]) - r0)
         r_mag = np.linalg.norm(y_res[0:3, -1])
@@ -71,12 +69,12 @@ class TestRocketOde(unittest.TestCase):
         mass = 1
 
         state = np.concatenate((pos, vel, [mass]))
-        tspan = [0, 2744.4777483128987] 
+        tspan = [0, 2744.4777483128987]
 
         max_step = 10
         guidance_func = lambda t, state: (0, 0, 0)
         ode_func = lambda t, state: rocket_ode(t, state, self.mu_earth, 1, 1, guidance_func)
-        t_res, y_res = rk4(ode_func, tspan, state, max_step)
+        _, y_res = rk4(ode_func, tspan, state, max_step)
 
         print("orbit res")
         r_mag = np.linalg.norm(y_res[0:2, -1])
@@ -84,12 +82,11 @@ class TestRocketOde(unittest.TestCase):
         self.assertTrue(abs(r_mag - rp)<1e-2)
 
     def test_funct__rocket_ode__3(self):
-        # Tests a fall from 10m along with thrusting horizontally, checks 
+        # Tests a fall from 10m along with thrusting horizontally, checks
         # mass state before and after stopping thrusting
         # Warning, the thrust is not continuous at t=1 so rk4 needs a small
         # step size to handle it accurately.
         dv = 10
-        T = 1
         m0 = 100
         ve = 2350
         F_thrust = 997.8753551745272
@@ -116,11 +113,11 @@ class TestRocketOde(unittest.TestCase):
         mass = [m0]
         state = pos + vel + mass
         ode_func = lambda t, state: rocket_ode(t, state, self.mu_earth, Isp, F_thrust, guidance_func)
-        t_res0, y_res0 = rk4(ode_func, tspan0, state, max_step)
-        t_res1, y_res1 = rk4(ode_func, tspan1, state, max_step)
+        _, y_res0 = rk4(ode_func, tspan0, state, max_step)
+        _, y_res1 = rk4(ode_func, tspan1, state, max_step)
 
-        mf0 = 99.66029775142995 
-        mf1 = 99.57537218928744 
+        mf0 = 99.66029775142995
+        mf1 = 99.57537218928744
 
         mf0_res0 = y_res0[6, -1]
         mf1_res1 = y_res1[6, -1]
@@ -128,7 +125,7 @@ class TestRocketOde(unittest.TestCase):
         # Calculated mass checks
         self.assertTrue(abs(mf0_res0 - mf0) < 1e-3)
         self.assertTrue(abs(mf1_res1 - mf1) < 1e-3)
-        
+
         v = y_res1[4, -1]
         r_mag = np.linalg.norm(y_res1[0:3, -1])
 
@@ -152,7 +149,6 @@ class TestRocketOde(unittest.TestCase):
         Isp = ve/g0
         r0 = 6375.416e3
 
-        T = 3
         x0 = 6375417.159500072
         v0 = -0.7086221494046185
         xT = r0
@@ -166,8 +162,7 @@ class TestRocketOde(unittest.TestCase):
         max_step = 0.1
         tspan = [0, 3]
         ode_func = lambda t, state: rocket_ode(t, state, self.mu_earth, Isp, F_thrust, guidance_func)
-        t_res, y_res = rk4(ode_func, tspan, state, max_step)
-        # sample_res = solve_ivp(ode_func, tspan, state, method='RK45')
+        _, y_res = rk4(ode_func, tspan, state, max_step)
 
         # Check against final radius and final velocity magnitudes
         res_r = y_res[0:3, -1]
@@ -181,8 +176,6 @@ class TestRocketOde(unittest.TestCase):
         print("final", y_res[:, -1])
         print("rmag: {}".format(res_r_mag))
 
-    def test_funct__rocket_ode__5(self):
-        ...
 
 
 if __name__ == '__main__':

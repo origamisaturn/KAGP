@@ -1,52 +1,76 @@
-import yaml
 import pickle as pkl
-from enum import Enum
-from pydantic import (
-    BaseModel, conlist, PositiveFloat, NonNegativeFloat, model_validator)
 from typing import Optional
 from typing_extensions import Self
 from pathlib import Path
+from pydantic import (
+    BaseModel, ValidationInfo,
+    conlist, model_validator, field_validator,
+    PositiveFloat, NonNegativeFloat)
+import yaml
 import numpy as np
 
 
-class GuidanceName(Enum):
-    DEFAULT = "default"
-
 class SpacecraftConfig(BaseModel):
     """ Spacecraft parameters for a single stage. """
-    specific_impulse: PositiveFloat
-    thrust: PositiveFloat
-    wet_mass: PositiveFloat
+    specific_impulse: PositiveFloat # s
+    thrust: PositiveFloat # N
+    wet_mass: PositiveFloat # kg
+
 
 class CelestialBodyConfig(BaseModel):
-    gravitational_parameter: PositiveFloat
+    gravitational_parameter: PositiveFloat # m^3/s^2
+
 
 class OrbitTargetingAscentConfig(BaseModel):
-    apoapsis: PositiveFloat
-    periapsis: PositiveFloat
-    longitude_of_ascending_node: NonNegativeFloat
-    inclination: NonNegativeFloat
-    argument_of_periapsis: NonNegativeFloat
+    apoapsis: PositiveFloat # m
+    periapsis: PositiveFloat # m
+    longitude_of_ascending_node: NonNegativeFloat # rad. [0, 2pi]
+    inclination: NonNegativeFloat # rad. [0, pi]
+    argument_of_periapsis: NonNegativeFloat # rad. [0, 2pi]
 
     enable_estimator: bool = True
-    estimator_ignore_time: NonNegativeFloat = 5
-    estimator_output_time: NonNegativeFloat = 50
+    estimator_ignore_time: NonNegativeFloat = 5 # s
+    estimator_output_time: NonNegativeFloat = 50 # s
+
+    @field_validator('longitude_of_ascending_node', 'inclination',
+                     'argument_of_periapsis')
+    @classmethod
+    def convert_deg_to_rad(cls, val: float, info: ValidationInfo) -> NonNegativeFloat:
+        if isinstance(val, float):
+            if info.field_name == 'inclination':
+                assert val >= 0 and val <= 180, f'{info.field_name} must be between 0 and 180 degrees.'
+                val = np.deg2rad(val%180)
+            else:
+                val = np.deg2rad(val%360)
+        return val
 
 
 class DebugAscent1Config(BaseModel):
-    terminal_time: PositiveFloat
-    radius: PositiveFloat
-    radial_velocity: float
-    longitude_of_ascending_node: NonNegativeFloat
-    inclination: NonNegativeFloat
+    terminal_time: PositiveFloat # s
+    radius: PositiveFloat # m
+    radial_velocity: float # m/s
+    longitude_of_ascending_node: NonNegativeFloat # rad. [0, 2pi]
+    inclination: NonNegativeFloat # rad. [0, pi]
+
+    @field_validator('longitude_of_ascending_node', 'inclination')
+    @classmethod
+    def convert_deg_to_rad(cls, val: float, info: ValidationInfo) -> NonNegativeFloat:
+        if isinstance(val, float):
+            if info.field_name == 'inclination':
+                assert val >= 0 and val <= 180, f'{info.field_name} must be between 0 and 180 degrees.'
+                val = np.deg2rad(val%180)
+            else:
+                val = np.deg2rad(val%360)
+        return val
+
 
 class IntegratorConfig(BaseModel):
-    simulation_end_time: PositiveFloat
-    initial_position: conlist(float, min_length=3, max_length=3)
-    initial_velocity: conlist(float, min_length=3, max_length=3)
+    simulation_end_time: PositiveFloat # s
+    initial_position: conlist(float, min_length=3, max_length=3) # [m, m, m]
+    initial_velocity: conlist(float, min_length=3, max_length=3) # [m/s, m/s, m/s]
     # TODO: Check what happens when outer_loop_interval is zero.
-    outer_loop_interval: NonNegativeFloat = 7
-    outer_loop_cutoff: NonNegativeFloat = 10
+    outer_loop_interval: NonNegativeFloat = 7 # s
+    outer_loop_cutoff: NonNegativeFloat = 10 # s
 
     @model_validator(mode='after')
     def check_init_position_nonzero(self) -> Self:
@@ -55,12 +79,14 @@ class IntegratorConfig(BaseModel):
             raise ValueError("initial_position is zero.")
         return self
 
+
 class KRPCClientConfig(BaseModel):
     name: str = "gcherry"
-    outer_loop_interval: PositiveFloat = 7
-    outer_loop_cutoff: PositiveFloat = 10
-    post_guidance_measurement: NonNegativeFloat = 5
-    main_engine_cutoff_shift: float = -0.061
+    outer_loop_interval: PositiveFloat = 7 # s
+    outer_loop_cutoff: PositiveFloat = 10 # s
+    post_guidance_measurement: NonNegativeFloat = 5 # s
+    main_engine_cutoff_shift: float = -0.061 # s
+
 
 class Config(BaseModel):
     """ Main settings class.
@@ -80,10 +106,10 @@ class Config(BaseModel):
 
     @model_validator(mode='after')
     def check_one_simulation_defined(self) -> Self:
-        sim_attr = ['integrator', 'krpc_client']        
+        sim_attr = ['integrator', 'krpc_client']
         _assert_single_config_attr(self, sim_attr, "simulation")
         return self
-        
+
     @model_validator(mode='after')
     def check_one_guidance_defined(self) -> Self:
         guidance_attr = ['orbit_targeting_ascent', 'debug_ascent_1']
@@ -93,6 +119,7 @@ class Config(BaseModel):
     def save_pkl(self, save_path):
         with open(save_path, 'wb') as fh:
             pkl.dump(self, fh)
+
 
 def _assert_single_config_attr(config_model, attr_list, attr_kind):
     defined_sum = 0
@@ -104,6 +131,7 @@ def _assert_single_config_attr(config_model, attr_list, attr_kind):
     elif defined_sum != 1:
         raise ValueError("More than one {} attribute defined.".format(attr_kind))
 
+
 def load_config(filenames):
     """ Creates a Config object based on input files. 
     
@@ -113,10 +141,8 @@ def load_config(filenames):
 
     Returns:
         A Config object.
-    
     """
     input_data = {}
-    # Add functions for checking yaml input and if filename exists
     for filename in filenames:
         p = Path(filename)
         if not (p.exists() and p.is_file()):
