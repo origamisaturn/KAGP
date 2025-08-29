@@ -132,6 +132,8 @@ This module outputs $r_D$, $\dot r_D$ and $v_{\theta D}$ based on desired $r_p$,
 
 TODO: Check current behavior and potential last time error before adding more documentation
 
+TODO: Add note about how either $m_0$ or $\dot m$ can determine the desired engine properties (what is that property, thrust?)
+
 This module uses a least-squares estimator to find the variables $v_e$ and $\dot m$ based on the equation for rocket thrust (C.1.6):
 
 $$\begin{align}
