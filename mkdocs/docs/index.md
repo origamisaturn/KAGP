@@ -1,17 +1,31 @@
-# Welcome to MkDocs
+# PLACEHOLDER
 
-For full documentation visit [mkdocs.org](https://www.mkdocs.org).
+PLACEHOLDER is an ascent guidance program for single-stage spacecraft in Kerbal Space Program.
 
-## Commands
+## Install
 
-* `mkdocs new [dir-name]` - Create a new project.
-* `mkdocs serve` - Start the live-reloading docs server.
-* `mkdocs build` - Build the documentation site.
-* `mkdocs -h` - Print help message and exit.
+Installation is currently only local. Requires Python 3.10 due to reliance on poliastro. Recommend using a venv or Conda. Required packages:
+...
+Require installing in editable mode, I think? for the documentation?
 
-## Project layout
+heavy on dependencies
 
-    mkdocs.yml    # The configuration file.
-    docs/
-        index.md  # The documentation homepage.
-        ...       # Other markdown pages, images and other files.
+## Install
+
+
+
+## Use
+
+Only works for single-stage rockets
+
+Requires kRPC server running locally
+
+Invoke the program with the `gcherry` command. 
+`python -m pip 
+
+## F
+
+
+
+
+## References

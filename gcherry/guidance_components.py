@@ -49,6 +49,7 @@ class EnginePropertyEstimator(om.ExplicitComponent):
         super().__init__(*args, **kwargs)
 
     def minimize_function(self, x):
+        """ Objective error function for estimating engine properties. """
         v_e = x[0]
         tau = x[1]
         t = np.array(self.time_history)

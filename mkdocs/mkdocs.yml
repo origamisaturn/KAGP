@@ -8,7 +8,6 @@ nav:
     - 'implementation_docs/todo.md'
     - inputs.md
   - Implementation: 
-    - Misc: 'implementation_docs/misc.md'
     - Guidance Objects: 'implementation_docs/guidance_objects.md'
     - Guidance Components: 'implementation_docs/guidance_components.md'
   - Appendices:

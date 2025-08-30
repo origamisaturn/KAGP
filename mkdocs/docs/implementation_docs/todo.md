@@ -23,3 +23,5 @@ v_{\theta T} \\\\
 - make a note how $\theta$ replaces $\nu$ in the program
 - Do I chose $r_T$ or $r_{T,\textrm{tgt}}$?
 - Really should consider whether or not to use $r_T$ or $r(T)$, this is confusing.
+- add a way of viewing documentation offline
+- add a way of invoking without installation
