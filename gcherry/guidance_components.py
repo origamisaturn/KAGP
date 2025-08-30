@@ -82,6 +82,7 @@ class EnginePropertyEstimator(om.ExplicitComponent):
             return
         elif t != self._last_time:
             t = inputs['estimator_sample_t'][0]
+            self._last_time = t
             sample_thrust_acc = inputs['sample_thrust_acceleration'][0]
             m0 = inputs['m0'][0]
 
