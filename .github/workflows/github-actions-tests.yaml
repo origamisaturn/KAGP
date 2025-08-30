@@ -25,7 +25,7 @@ jobs:
       - name: Run tests
         run: |
           pip install pytest coverage coverage-badge
-          coverage run -m pytest gcherry/tests
+          coverage run -m pytest kagp/tests
           coverage-badge -fo coverage.svg
       - name: Verify badge changed
         uses: tj-actions/verify-changed-files@v16
