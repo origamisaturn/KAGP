@@ -2,9 +2,9 @@ from abc import ABC, abstractmethod
 from typing_extensions import override
 import openmdao.api as om
 
-import gcherry.config as cfg
-from gcherry.log import GuidanceLog
-from gcherry.guidance_components import (
+import kagp.config as cfg
+from kagp.log import GuidanceLog
+from kagp.guidance_components import (
     OrbitGuidanceComponent,
     PitchHeadingQuery,
     VThetaSolverOuterLoop,

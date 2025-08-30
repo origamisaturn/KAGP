@@ -3,7 +3,7 @@ import math
 import openmdao.api as om
 from scipy.optimize import least_squares
 
-from gcherry.transform import (
+from kagp.transform import (
     unit_vector,
     global2perifocal_rot,
     perifocal2global_rot,
@@ -11,8 +11,8 @@ from gcherry.transform import (
     pcf2global_rot,
     get_ra_decl
 )
-from gcherry.rk4 import rk4
-from gcherry.log_utils import almost_equal
+from kagp.rk4 import rk4
+from kagp.log_utils import almost_equal
 
 
 class InfeasibleError(Exception):

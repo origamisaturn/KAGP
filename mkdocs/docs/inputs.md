@@ -65,7 +65,7 @@ Connects to kRPC server for guidance.
 
 Key                         | Units | Required  | Default   | Type      | Description
 ---                         | ---   | ---       | ---       | ---       | ---
-name                        | N/A   | No        | `gcherry` | `string`  | Name of this program when displayed on kRPC server.
+name                        | N/A   | No        | `kagp` | `string`  | Name of this program when displayed on kRPC server.
 outer_loop_interval         | s     | No        | 7         | `float`   | Time between successive outer loop calculations.
 outer_loop_cutoff           | s     | No        | 10        | `float`   | Outer loop calculation will be disabled outer_loop_cutoff seconds before the estimated terminal time. An outer loop iteration calculated less than 10 seconds before terminal time may fail to converge.
 post_guidance_measurement   | s     | No        | 5         | `float`   | Client will continue to run and log data until post_guidance_measurement seconds after guidance termination.

@@ -20,7 +20,7 @@ Only works for single-stage rockets
 
 Requires kRPC server running locally
 
-Invoke the program with the `gcherry` command. 
+Invoke the program with the `kagp` command. 
 `python -m pip 
 
 ## F

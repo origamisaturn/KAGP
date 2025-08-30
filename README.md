@@ -1,4 +1,4 @@
-![test-workflow](https://github.com/origamisaturn/gcherry/actions/workflows/github-actions-tests.yaml/badge.svg)
+![test-workflow](https://github.com/origamisaturn/kagp/actions/workflows/github-actions-tests.yaml/badge.svg)
 ![pytest-coverage](coverage.svg)
 
 # Single Stage Guidance
@@ -6,12 +6,12 @@ Implementation of single stage ascent "E-guidance" as described in [REFERENCE], 
 Running in KSP requires the KRPC modification [LINK] to be installed in KSP.
 [config inputs](inputs.md)
 ## Example
-Invoke the program with the `gcherry` command. There are two subcommands:
-`gcherry run` and `gcherry plotlog`.
+Invoke the program with the `kagp` command. There are two subcommands:
+`kagp run` and `kagp plotlog`.
 
-`gcherry run` takes the path to yaml file(s) as input, and runs the guidance algorithm on either an internal integrator, or on a KSP spacecraft through a KRPC server. An invocation using the lunar ascent example is:
+`kagp run` takes the path to yaml file(s) as input, and runs the guidance algorithm on either an internal integrator, or on a KSP spacecraft through a KRPC server. An invocation using the lunar ascent example is:
 ```
-    gcherry run examples/ascent_lem.yaml examples/integrator_lunar_ascent.yaml 
+    kagp run examples/ascent_lem.yaml examples/integrator_lunar_ascent.yaml 
 ```
 Separating the spacecraft config file from the guidance config file, as is done in the example, allows swapping out different ascent vehicles for the same guidance path.
 
@@ -19,10 +19,10 @@ Config files are loaded and placed into a dictionary in the order they were prov
 
 Log files for each run are saved in ./logs. Each run is stored in a folder named with a timestamp.
 
-`gcherry plotlog` plots the logs, given the folder they are stored in.
+`kagp plotlog` plots the logs, given the folder they are stored in.
 
 ```
-    gcherry plotlog logs/071524_010721
+    kagp plotlog logs/071524_010721
 ```
 It plots:
 - state

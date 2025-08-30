@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 # version back to 3.10.x.
 from poliastro.core.elements import rv2coe
 
-from gcherry.transform import (
+from kagp.transform import (
     rcn2global_rot,
     global2topo_rot,
     get_ra_decl,

@@ -81,7 +81,7 @@ class IntegratorConfig(BaseModel):
 
 
 class KRPCClientConfig(BaseModel):
-    name: str = "gcherry"
+    name: str = "KAGP"
     outer_loop_interval: PositiveFloat = 7 # s
     outer_loop_cutoff: PositiveFloat = 10 # s
     post_guidance_measurement: NonNegativeFloat = 5 # s

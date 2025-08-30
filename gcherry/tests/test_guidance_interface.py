@@ -1,14 +1,14 @@
 import unittest
 import numpy as np
 
-import gcherry.config as cfg
-from gcherry.guidance_interface import generate_guidance_obj
+import kagp.config as cfg
+from kagp.guidance_interface import generate_guidance_obj
 
 
 class TestGuidance(unittest.TestCase):
     # Very basic test to make sure heading output makes sense.
     def test_obj__OrbitTargetingAscent__heading_1(self):
-        config_files = ["gcherry/tests/input/test_orbit_targeting_ascent_scenario_1.yaml"]
+        config_files = ["kagp/tests/input/test_orbit_targeting_ascent_scenario_1.yaml"]
         config = cfg.load_config(config_files)
 
         x0 = np.array([1737.4E+3, 0.0, 0.0E+3])

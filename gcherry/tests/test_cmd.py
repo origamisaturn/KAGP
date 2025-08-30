@@ -1,13 +1,13 @@
 import unittest
 import os.path
 
-from gcherry.main_script import _run_cmd
-from gcherry.guidance_components import InfeasibleError
+from kagp.main_script import _run_cmd
+from kagp.guidance_components import InfeasibleError
 
 
 class SubstituteArgumentParser():
     """ Class to emulate the object output by parser.parse_args() in 
-    gcherry.main_script.gcherry_cmd(). Mainly for inputting config 
+    kagp.main_script.kagp_cmd(). Mainly for inputting config 
     files. 
     """
     config_paths: list[str]
@@ -35,7 +35,7 @@ def checkBadInput(config_path):
     return expectedException
 
 
-class TestGCherryCmd(unittest.TestCase):
+class TestKAGPCommand(unittest.TestCase):
     """ Tests _run_cmd() function. 
     """
     def setUp(self):

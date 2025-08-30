@@ -1,14 +1,14 @@
 import unittest
 import numpy as np
 
-from gcherry.transform import (
+from kagp.transform import (
     body2global_rot, global2body_rot,
     perifocal2global_rot, global2perifocal_rot,
     pcf2global_rot, global2pcf_rot,
     rcn2global_rot, global2rcn_rot,
     Rx
 )
-from gcherry.log_utils import almost_equal
+from kagp.log_utils import almost_equal
 
 
 class TestRot(unittest.TestCase):

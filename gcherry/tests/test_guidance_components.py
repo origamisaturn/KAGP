@@ -2,7 +2,7 @@ import unittest
 import numpy as np
 import openmdao.api as om
 
-from gcherry.guidance_components import (
+from kagp.guidance_components import (
     RadialYawGuidance,
     PitchHeadingQuery,
     TimeToGo,
@@ -10,8 +10,8 @@ from gcherry.guidance_components import (
     OuterLoopGroup,
     OrbitTargetingGroup
 )
-from gcherry.transform import global2perifocal_rot
-from gcherry.log_utils import almost_equal
+from kagp.transform import global2perifocal_rot
+from kagp.log_utils import almost_equal
 
 
 # See test_debug_ascent_1_scenario_1.yaml

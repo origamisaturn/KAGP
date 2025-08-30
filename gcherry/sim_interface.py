@@ -3,11 +3,11 @@ from typing_extensions import override
 import numpy as np
 import krpc
 
-import gcherry.config as cfg
-from gcherry.guidance_interface import GuidanceBase
-from gcherry.log import SimulationLog
-from gcherry.transform import body2global_rot
-from gcherry.rk4 import rk4_step
+import kagp.config as cfg
+from kagp.guidance_interface import GuidanceBase
+from kagp.log import SimulationLog
+from kagp.transform import body2global_rot
+from kagp.rk4 import rk4_step
 
 
 class SimulatorBase(ABC):

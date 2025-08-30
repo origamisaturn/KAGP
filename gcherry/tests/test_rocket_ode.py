@@ -2,8 +2,8 @@ import unittest
 import math
 import numpy as np
 
-from gcherry.rk4 import rk4
-from gcherry.sim_interface import rocket_ode
+from kagp.rk4 import rk4
+from kagp.sim_interface import rocket_ode
 
 
 class TestRocketOde(unittest.TestCase):

@@ -9,17 +9,17 @@ import time
 import pickle as pkl
 import matplotlib.pyplot as plt
 
-import gcherry.config as cfg
-from gcherry.guidance_components import InfeasibleError
-from gcherry.guidance_interface import generate_guidance_obj, GuidanceBase
-from gcherry.sim_interface import generate_sim_obj
-from gcherry.log import LogAnalyzer
+import kagp.config as cfg
+from kagp.guidance_components import InfeasibleError
+from kagp.guidance_interface import generate_guidance_obj, GuidanceBase
+from kagp.sim_interface import generate_sim_obj
+from kagp.log import LogAnalyzer
 
 
-def gcherry_cmd():
+def kagp_cmd():
     """ Main command for performing ascent guidance. """
     parser = argparse.ArgumentParser(
-        prog='gcherry',
+        prog='kagp',
         description='A single-stage iterative ascent guidance program')
     subparsers = parser.add_subparsers()
 
@@ -105,4 +105,4 @@ def _plot_log(log_obj: LogAnalyzer):
 
 
 if __name__ == '__main__':
-    gcherry_cmd()
+    kagp_cmd()

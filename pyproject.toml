@@ -3,16 +3,16 @@ requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "gcherry"
+name = "kagp"
 version = "0.0.1"
 dynamic = ["dependencies"]
 
 [project.scripts]
-gcherry = "gcherry.main_script:gcherry_cmd"
+kagp = "kagp.main_script:kagp_cmd"
 
 [tool.setuptools.dynamic]
 dependencies = {file = ["requirements.txt"]}
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["gcherry"]
+include = ["kagp"]

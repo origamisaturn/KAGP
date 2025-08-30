@@ -1,6 +1,6 @@
 import numpy as np
 
-from gcherry.rk4 import rk4, within_tol
+from kagp.rk4 import rk4, within_tol
 
 # Following tests based on Ordinary Differential Equations, Tenenbaum and
 # Pollard, p.656 - 658

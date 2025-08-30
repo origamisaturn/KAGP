@@ -2,7 +2,7 @@ import unittest
 import math
 import numpy as np
 
-from gcherry.log_utils import (
+from kagp.log_utils import (
     get_radius,
     get_r_hat,
     get_theta_hat,

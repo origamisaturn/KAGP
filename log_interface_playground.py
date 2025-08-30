@@ -1,10 +1,10 @@
 import unittest
 import pickle as pkl
-from gcherry.log import LogAnalyzer
+from kagp.log import LogAnalyzer
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from gcherry.main_script import _load_obj
+from kagp.main_script import _load_obj
 
 if __name__ == '__main__':
     dirpath = "logs/071424_180957"

@@ -1,16 +1,16 @@
 import unittest
 import numpy as np
 
-import gcherry.config as cfg
-from gcherry.guidance_interface import generate_guidance_obj
-from gcherry.sim_interface import generate_sim_obj
-from gcherry.log import LogAnalyzer
-from gcherry.log_utils import almost_equal
+import kagp.config as cfg
+from kagp.guidance_interface import generate_guidance_obj
+from kagp.sim_interface import generate_sim_obj
+from kagp.log import LogAnalyzer
+from kagp.log_utils import almost_equal
 
 
 class TestIntegratorSim(unittest.TestCase):
     def test_case_1(self):
-        filenames = ["gcherry/tests/input/test_debug_ascent_1_scenario_1.yaml"]
+        filenames = ["kagp/tests/input/test_debug_ascent_1_scenario_1.yaml"]
         config = cfg.load_config(filenames)
         guidance_obj = generate_guidance_obj(config)
         sim_obj = generate_sim_obj(config, guidance_obj)
@@ -27,7 +27,7 @@ class TestIntegratorSim(unittest.TestCase):
         self.assertTrue(almost_equal(ferr['target_inc_err'], 0.0, 1e-6))
 
     def test_case_2(self):
-        filenames = ["gcherry/tests/input/test_debug_ascent_1_scenario_2.yaml"]
+        filenames = ["kagp/tests/input/test_debug_ascent_1_scenario_2.yaml"]
         config = cfg.load_config(filenames)
         guidance_obj = generate_guidance_obj(config)
         sim_obj = generate_sim_obj(config, guidance_obj)
@@ -44,7 +44,7 @@ class TestIntegratorSim(unittest.TestCase):
         self.assertTrue(almost_equal(ferr['target_inc_err'], 0.0, 1e-6))
 
     def test_case_3(self):
-        filenames = ["gcherry/tests/input/test_orbit_targeting_ascent_scenario_1.yaml"]
+        filenames = ["kagp/tests/input/test_orbit_targeting_ascent_scenario_1.yaml"]
         config = cfg.load_config(filenames)
         guidance_obj = generate_guidance_obj(config)
         sim_obj = generate_sim_obj(config, guidance_obj)
@@ -63,7 +63,7 @@ class TestIntegratorSim(unittest.TestCase):
         # argp is degenerate when inc is 0.0
 
     def test_case_4(self):
-        filenames = ["gcherry/tests/input/test_orbit_targeting_ascent_scenario_2.yaml"]
+        filenames = ["kagp/tests/input/test_orbit_targeting_ascent_scenario_2.yaml"]
         config = cfg.load_config(filenames)
         guidance_obj = generate_guidance_obj(config)
         sim_obj = generate_sim_obj(config, guidance_obj)
@@ -83,7 +83,7 @@ class TestIntegratorSim(unittest.TestCase):
 
     def test_case_5(self):
         """ Apollo LM Ascent Stage sample trajectory. """
-        filenames = ["gcherry/tests/input/test_apollo_ascent_example.yaml"]
+        filenames = ["kagp/tests/input/test_apollo_ascent_example.yaml"]
         config = cfg.load_config(filenames)
         guidance_obj = generate_guidance_obj(config)
         sim_obj = generate_sim_obj(config, guidance_obj)

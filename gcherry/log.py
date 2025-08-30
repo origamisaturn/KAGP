@@ -7,9 +7,9 @@ import matplotlib
 import pandas as pd
 import numpy as np
 
-from gcherry.config import Config
-import gcherry.log_utils as log_utils
-from gcherry.log_utils import plot_vars, interp_table
+from kagp.config import Config
+import kagp.log_utils as log_utils
+from kagp.log_utils import plot_vars, interp_table
 
 
 # TODO: Write documentation for this
