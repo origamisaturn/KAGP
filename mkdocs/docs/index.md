@@ -1,6 +1,6 @@
-# PLACEHOLDER
+# KAGP - Kerbal Ascent Guidance Procedure
 
-PLACEHOLDER is an ascent guidance program for single-stage spacecraft in Kerbal Space Program.
+KAGP is an ascent autopilot for single-stage spacecraft in Kerbal Space Program.
 
 ## Install
 
