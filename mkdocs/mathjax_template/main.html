@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block libs %}
+    {{ super() }}
+    <script>
+    MathJax = {
+        tex: {
+            inlineMath: {'[+]': [['$', '$']]}
+        }
+    };
+    </script>
+    <script defer id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js"></script>
+{% endblock %}
