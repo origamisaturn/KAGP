@@ -7,7 +7,7 @@ Docs:
 - TODO: WEBSITE
 - FOLDER MARKDOWN
 
-This ascent program is based on the paper by G. Cherry referenced below. A derivation of the version of the ascent algorithm used for this program is provided in the online documentation (ADD HYPERLINK).
+This ascent program is based on the paper by G. Cherry referenced below. A derivation of the version of the ascent algorithm used for this program is provided in the online documentation (TODO: ADD HYPERLINK).
 
 ## Requirements
 
@@ -26,7 +26,7 @@ pip install ./kagp
 
 ## Use
 
-Requires kRPC server with default settings running locally. Have the spacecraft ready for launch before using this program. This program is only for single-stage ascents, it cannot perform staging.
+KAGP requires a kRPC server with default settings running locally. The spacecraft must be ready for launch when the program is invoked. This program is only for single-stage ascents, it cannot perform staging.
 
 Invoke the program with the `kagp` command. There are two subcommands:
 
@@ -37,7 +37,7 @@ Invoke the program with the `kagp` command. There are two subcommands:
 
 Multiple config files can be provided. Config files are loaded in the order they are provided to the `kagp run` command. If a key is defined in multiple config files, the key in the latest config file takes priority.
 
-Log files for a completed autopilot run are saved in `logs/`, in the current working directory (TODO: IMPLEMENT THIS SO IT IS THE CASE). Each run is stored in a folder named with a timestamp.
+Log files for a completed autopilot run are saved in `logs/`, in the current working directory (TODO: IMPLEMENT THIS SO THAT IT IS THE CASE). Each run is stored in a folder named with a timestamp.
 
 `kagp plotlog` accepts the path to a log folder, and plots the logs.
 

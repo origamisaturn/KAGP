@@ -75,35 +75,35 @@ $$\begin{align}
 It is desirable to solve for $\ddot q(t)$. The constants $c_1$ and $c_2$ are unknown. $p_1(t)$ and $p_2(t)$ are given, and the following boundary conditions are provided
 
 $$\begin{align}
-    q_0 & = q(t_0) \tag{C.2.5}\\\\
-    \dot q_0 & = \dot q(t_0) \tag{C.2.6}\\\\
+    q_o & = q(t_o) \tag{C.2.5}\\\\
+    \dot q_o & = \dot q(t_o) \tag{C.2.6}\\\\
     q_D & = q(T) \tag{C.2.7}\\\\
     \dot q_D & = \dot q(T) \tag{C.2.8} 
 \end{align}$$
 
-where $t_0$ is the current time. Integrating equation (C.2.1) yields the equations of constraint 
+where $t_o$ is the current time. Integrating equation (C.2.1) yields the equations of constraint 
 
 $$\begin{align}
-    \dot q_D - \dot q_0 
-        & = \int_{t_0}^T \ddot q(t) dt \tag{C.2.9} \\\\
-        &= c_1 \int_{t_0}^T p_1(t) dt + c_2 \int_{t_0}^T p_2(t) dt \nonumber \\\\
-    q_D - q_0 - \dot q(t_0)T_{go}
-        & = \int_{t_0}^T \int_{t_0}^t \ddot q(s) ds \; dt \tag{C.2.10} \\\\
-        &= c_1 \int_{t_0}^T \int_{t_0}^t p_1(s) ds \; dt
-            + c_2 \int_{t_0}^T \int_{t_0}^t p_2(s) ds \; dt \nonumber
+    \dot q_D - \dot q_o 
+        & = \int_{t_o}^T \ddot q(t) dt \tag{C.2.9} \\\\
+        &= c_1 \int_{t_o}^T p_1(t) dt + c_2 \int_{t_o}^T p_2(t) dt \nonumber \\\\
+    q_D - q_o - \dot q(t_o)T_{go}
+        & = \int_{t_o}^T \int_{t_o}^t \ddot q(s) ds \; dt \tag{C.2.10} \\\\
+        &= c_1 \int_{t_o}^T \int_{t_o}^t p_1(s) ds \; dt
+            + c_2 \int_{t_o}^T \int_{t_o}^t p_2(s) ds \; dt \nonumber
 \end{align}$$
 
 where
 
 $$\begin{align}
-    T_{go} = T - t_0 \tag{C.2.11}\\\\
+    T_{go} = T - t_o \tag{C.2.11}\\\\
 \end{align}$$
 
 The equations of constraint can be represented by the matrix equation
 
 $$\begin{align}
     \begin{bmatrix}
-    \dot q_D - \dot q_0\\\\
+    \dot q_D - \dot q_o\\\\
     q_D - (q_o + \dot q_o T_{go})
     \end{bmatrix}
     = F 
@@ -174,8 +174,8 @@ $$\begin{align}
 Given the following boundary conditions
 
 $$\begin{align}
-    r_0 & = r(t_0) \tag{C.3.9}\\\\
-    \dot r_0 & = \dot r(t_0) \tag{C.3.10}\\\\
+    r_o & = r(t_o) \tag{C.3.9}\\\\
+    \dot r_o & = \dot r(t_o) \tag{C.3.10}\\\\
     r_D & = r(T) \tag{C.3.11}\\\\
     \dot r_D & = \dot r(T) \tag{C.3.12} 
 \end{align}$$
@@ -221,8 +221,8 @@ $$\begin{align}
 Given the following boundary conditions
 
 $$\begin{align}
-    y_0 & = y(t_0) \tag{C.4.7}\\\\
-    \dot y_0 & = \dot y(t_0) \tag{C.4.8}\\\\
+    y_o & = y(t_o) \tag{C.4.7}\\\\
+    \dot y_o & = \dot y(t_o) \tag{C.4.8}\\\\
     y_D & = y(T) \tag{C.4.9}\\\\
     \dot y_D & = \dot y(T) \tag{C.4.10} 
 \end{align}$$
@@ -261,7 +261,7 @@ $$\begin{align}
 where
 
 $$\begin{align}
-    \Delta v_{\theta L} = \int_{t_0}^T a_L(t) dt \tag{C.5.5}\\\\
+    \Delta v_{\theta L} = \int_{t_o}^T a_L(t) dt \tag{C.5.5}\\\\
 \end{align}$$
 
 The time-to-go $T_{go}$ is calculated using an iterative method based on varying guesses of $\Delta v_{\theta L}$. The formula for the next estimate of $\Delta v_{\theta L}$ based on the previous one is 
@@ -271,8 +271,8 @@ $$\begin{align}
 \end{align}$$
 
 where $v_{\theta D}$ is the target $v_\theta$ at time $T$, and $v_{\theta F, n}$ is the estimated $v_\theta(T)$ for thrust loss estimate $v_{\theta L, n}$. The following figure illustrates the procedure for calculating $\Delta v_{\theta L}$.
-<figure>
-    <img width="600px" src="../../img/iterative_T_go_algo.svg">
+<figure class="centered-fig">
+    <img alt="Figure showing iterative method of calulating Delta-v-theta-loss." width="600px" height="460px" src="../../img/iterative_T_go_algo.svg">
 </figure>
 
 
@@ -317,7 +317,7 @@ $$\begin{align}
 
 $\dot v_{\theta}(t)$ will be numerically integrated from the initial condition $v_{\theta o}$ to find $v_{\theta}(T)$. Therefore, $v_\theta$ is assumed given. Expressions for $\vec a_T$, $\hat \theta$, $\dot r$, and $r$ must be found.
 
-#### $\dot r(t)$ and $r(t)$
+#### Finding $\dot r(t)$ and $r(t)$
 
 Both $\ddot r(t)$ and $\ddot y(t)$ are assumed given by the guidance laws.
 $\dot r(t)$ and $r(t)$ are both found by integrating the radial guidance law (C.3.6) and using $t$ and $T$ as the boundary conditions
@@ -352,7 +352,7 @@ $$\begin{align}
     \end{bmatrix} \tag{C.6.3}
 \end{align}$$
 
-#### $\hat \theta(t)$
+#### Finding $\hat \theta(t)$
 
 The circumferential unit vector $\hat \theta$ is given by 
 
@@ -372,8 +372,8 @@ $$\begin{align}
 \end{align}$$
 
 where $\dot y$ is given by (C.6.3). Define $\beta (t)$ as the angle of the vehicle's position with respect to the target orbital plane.
-<figure style="display: flex; align-items: center; justify-content: center;">
-    <img src="../../img/B6_beta_angle.svg" width=303px height=338px/>
+<figure class="centered-fig">
+    <img alt="Figure of y(t) in Plane Control Frame axes." src="../../img/B6_beta_angle.svg" width=303px height=338px/>
 </figure>
 
 Based on the figure, $\hat y$ can be written in PCF axes as
@@ -399,7 +399,7 @@ $$\begin{align}
 
 Equation (C.6.7) can now be solved to yield $\hat \theta(t)$.
 
-#### $\vec a_T(t)$
+#### Finding $\vec a_T(t)$
 
 $a_T$ is given by 
 $$\begin{align}

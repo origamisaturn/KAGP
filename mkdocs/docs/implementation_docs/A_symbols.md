@@ -31,6 +31,7 @@
 | $T_{go}$ | time-to-go, $s$ |
 | $v$ | velocity, $m/s$ |
 | $v_e$ | exhaust velocity, $m/s$ |
+| $y$ | distance perpendicular to target orbital plane, $m$ |
 
 | Subscript | Description |
 | ---   | ---   |

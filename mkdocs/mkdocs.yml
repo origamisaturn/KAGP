@@ -3,10 +3,10 @@ theme:
   name: readthedocs
   custom_dir: mathjax_template/
 nav:
-  - GCherry:
+  - KAGP:
     - index.md
-    - 'implementation_docs/todo.md'
     - inputs.md
+    - 'implementation_docs/todo.md'
   - Implementation: 
     - Guidance Objects: 'implementation_docs/guidance_objects.md'
     - Guidance Components: 'implementation_docs/guidance_components.md'
@@ -14,6 +14,8 @@ nav:
     - A. Reference Symbols: 'implementation_docs/A_symbols.md'
     - B. Reference Frames: 'implementation_docs/B_reference_frames.md'
     - C. Guidance Derivation: 'implementation_docs/C_abbv_derivation.md'
+extra_css:
+  - css/fig.css
 markdown_extensions:
   - toc:
       permalink: True

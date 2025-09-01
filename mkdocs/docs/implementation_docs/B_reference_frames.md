@@ -16,7 +16,7 @@ $$\begin{align}
 
 ### Perifocal
 
-Origin is at center of celestial body. $\hat p$ points to orbit periapsis, $\hat q$ on orbital plane at $\nu = \frac{\pi}{2}$, and $\hat w = \hat p \times \hat q$.
+Origin is at center of celestial body. $\hat p$ points to orbit periapsis, $\hat q$ on orbital plane at true anomaly $\nu = \frac{\pi}{2}$, and $\hat w = \hat p \times \hat q$.
 
 The following defines the perifocal axes in terms of the global frame.
 
