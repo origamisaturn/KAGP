@@ -1,4 +1,4 @@
-site_name: PLACEHOLDER PLACEHOLDER
+site_name: KAGP Docs
 theme:
   name: readthedocs
   custom_dir: mathjax_template/

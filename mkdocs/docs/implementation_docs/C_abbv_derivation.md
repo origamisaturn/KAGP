@@ -66,7 +66,7 @@ $$\begin{align}
     p_2(t)&=(T-t)a_T(t) \tag{C.2.3} 
 \end{align}$$
 
-where $T$ is the time of guidance termination. The thrust acceleration $a_T$ is written in the following form to accomodate a Taylor expansion
+where $T$ is the time of guidance termination. The thrust acceleration $a_T$ is written in the following form to accommodate a Taylor expansion
 
 $$\begin{align}
     a_T(t) = a_0 + a_1(T-t) + a_2(T-t)^2 + ... + a_n(T-t)^n \tag{C.2.4}\\\\
@@ -272,7 +272,7 @@ $$\begin{align}
 
 where $v_{\theta D}$ is the target $v_\theta$ at time $T$, and $v_{\theta F, n}$ is the estimated $v_\theta(T)$ for thrust loss estimate $v_{\theta L, n}$. The following figure illustrates the procedure for calculating $\Delta v_{\theta L}$.
 <figure class="centered-fig">
-    <img alt="Figure showing iterative method of calulating Delta-v-theta-loss." width="600px" height="460px" src="../../img/iterative_T_go_algo.svg">
+    <img alt="Figure showing iterative method of calculating Delta-v-theta-loss." width="600px" height="460px" src="../../img/iterative_T_go_algo.svg">
 </figure>
 
 

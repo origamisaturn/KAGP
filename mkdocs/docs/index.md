@@ -5,17 +5,17 @@ KAGP is an ascent autopilot for single-stage spacecraft in Kerbal Space Program 
 Docs:
 
 - TODO: WEBSITE
-- FOLDER MARKDOWN
+- TODO: FOLDER MARKDOWN
 
 This ascent program is based on the paper by G. Cherry referenced below. A derivation of the version of the ascent algorithm used for this program is provided in the online documentation (TODO: ADD HYPERLINK).
 
 ## Requirements
 
-This program is intended to be used in KSP Realism Overhaul + Real Solar System. It may fail to converge in stock KSP due to larger thrust-to-weight ratios.
+This program is intended to be used in KSP Realism Overhaul + Real Solar System. The algorithm may fail to converge in stock KSP due to the larger thrust-to-weight ratios.
 
 Requires Python 3.10 due to reliance on poliastro. Recommend performing installation in a venv or using a Conda environment.
 
-Requires kRPC to be installed for KSP.
+Requires [kRPC](https://github.com/krpc/krpc) to be installed for KSP.
 
 ## Install
 
@@ -37,7 +37,7 @@ Invoke the program with the `kagp` command. There are two subcommands:
 
 Multiple config files can be provided. Config files are loaded in the order they are provided to the `kagp run` command. If a key is defined in multiple config files, the key in the latest config file takes priority.
 
-Log files for a completed autopilot run are saved in `logs/`, in the current working directory (TODO: IMPLEMENT THIS SO THAT IT IS THE CASE). Each run is stored in a folder named with a timestamp.
+Log files for a completed autopilot run are saved in `logs/`, in the current working directory. Each run is stored in a folder named with a timestamp.
 
 `kagp plotlog` accepts the path to a log folder, and plots the logs.
 

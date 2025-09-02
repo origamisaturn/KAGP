@@ -30,7 +30,7 @@ Key                         | Units | Required  | Default   | Type      | Descri
 apoapsis                    | m     | Yes       |           | `float`   | Target apoapsis radius, from major body center.
 periapsis                   | m     | Yes       |           | `float`   | Target periapsis radius, from major body center.
 longitude_of_ascending_node | deg   | Yes       |           | `float`   |
-inclination                 | deg   | Yes       |           | `float`   | Range of [-90, 90). #TODO: THIS IS WRONG, SHOULD BE 0 TO 180
+inclination                 | deg   | Yes       |           | `float`   | Range of [0, 180).
 argument_of_periapsis       | deg   | Yes       |           | `float`   |
 enable_estimator            | N/A   | No        | `True`    | `bool`    | Enables engine property estimator. Calculates exhaust velocity and mass flow.
 estimator_ignore_time       | s     | No        | 5.0       | `float`   | Will cause engine estimator to ignore thrust measurements until estimator_ignore_time seconds after guidance start. To avoid engine measurements during engine ramp-up.

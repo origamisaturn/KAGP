@@ -52,7 +52,7 @@ This uses the `OrbitTargetingAscentGroup` model. The connections of the componen
     </figcaption>
 </figure>
 
-Note that the `OrbitGuidanceComponent` has a boolean input `"run_outer_loop"` (not labeled on the figure): When it is set to true, new values for $T$ and the $c_1,\, c_2$ constants are calculated when `.compute()` is called for this model. Otherwise, only the `EnginePropertyEstimator` and `PitchHeadingQuery` components are run. 
+Note that the `OrbitGuidanceComponent` has a Boolean input `"run_outer_loop"` (not labeled on the figure): When it is set to true, new values for $T$ and the $c_1,\, c_2$ constants are calculated when `.compute()` is called for this model. Otherwise, only the `EnginePropertyEstimator` and `PitchHeadingQuery` components are run. 
 
 The rate of outer loop calls is set in the simulation object which contains this guidance object. Ideally, the outer loop would be run once every few seconds.
 
@@ -75,4 +75,4 @@ The purpose of this guidance object is to test a subset of the components used i
     </figcaption>
 </figure>
 
-Like the `OrbitTargetingAscent` guidance object, `VThetaSolverOuterLoop` has a boolean `run_outer_loop` input which determines if it will run and compute new values for $c_1,\, c_2$ when `.compute()` is called for this model.
+Like the `OrbitTargetingAscent` guidance object, `VThetaSolverOuterLoop` has a Boolean `run_outer_loop` input which determines if it will run and compute new values for $c_1,\, c_2$ when `.compute()` is called for this model.
