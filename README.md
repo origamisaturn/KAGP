@@ -1,51 +1,48 @@
 ![test-workflow](https://github.com/origamisaturn/kagp/actions/workflows/github-actions-tests.yaml/badge.svg)
 ![pytest-coverage](coverage.svg)
 
-# Single Stage Guidance
-Implementation of single stage ascent "E-guidance" as described in [REFERENCE], with ability to control spacecraft in Kerbal Space Program (KSP).
-Running in KSP requires the KRPC modification [LINK] to be installed in KSP.
-[config inputs](inputs.md)
-## Example
+# KAGP - Kerbal Ascent Guidance Procedure
+
+KAGP is an ascent autopilot for single-stage spacecraft in Kerbal Space Program (KSP).
+
+Docs:
+
+- [krpc.github.io](https://krpc.github.io/)
+
+This ascent program is based on the paper by G. Cherry referenced below. A derivation of the version of the ascent algorithm used for this program is provided in the [docs](https://krpc.github.io/implementation_docs/C_abbv_derivation.md).
+
+## Requirements
+
+This program is intended to be used in KSP Realism Overhaul + Real Solar System. The algorithm may fail to converge in stock KSP due to the larger thrust-to-weight ratios.
+
+Requires Python 3.10 due to reliance on poliastro. Recommend performing installation in a venv or using a Conda environment.
+
+Requires [kRPC](https://github.com/krpc/krpc) to be installed for KSP.
+
+## Install
+
+Download the KAGP source files, then use `pip` in a Python 3.10 environment to install the project. For example, with source files placed in folder `kagp`, and the current working directory being one level above, the installation command is:
+```python
+pip install ./kagp
+```
+
+## Use
+
+KAGP requires a kRPC server with default settings running locally. The spacecraft must be ready for launch when the program is invoked. This program is only for single-stage ascents, it cannot perform staging.
+
 Invoke the program with the `kagp` command. There are two subcommands:
-`kagp run` and `kagp plotlog`.
 
-`kagp run` takes the path to yaml file(s) as input, and runs the guidance algorithm on either an internal integrator, or on a KSP spacecraft through a KRPC server. An invocation using the lunar ascent example is:
-```
-    kagp run examples/ascent_lem.yaml examples/integrator_lunar_ascent.yaml 
-```
-Separating the spacecraft config file from the guidance config file, as is done in the example, allows swapping out different ascent vehicles for the same guidance path.
+- `kagp run`
+- `kagp plotlog`
 
-Config files are loaded and placed into a dictionary in the order they were provided to the command. If a key has already been provided by a preceeding config file when the next config file is loaded, the preceeding key is overwritten.
+`kagp run` accepts a [configuration file](https://krpc.github.io/inputs.md) and runs the ascent autopilot. See `examples/` for example config files.
 
-Log files for each run are saved in ./logs. Each run is stored in a folder named with a timestamp.
+Multiple config files can be provided. Config files are loaded in the order they are provided to the `kagp run` command. If a key is defined in multiple config files, the key in the latest config file takes priority.
 
-`kagp plotlog` plots the logs, given the folder they are stored in.
+Log files for a completed autopilot run are saved in `logs/`, in the current working directory. Each run is stored in a folder named with a timestamp.
 
-```
-    kagp plotlog logs/071524_010721
-```
-It plots:
-- state
-- guidance inputs
-- guidance outputs
-- values derived from state
-- values derived from guidance and state
-- guidance error values
-- final state error values
+`kagp plotlog` accepts the path to a log folder, and plots the logs.
 
-## Info
-Implements ascent vehicle guidance
-Mostly follows the book, implements yaw guidance and pitch guidance
-less concern with computing power while attempting to follow the spirit
-of the book. 
-the vtheta solver is custom, uses RK4 instead of taylor series since it
-would have been too complicated for little gain.
-modified to have orbit targeting and estimation of engine parameters
+## References
 
-The file specification for input can be found here:
-examples are in this folder
-
-see transform.py for frames used.
-
-## Demo
-A demo of the guidance in action can be found here:
+G. W. Cherry, "A General, Explicit, Optimizing Guidance Law for Rocket-Propelled Spaceflight," in <i>Astrodynamics Guidance and Control Conference, August 24-26, 1964, Los Angeles, CA, USA</i> [Online]. Available: ARC, https://arc.aiaa.org/doi/10.2514/6.1964-638
