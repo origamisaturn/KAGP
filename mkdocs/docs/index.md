@@ -2,10 +2,6 @@
 
 KAGP is an ascent autopilot for single-stage spacecraft in Kerbal Space Program (KSP).
 
-Docs:
-
-- [krpc.github.io](krpc.github.io)
-
 This ascent program is based on the paper by G. Cherry referenced below. A derivation of the version of the ascent algorithm used for this program is provided in the [docs](implementation_docs/C_abbv_derivation.md).
 
 ## Requirements
@@ -19,7 +15,7 @@ Requires [kRPC](https://github.com/krpc/krpc) to be installed for KSP.
 ## Install
 
 Download the KAGP source files, then use `pip` in a Python 3.10 environment to install the project. For example, with source files placed in folder `kagp`, and the current working directory being one level above, the installation command is:
-```python
+```
 pip install ./kagp
 ```
 
@@ -32,13 +28,24 @@ Invoke the program with the `kagp` command. There are two subcommands:
 - `kagp run`
 - `kagp plotlog`
 
-`kagp run` accepts a [configuration file](inputs.md) and runs the ascent autopilot. See `examples/` for example config files.
+`kagp run` accepts a [configuration file](inputs.md) and runs the ascent autopilot. See `examples/` for example config files. An example invocation for ascent guidance with the internal integrator is
+```
+kagp run examples/ascent_lem.yaml examples/integrator_lunar_ascent.yaml
+```
 
 Multiple config files can be provided. Config files are loaded in the order they are provided to the `kagp run` command. If a key is defined in multiple config files, the key in the latest config file takes priority.
 
 Log files for a completed autopilot run are saved in `logs/`, in the current working directory. Each run is stored in a folder named with a timestamp.
 
 `kagp plotlog` accepts the path to a log folder, and plots the logs.
+
+## Test
+
+To test KAGP, simply run pytest in the project directory:
+```
+pip install pytest
+pytest
+```
 
 ## References
 
