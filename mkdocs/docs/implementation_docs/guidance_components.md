@@ -8,14 +8,16 @@ The guidance components are then organized into groups, using OpenMDAO's `Group`
 
 The final guidance algorithm is implemented as a subclass of `Group` before being used in a guidance object.
 
-NOTE: The documentation refers to true anomaly as $\nu$, but the program uses $\theta$ to represent true anomaly.
+Some components output variables used for debugging. These outputs are not shown in the diagrams below.
+
+NOTE: The documentation refers to true anomaly as $\nu$, but the code uses "theta" to represent true anomaly.
 
 
 ### 3.1. RadialYawGuidance
 
 This module calculates the $c_1$ and $c_2$ constants for the radial guidance law (C.3.6) and the plane control guidance law (C.4.4).
 
-<img src="../../img/RadialYawGuidanceChart.svg" style="width: 695px;"/>
+<img alt="Chart of inputs and outputs for the 'Radial-Yaw-Guidance' component." src="../../img/RadialYawGuidanceChart.svg" width=695px height=200px style="width: 695px;"/>
 
 Vehicle thrust acceleration $a_T(t)$ is written as a second-order Taylor series of $a_T=v_e/(\tau-t)$ about terminal time $T$
 
@@ -73,7 +75,7 @@ This module outputs $c_{1, \textrm{radial}}$, $c_{2, \textrm{radial}}$, $c_{1, \
 
 This module iteratively estimates cut-off time $T$ when connected to the `RadialYawGuidance` and `VThetaSolver` modules. 
 
-<img src="../../img/TimeToGoChart.svg" style="width: 695px;"/>
+<img alt="Chart of inputs and outputs for the 'Time-To-Go' component." src="../../img/TimeToGoChart.svg" width=695px height=200px style="width: 695px;"/>
 
 A fixed-point iteration scheme is used where $Q_{n}$ is the variable iteratively being solved for, as in Equation (C.5.10):
 
@@ -84,7 +86,7 @@ $$\begin{align}
 The next estimate of cut-off time $T_{n+1}$ is found from $Q_{n+1}$ using Equation (C.5.8):
 
 $$\begin{align}
-    T_{n+1} &= T_{go,n+1} + t_0 \\\\
+    T_{n+1} &= T_{go,n+1} + t_o \\\\
     &= \tau_o \\{1 - \exp [-(v_{\theta D} - v_{\theta o})/v_e]\, Q_{n+1}\\} + t_o
 \end{align}$$
 
@@ -94,7 +96,7 @@ The output is $T$. This module must be the first component to run if other compo
 
 This module calculates the circumferential velocity $v_\theta$ at final time $T$, and the change in true anomaly $\Delta \nu$ of the vehicle from current time $t_o$ to cut-off time $T$.
 
-<img src="../../img/VThetaSolverChart.svg" style="width: 695px;"/>
+<img alt="Chart of inputs and outputs for the 'V-Theta-Solver' component." src="../../img/VThetaSolverChart.svg" width=695px height=245px style="width: 695px;"/>
 
 A Runge-Kutta 4th order integrator is used to integrate the differential equations (C.6.1) and (C.8.4)
 
@@ -111,7 +113,7 @@ The outputs are $v_\theta(T)$ and $\Delta \theta(T)$.
 
 This module calculates commanded pitch and heading of the vehicle using (C.7.1) and (C.7.2)
 
-<img src="../../img/PitchHeadingQueryChart.svg" style="width: 695px;"/>
+<img alt="Chart of inputs and outputs for the 'Pitch-Heading-Query' component." src="../../img/PitchHeadingQueryChart.svg" width=695px height=245px style="width: 695px;"/>
 
 The commanded pitch and heading are calculated as in the following equations: 
 
@@ -126,13 +128,13 @@ This module uses $\vec a_T$ as calculated in Appendix C.6.
 
 This module outputs $r_D$, $\dot r_D$ and $v_{\theta D}$ based on desired $r_p$, $r_a$, and $\omega$. The method of calculation is outlined in Appendix C.9.
 
-<img src="../../img/OrbitTargetingChart.svg" style="width: 695px;"/>
+<img alt="Chart of inputs and outputs for the 'Orbit-Targeting' component."  src="../../img/OrbitTargetingChart.svg" width=695px height=192px style="width: 695px;"/>
 
 ### 3.6. EnginePropertyEstimator
 
-TODO: Check current behavior and potential last time error before adding more documentation
+This module determines $v_e$ and $\dot m$ of the engine based on measurements of the acceleration from thrust.
 
-TODO: Add note about how either $m_0$ or $\dot m$ can determine the desired engine properties (what is that property, thrust?)
+<img alt="Chart of inputs and outputs for the 'Engine-Property-Estimator' component."  src="../../img/EnginePropertyEstimatorChart.svg" width=695px height=165px style="width: 695px;"/>
 
 This module uses a least-squares estimator to find the variables $v_e$ and $\dot m$ based on the equation for rocket thrust (C.1.6):
 
@@ -141,6 +143,4 @@ $$\begin{align}
     &= \frac{v_e}{\frac{m_o}{\dot m} - t}
 \end{align}$$
 
-<img src="../../img/EnginePropertyEstimatorChart.svg" style="width: 695px;"/>
-
-
+Internally, the module estimates $v_e$ and $\tau$. $\dot m$ is then calculated from $\tau = m_o/\dot m$, with the user providing $m_o$.

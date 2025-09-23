@@ -312,7 +312,7 @@ class KRPCClient(SingleStageSimulatorBase):
         self._vessel.auto_pilot.target_pitch_and_heading(90, 90)
         self._vessel.auto_pilot.target_roll = 0
         self._vessel.auto_pilot.engage()
-        self._vessel.control.throttle = 1
+        # self._vessel.control.throttle = 1
 
         init_time = self._conn.space_center.ut
         # guidance must start at time 0

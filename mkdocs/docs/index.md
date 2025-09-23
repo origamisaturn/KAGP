@@ -1,31 +1,52 @@
-# PLACEHOLDER
+# KAGP - Kerbal Ascent Guidance Procedure
 
-PLACEHOLDER is an ascent guidance program for single-stage spacecraft in Kerbal Space Program.
+KAGP is an ascent autopilot for single-stage spacecraft in Kerbal Space Program (KSP).
+
+This ascent program is based on the paper by G. Cherry referenced below. A derivation of the version of the ascent algorithm used for this program is provided in the [docs](implementation_docs/C_abbv_derivation.md).
+
+## Requirements
+
+This program is intended to be used in KSP Realism Overhaul + Real Solar System. The algorithm may fail to converge in stock KSP due to the larger thrust-to-weight ratios.
+
+Requires Python 3.10 due to reliance on poliastro. Recommend performing installation in a venv or using a Conda environment.
+
+Requires [kRPC](https://github.com/krpc/krpc) to be installed for KSP.
 
 ## Install
 
-Installation is currently only local. Requires Python 3.10 due to reliance on poliastro. Recommend using a venv or Conda. Required packages:
-...
-Require installing in editable mode, I think? for the documentation?
-
-heavy on dependencies
-
-## Install
-
-
+Download the KAGP source files, then use `pip` in a Python 3.10 environment to install the project. For example, with source files placed in folder `kagp`, and the current working directory being one level above, the installation command is:
+```
+pip install ./kagp
+```
 
 ## Use
 
-Only works for single-stage rockets
+KAGP requires a kRPC server with default settings running locally. The spacecraft must be ready for launch when the program is invoked. This program is only for single-stage ascents, it cannot perform staging.
 
-Requires kRPC server running locally
+Invoke the program with the `kagp` command. There are two subcommands:
 
-Invoke the program with the `kagp` command. 
-`python -m pip 
+- `kagp run`
+- `kagp plotlog`
 
-## F
+`kagp run` accepts a [configuration file](inputs.md) and runs the ascent autopilot. See `examples/` for example config files. An example invocation for ascent guidance with the internal integrator is
+```
+kagp run examples/ascent_lem.yaml examples/integrator_lunar_ascent.yaml
+```
 
+Multiple config files can be provided. Config files are loaded in the order they are provided to the `kagp run` command. If a key is defined in multiple config files, the key in the latest config file takes priority.
 
+Log files for a completed autopilot run are saved in `logs/`, in the current working directory. Each run is stored in a folder named with a timestamp.
 
+`kagp plotlog` accepts the path to a log folder, and plots the logs.
+
+## Test
+
+To test KAGP, simply run pytest in the project directory:
+```
+pip install pytest
+pytest
+```
 
 ## References
+
+G. W. Cherry, "A General, Explicit, Optimizing Guidance Law for Rocket-Propelled Spaceflight," in <i>Astrodynamics Guidance and Control Conference, August 24-26, 1964, Los Angeles, CA, USA</i> [Online]. Available: ARC, https://arc.aiaa.org/doi/10.2514/6.1964-638

@@ -54,6 +54,8 @@ def kagp_cmd():
 def _run_cmd(args):
     """ The 'run' subcommand. """
     config = cfg.load_config(args.config_paths)
+    if not args.nolog:
+        _make_log_dir(config)
     guidance_obj = generate_guidance_obj(config)
     sim_obj = generate_sim_obj(config, guidance_obj)
     sim_obj.run()
@@ -84,6 +86,11 @@ def _load_obj(save_dir):
 def _current_time_string():
     time_format = r"%m%d%y_%H%M%S"
     return time.strftime(time_format)
+
+def _make_log_dir(config: cfg.Config):
+    log_dir = "logs"
+    if not os.path.exists(log_dir):
+        os.makedirs(log_dir)
 
 def _save_log(config: cfg.Config, guidance_obj: GuidanceBase, sim_obj, log_obj: LogAnalyzer):
     save_dir = os.path.join("logs", _current_time_string())

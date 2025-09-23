@@ -45,14 +45,14 @@ Single-stage guidance algorithm that targets:
 This uses the `OrbitTargetingAscentGroup` model. The connections of the components within this model is shown in the following figure.
 
 
-<figure>
-    <img alt="PLACEHOLDER" src="../../img/OrbitTargetAscentChart.svg" style="width: 695px;" />
+<figure class="centered-fig">
+    <img alt="" src="../../img/OrbitTargetAscentChart.svg" width=695px height=660px style="width: 695px;" />
     <figcaption>
-        Chart of interconnections in the OrbitTargetingAscentGroup object, omitting most user inputs.
+        <i>Chart of interconnections in the <code>OrbitTargetingAscentGroup</code> object, omitting most user inputs. Only most relevant model outputs presented.</i>
     </figcaption>
 </figure>
 
-Note that the `OrbitGuidanceComponent` has a boolean input `"run_outer_loop"` (not labeled on the figure): When it is set to true, new values for $T$ and the $c_1,\, c_2$ constants are calculated when `.compute()` is called for this model. Otherwise, only the `EnginePropertyEstimator` and `PitchHeadingQuery` components are run. 
+Note that the `OrbitGuidanceComponent` has a Boolean input `"run_outer_loop"` (not labeled on the figure): When it is set to true, new values for $T$ and the $c_1,\, c_2$ constants are calculated when `.compute()` is called for this model. Otherwise, only the `EnginePropertyEstimator` and `PitchHeadingQuery` components are run. 
 
 The rate of outer loop calls is set in the simulation object which contains this guidance object. Ideally, the outer loop would be run once every few seconds.
 
@@ -68,11 +68,11 @@ Single-stage guidance algorithm that targets:
 
 The purpose of this guidance object is to test a subset of the components used in `OrbitTargetingAscent`. See `test_integrator_sim.py` for these tests.
 
-<figure>
-    <img alt="PLACEHOLDER" src="../../img/DebugAscent1Chart.svg" style="width: 695px;" />
+<figure class="centered-fig">
+    <img alt="" src="../../img/DebugAscent1Chart.svg" width=695px height=500px style="width: 695px;" />
     <figcaption>
-        Chart of interconnections in the DebugAscent1Group object, omitting most user inputs.
+        <i>Chart of interconnections in the <code>DebugAscent1Group</code> object, omitting most user inputs. Only most relevant model outputs presented.</i>
     </figcaption>
 </figure>
 
-Like the `OrbitTargetingAscent` guidance object, `VThetaSolverOuterLoop` has a boolean `run_outer_loop` input which determines if it will run and compute new values for $c_1,\, c_2$ when `.compute()` is called for this model.
+Like the `OrbitTargetingAscent` guidance object, `VThetaSolverOuterLoop` has a Boolean `run_outer_loop` input which determines if it will run and compute new values for $c_1,\, c_2$ when `.compute()` is called for this model.

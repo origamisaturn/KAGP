@@ -1,0 +1,8 @@
+.centered-fig {
+    display: grid;
+    place-items: center;
+}
+
+.centered-fig figcaption {
+    padding: 20px 20px 10px 20px;
+}

@@ -24,9 +24,9 @@ class CelestialBodyConfig(BaseModel):
 class OrbitTargetingAscentConfig(BaseModel):
     apoapsis: PositiveFloat # m
     periapsis: PositiveFloat # m
-    longitude_of_ascending_node: NonNegativeFloat # rad. [0, 2pi]
+    longitude_of_ascending_node: float # rad. [0, 2pi]
     inclination: NonNegativeFloat # rad. [0, pi]
-    argument_of_periapsis: NonNegativeFloat # rad. [0, 2pi]
+    argument_of_periapsis: float # rad. [0, 2pi]
 
     enable_estimator: bool = True
     estimator_ignore_time: NonNegativeFloat = 5 # s
@@ -49,7 +49,7 @@ class DebugAscent1Config(BaseModel):
     terminal_time: PositiveFloat # s
     radius: PositiveFloat # m
     radial_velocity: float # m/s
-    longitude_of_ascending_node: NonNegativeFloat # rad. [0, 2pi]
+    longitude_of_ascending_node: float # rad. [0, 2pi]
     inclination: NonNegativeFloat # rad. [0, pi]
 
     @field_validator('longitude_of_ascending_node', 'inclination')
