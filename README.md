@@ -5,7 +5,7 @@
 
 KAGP is an ascent autopilot for single-stage spacecraft in Kerbal Space Program (KSP).
 
-Docs are hosted on [krpc.github.io](https://krpc.github.io/).
+Docs are hosted on [kagp.github.io](https://kagp.github.io/).
 
 This ascent program is based on the paper by G. Cherry referenced below. A derivation of the version of the ascent algorithm used for this program is provided in the [docs](https://krpc.github.io/implementation_docs/C_abbv_derivation.md).
 
