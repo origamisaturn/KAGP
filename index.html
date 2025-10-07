@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="img/favicon.ico" />
+    <title>KAGP - Kerbal Ascent Guidance Procedure - KAGP Docs</title>
+    <link rel="stylesheet" href="css/theme.css" />
+    <link rel="stylesheet" href="css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+        <link href="css/fig.css" rel="stylesheet" />
+    
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "KAGP - Kerbal Ascent Guidance Procedure";
+        var mkdocs_page_input_path = "index.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script>
+    <script>
+    MathJax = {
+        tex: {
+            inlineMath: {'[+]': [['$', '$']]}
+        }
+    };
+    </script>
+    <script defer id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js"></script>
+ 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="." class="icon icon-home"> KAGP Docs
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="./search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption"><span class="caption-text">KAGP</span></p>
+              <ul class="current">
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">KAGP - Kerbal Ascent Guidance Procedure</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#requirements">Requirements</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#install">Install</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#use">Use</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#test">Test</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#references">References</a>
+    </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="inputs/">Input File Reference</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Implementation</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="implementation_docs/guidance_objects/">Guidance Objects</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="implementation_docs/guidance_components/">Guidance Components</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Appendices</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="implementation_docs/A_symbols/">A. Reference Symbols</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="implementation_docs/B_reference_frames/">B. Reference Frames</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="implementation_docs/C_abbv_derivation/">C. Guidance Derivation</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href=".">KAGP Docs</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="." class="icon icon-home" aria-label="Docs"></a></li>
+          <li class="breadcrumb-item">KAGP</li>
+      <li class="breadcrumb-item active">KAGP - Kerbal Ascent Guidance Procedure</li>
+    <li class="wy-breadcrumbs-aside">
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="kagp-kerbal-ascent-guidance-procedure">KAGP - Kerbal Ascent Guidance Procedure<a class="headerlink" href="#kagp-kerbal-ascent-guidance-procedure" title="Permanent link">&para;</a></h1>
+<p>KAGP is an ascent autopilot for single-stage spacecraft in Kerbal Space Program (KSP).</p>
+<p>This ascent program is based on the paper by G. Cherry referenced below. A derivation of the version of the ascent algorithm used for this program is provided in the <a href="implementation_docs/C_abbv_derivation/">docs</a>.</p>
+<h2 id="requirements">Requirements<a class="headerlink" href="#requirements" title="Permanent link">&para;</a></h2>
+<p>This program is intended to be used in KSP Realism Overhaul + Real Solar System. The algorithm may fail to converge in stock KSP due to the larger thrust-to-weight ratios.</p>
+<p>Requires Python 3.10 due to reliance on poliastro. Recommend performing installation in a venv or using a Conda environment.</p>
+<p>Requires <a href="https://github.com/krpc/krpc">kRPC</a> to be installed for KSP.</p>
+<h2 id="install">Install<a class="headerlink" href="#install" title="Permanent link">&para;</a></h2>
+<p>Download the KAGP source files, then use <code>pip</code> in a Python 3.10 environment to install the project. For example, with source files placed in folder <code>kagp</code>, and the current working directory being one level above, the installation command is:</p>
+<pre><code>pip install ./kagp
+</code></pre>
+<h2 id="use">Use<a class="headerlink" href="#use" title="Permanent link">&para;</a></h2>
+<p>KAGP requires a kRPC server with default settings running locally. The spacecraft must be ready for launch when the program is invoked. This program is only for single-stage ascents, it cannot perform staging.</p>
+<p>Invoke the program with the <code>kagp</code> command. There are two subcommands:</p>
+<ul>
+<li><code>kagp run</code></li>
+<li><code>kagp plotlog</code></li>
+</ul>
+<p><code>kagp run</code> accepts a <a href="inputs/">configuration file</a> and runs the ascent autopilot. See <code>examples/</code> for example config files. An example invocation for ascent guidance with the internal integrator is</p>
+<pre><code>kagp run examples/ascent_lem.yaml examples/integrator_lunar_ascent.yaml
+</code></pre>
+<p>Multiple config files can be provided. Config files are loaded in the order they are provided to the <code>kagp run</code> command. If a key is defined in multiple config files, the key in the latest config file takes priority.</p>
+<p>Log files for a completed autopilot run are saved in <code>logs/</code>, in the current working directory. Each run is stored in a folder named with a timestamp.</p>
+<p><code>kagp plotlog</code> accepts the path to a log folder, and plots the logs.</p>
+<h2 id="test">Test<a class="headerlink" href="#test" title="Permanent link">&para;</a></h2>
+<p>To test KAGP, simply run pytest in the project directory:</p>
+<pre><code>pip install pytest
+pytest
+</code></pre>
+<h2 id="references">References<a class="headerlink" href="#references" title="Permanent link">&para;</a></h2>
+<p>G. W. Cherry, "A General, Explicit, Optimizing Guidance Law for Rocket-Propelled Spaceflight," in <i>Astrodynamics Guidance and Control Conference, August 24-26, 1964, Los Angeles, CA, USA</i> [Online]. Available: ARC, https://arc.aiaa.org/doi/10.2514/6.1964-638</p>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="inputs/" class="btn btn-neutral float-right" title="Input File Reference">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+    
+      <span><a href="inputs/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = ".";</script>
+    <script src="js/theme_extra.js"></script>
+    <script src="js/theme.js"></script>
+      <script src="search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>

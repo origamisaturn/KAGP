@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="../../img/favicon.ico" />
+    <title>Guidance Objects - KAGP Docs</title>
+    <link rel="stylesheet" href="../../css/theme.css" />
+    <link rel="stylesheet" href="../../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+        <link href="../../css/fig.css" rel="stylesheet" />
+    
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Guidance Objects";
+        var mkdocs_page_input_path = "implementation_docs\\guidance_objects.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script>
+    <script>
+    MathJax = {
+        tex: {
+            inlineMath: {'[+]': [['$', '$']]}
+        }
+    };
+    </script>
+    <script defer id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js"></script>
+ 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../.." class="icon icon-home"> KAGP Docs
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption"><span class="caption-text">KAGP</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../..">KAGP - Kerbal Ascent Guidance Procedure</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../inputs/">Input File Reference</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Implementation</span></p>
+              <ul class="current">
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">Guidance Objects</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#simulation-objects">Simulation Objects</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#guidance-objects">Guidance Objects</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#11-orbittargetingascent">1.1. OrbitTargetingAscent</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#12-debugascent1">1.2. DebugAscent1</a>
+    </li>
+        </ul>
+    </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../guidance_components/">Guidance Components</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Appendices</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../A_symbols/">A. Reference Symbols</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../B_reference_frames/">B. Reference Frames</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../C_abbv_derivation/">C. Guidance Derivation</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../..">KAGP Docs</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../.." class="icon icon-home" aria-label="Docs"></a></li>
+          <li class="breadcrumb-item">Implementation</li>
+      <li class="breadcrumb-item active">Guidance Objects</li>
+    <li class="wy-breadcrumbs-aside">
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="guidance-and-simulation-objects">Guidance and Simulation Objects<a class="headerlink" href="#guidance-and-simulation-objects" title="Permanent link">&para;</a></h1>
+<h2 id="simulation-objects">Simulation Objects<a class="headerlink" href="#simulation-objects" title="Permanent link">&para;</a></h2>
+<p>The base class for all simulator objects is <code>SingleStageSimulatorBase</code>. All simulator objects contain a <code>GuidanceBase</code> object and a <code>SimulationLog</code> object.</p>
+<p>There are currently two simulation objects in the program: <code>IntegratorSim</code> and <code>KRPCClient</code>.</p>
+<p><code>IntegratorSim</code> uses a Runge-Kutta 4 integrator. The vehicle is only under the forces of gravity and acceleration. Changes in orientation are instantaneous and determined by the guidance object, there are no turning dynamics.</p>
+<p><code>KRPCClient</code> uses the <a href="https://github.com/krpc/krpc">kRPC</a> library to connect to Kerbal Space Program and send commands to the active vessel. This object only supports locally-hosted kRPC servers. kRPC's internal autopilot is used to control vehicle orientation.</p>
+<p>Simulation objects accept guidance objects and config objects during initialization.</p>
+<h2 id="guidance-objects">Guidance Objects<a class="headerlink" href="#guidance-objects" title="Permanent link">&para;</a></h2>
+<p>Guidance objects are objects that encapsulate guidance algorithms. They act as an interface between guidance implementations and simulation objects. Guidance objects are defined in <code>guidance_interface.py</code>.</p>
+<p><code>GuidanceBase</code> is the abstract base class that defines the interface for all guidance objects. All guidance objects are a subclass of <code>GuidanceBase</code>. </p>
+<p><code>OpenMDAOGuidanceBase</code> subclasses <code>GuidanceBase</code>, and contains methods and a logging object specific to OpenMDAO models. Since all guidance objects currently in the program are implemented with OpenMDAO, all guidance objects subclass <code>OpenMDAOGuidanceBase</code>.</p>
+<p>The most important member function of <code>GuidanceBase</code> is <code>get_command()</code>, which returns the commanded thrust, pitch, and heading, given the current state. All guidance objects use the state vector</p>
+<p>$$\begin{align}
+    \begin{bmatrix}\; x &amp; y &amp; z &amp; \dot x &amp; \dot y &amp; \dot z &amp; m \;\end{bmatrix}
+\end{align}$$</p>
+<p>where $x$, $y$, $z$ are the components of the position vector $\vec r$ in the global inertial frame, and $m$ is mass.</p>
+<p>Guidance objects are used when initializing simulation objects. Guidance objects use config objects during initialization.</p>
+<h3 id="11-orbittargetingascent">1.1. OrbitTargetingAscent<a class="headerlink" href="#11-orbittargetingascent" title="Permanent link">&para;</a></h3>
+<p>Single-stage guidance algorithm that targets:</p>
+<ul>
+<li>apoapsis</li>
+<li>periapsis</li>
+<li>longitude of ascending node</li>
+<li>inclination</li>
+<li>argument of periapsis</li>
+</ul>
+<p>This uses the <code>OrbitTargetingAscentGroup</code> model. The connections of the components within this model is shown in the following figure.</p>
+<figure class="centered-fig">
+    <img alt="" src="../../img/OrbitTargetAscentChart.svg" width=695px height=660px style="width: 695px;" />
+    <figcaption>
+        <i>Chart of interconnections in the <code>OrbitTargetingAscentGroup</code> object, omitting most user inputs. Only most relevant model outputs presented.</i>
+    </figcaption>
+</figure>
+
+<p>Note that the <code>OrbitGuidanceComponent</code> has a Boolean input <code>"run_outer_loop"</code> (not labeled on the figure): When it is set to true, new values for $T$ and the $c_1,\, c_2$ constants are calculated when <code>.compute()</code> is called for this model. Otherwise, only the <code>EnginePropertyEstimator</code> and <code>PitchHeadingQuery</code> components are run. </p>
+<p>The rate of outer loop calls is set in the simulation object which contains this guidance object. Ideally, the outer loop would be run once every few seconds.</p>
+<h3 id="12-debugascent1">1.2. DebugAscent1<a class="headerlink" href="#12-debugascent1" title="Permanent link">&para;</a></h3>
+<p>Single-stage guidance algorithm that targets:</p>
+<ul>
+<li>radius</li>
+<li>radial velocity</li>
+<li>cut-off time</li>
+<li>longitude of ascending node</li>
+<li>inclination</li>
+</ul>
+<p>The purpose of this guidance object is to test a subset of the components used in <code>OrbitTargetingAscent</code>. See <code>test_integrator_sim.py</code> for these tests.</p>
+<figure class="centered-fig">
+    <img alt="" src="../../img/DebugAscent1Chart.svg" width=695px height=500px style="width: 695px;" />
+    <figcaption>
+        <i>Chart of interconnections in the <code>DebugAscent1Group</code> object, omitting most user inputs. Only most relevant model outputs presented.</i>
+    </figcaption>
+</figure>
+
+<p>Like the <code>OrbitTargetingAscent</code> guidance object, <code>VThetaSolverOuterLoop</code> has a Boolean <code>run_outer_loop</code> input which determines if it will run and compute new values for $c_1,\, c_2$ when <code>.compute()</code> is called for this model.</p>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../../inputs/" class="btn btn-neutral float-left" title="Input File Reference"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../guidance_components/" class="btn btn-neutral float-right" title="Guidance Components">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+      <span><a href="../../inputs/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../guidance_components/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "../..";</script>
+    <script src="../../js/theme_extra.js"></script>
+    <script src="../../js/theme.js"></script>
+      <script src="../../search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="../../img/favicon.ico" />
+    <title>C. Guidance Derivation - KAGP Docs</title>
+    <link rel="stylesheet" href="../../css/theme.css" />
+    <link rel="stylesheet" href="../../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+        <link href="../../css/fig.css" rel="stylesheet" />
+    
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "C. Guidance Derivation";
+        var mkdocs_page_input_path = "implementation_docs\\C_abbv_derivation.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script>
+    <script>
+    MathJax = {
+        tex: {
+            inlineMath: {'[+]': [['$', '$']]}
+        }
+    };
+    </script>
+    <script defer id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js"></script>
+ 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../.." class="icon icon-home"> KAGP Docs
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption"><span class="caption-text">KAGP</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../..">KAGP - Kerbal Ascent Guidance Procedure</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../inputs/">Input File Reference</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Implementation</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../guidance_objects/">Guidance Objects</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../guidance_components/">Guidance Components</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Appendices</span></p>
+              <ul class="current">
+                  <li class="toctree-l1"><a class="reference internal" href="../A_symbols/">A. Reference Symbols</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../B_reference_frames/">B. Reference Frames</a>
+                  </li>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">C. Guidance Derivation</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#c1-fixed-thrust-model">C.1. Fixed-Thrust Model</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#c2-generalized-guidance-law">C.2. Generalized Guidance Law</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#c3-radial-guidance-law">C.3. Radial Guidance Law</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#c4-plane-control-guidance-law">C.4. Plane Control Guidance Law</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#c5-time-to-go">C.5. Time-to-Go</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#c6-final-circumferential-velocity">C.6. Final Circumferential Velocity</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#finding-dot-rt-and-rt">Finding $\dot r(t)$ and $r(t)$</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#finding-hat-thetat">Finding $\hat \theta(t)$</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#finding-vec-a_tt">Finding $\vec a_T(t)$</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#c7-pitch-and-heading">C.7. Pitch and Heading</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#c8-final-true-anomaly">C.8. Final True Anomaly</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#c9-orbit-targeting">C.9. Orbit Targeting</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#references">References</a>
+    </li>
+    </ul>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../..">KAGP Docs</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../.." class="icon icon-home" aria-label="Docs"></a></li>
+          <li class="breadcrumb-item">Appendices</li>
+      <li class="breadcrumb-item active">C. Guidance Derivation</li>
+    <li class="wy-breadcrumbs-aside">
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h2 id="appendix-c-abbreviated-derivation">Appendix C: Abbreviated Derivation<a class="headerlink" href="#appendix-c-abbreviated-derivation" title="Permanent link">&para;</a></h2>
+<p>The following is a derivation for the single-stage ascent guidance method implemented in this program. This is an abbreviated version of the derivation for fixed-thrust ascent guidance found in "A General, Explicit, Optimizing Guidance Law for Rocket-Propelled Spaceflight" by G. Cherry <a href="#ref_gcherry">[1]</a>.</p>
+<p>In broad terms, the guidance method is derived by</p>
+<ul>
+<li>Applying the linear tangent law to the differential equation of radial motion, and to the differential equation of distance normal to the target orbital plane. This yields guidance laws for $\ddot r$ and $\ddot y$.</li>
+<li>Determining an expression for predicting $v_{\theta}(T)$ based on the guidance laws.</li>
+<li>Defining an iterative method for determining cut-off time $T$ based on the difference between the desired and predicted $v_\theta(T)$.</li>
+<li>Determining an iterative method for targeting a set of orbital elements.</li>
+</ul>
+<p>This derivation is based completely on the paper by G.Cherry, with some modification:</p>
+<p>1) Cherry derives the guidance law by defining the law to have the minimum number of terms necessary to uniquely satisfy the boundary conditions, and defers optimization of the guidance law to the paper's appendix. The derivation here instead starts from the content in Appendix A of Cherry, deriving the guidance laws based on an approximation of the linear tangent steering law and the differential equations of motion.</p>
+<p>2) The method of predicting the final circumferential velocity derived in Cherry is a Taylor expansion, and it is designed exclusively for the radial guidance law. Here, the final circumferential velocity is predicted using a numerical integrator, and it incorporates both radial and plane control guidance.</p>
+<p>3) The orbit targeting method in Cherry has an unconstrained argument of periapsis. Here, the argument of periapsis is given.</p>
+<p>A numerical integrator is used here instead of a Taylor expansion mainly for convenience; the equation for $\dot v_{\theta}(t)$ derived here is large, and it was determined that a Taylor expansion would be much larger and more difficult to debug in the implemented program compared to using a numerical integrator.</p>
+<h3 id="c1-fixed-thrust-model">C.1. Fixed-Thrust Model<a class="headerlink" href="#c1-fixed-thrust-model" title="Permanent link">&para;</a></h3>
+<p>A constant-thrust model for a rocket, with constant mass flow and exhaust velocity, is defined as follows:</p>
+<p>$$\begin{align}
+    v_e &amp; = g_0I_{sp} = \textrm{constant} \tag{C.1.1}\\
+    \dot{m} &amp; = \textrm{constant} \tag{C.1.2}\\
+    \dot{m} &amp; &gt; 0 \tag{C.1.3}\\
+    F_T &amp; = \dot{m} v_e \tag{C.1.4} 
+\end{align}$$</p>
+<p>The mass of the rocket vehicle is a linear function of time</p>
+<p>$$\begin{align}
+    m=m_o-\dot m t \tag{C.1.5}
+\end{align}$$</p>
+<p>where $m_o$ is the mass of the vehicle at $t=0$. Applying Newton's second law yields a formula for thrust acceleration</p>
+<p>$$\begin{align}
+    a_T=v_e/(\tau-t) \tag{C.1.6}
+\end{align}$$</p>
+<p>where</p>
+<p>$$\begin{align}
+    \tau \equiv m_o/ \dot m \tag{C.1.7}
+\end{align}$$</p>
+<p>$\tau$ can be interpreted as the time at which the rocket vehicle composed of only fuel and no structure will reach $0$ mass. </p>
+<h3 id="c2-generalized-guidance-law">C.2. Generalized Guidance Law<a class="headerlink" href="#c2-generalized-guidance-law" title="Permanent link">&para;</a></h3>
+<p>It will be helpful to have a general formula to solve the guidance laws that will be derived. A guidance law for generalized coordinate $q$ is defined:</p>
+<p>$$\begin{align}
+    \ddot q(t) &amp; = c_1 p_1(t) + c_2 p_2(t) \tag{C.2.1}\\
+\end{align}$$</p>
+<p>where</p>
+<p>$$\begin{align}
+    p_1(t)&amp;=a_T(t) \tag{C.2.2}\\
+    p_2(t)&amp;=(T-t)a_T(t) \tag{C.2.3} 
+\end{align}$$</p>
+<p>where $T$ is the time of guidance termination. The thrust acceleration $a_T$ is written in the following form to accommodate a Taylor expansion</p>
+<p>$$\begin{align}
+    a_T(t) = a_0 + a_1(T-t) + a_2(T-t)^2 + ... + a_n(T-t)^n \tag{C.2.4}\\
+\end{align}$$</p>
+<p>It is desirable to solve for $\ddot q(t)$. The constants $c_1$ and $c_2$ are unknown. $p_1(t)$ and $p_2(t)$ are given, and the following boundary conditions are provided</p>
+<p>$$\begin{align}
+    q_o &amp; = q(t_o) \tag{C.2.5}\\
+    \dot q_o &amp; = \dot q(t_o) \tag{C.2.6}\\
+    q_D &amp; = q(T) \tag{C.2.7}\\
+    \dot q_D &amp; = \dot q(T) \tag{C.2.8} 
+\end{align}$$</p>
+<p>where $t_o$ is the current time. Integrating equation (C.2.1) yields the equations of constraint </p>
+<p>$$\begin{align}
+    \dot q_D - \dot q_o 
+        &amp; = \int_{t_o}^T \ddot q(t) dt \tag{C.2.9} \\
+        &amp;= c_1 \int_{t_o}^T p_1(t) dt + c_2 \int_{t_o}^T p_2(t) dt \nonumber \\
+    q_D - q_o - \dot q(t_o)T_{go}
+        &amp; = \int_{t_o}^T \int_{t_o}^t \ddot q(s) ds \; dt \tag{C.2.10} \\
+        &amp;= c_1 \int_{t_o}^T \int_{t_o}^t p_1(s) ds \; dt
+            + c_2 \int_{t_o}^T \int_{t_o}^t p_2(s) ds \; dt \nonumber
+\end{align}$$</p>
+<p>where</p>
+<p>$$\begin{align}
+    T_{go} = T - t_o \tag{C.2.11}\\
+\end{align}$$</p>
+<p>The equations of constraint can be represented by the matrix equation</p>
+<p>$$\begin{align}
+    \begin{bmatrix}
+    \dot q_D - \dot q_o\\
+    q_D - (q_o + \dot q_o T_{go})
+    \end{bmatrix}
+    = F 
+    \begin{bmatrix}
+    c_1\\
+    c_2
+    \end{bmatrix} \tag{C.2.12}
+\end{align}$$</p>
+<p>where the $F$ matrix is a $2 \times 2$ matrix composed of the following entries</p>
+<p>$$\begin{align}
+    f_{11} &amp; = a_0 T_{go} + a_1 T_{go}^2/2 + \dots + a_nT_{go}^{n+1}/(n+1) \tag{C.2.13}\\
+    f_{12} &amp; = a_0 T_{go}^2/2 + a_1 T_{go}^3/3 + \dots + a_nT_{go}^{n+2}/(n+2) \tag{C.2.14}\\
+    f_{21} &amp; = f_{12} \tag{C.2.15}\\
+    f_{22} &amp; = a_0 T_{go}^3/3 + a_1 T_{go}^4/4 + \dots + a_nT_{go}^{n+3}/(n+3) \tag{C.2.16}
+\end{align}$$</p>
+<p>Given the boundary conditions in (C.2.5-8), the constants $c_1$ and $c_2$ is solved from (C.2.12) by inverting the $F$ matrix. This solves the general guidance equation.</p>
+<h3 id="c3-radial-guidance-law">C.3. Radial Guidance Law<a class="headerlink" href="#c3-radial-guidance-law" title="Permanent link">&para;</a></h3>
+<p>The linear tangent steering law <a href="#ref_bryson_ho">[2]</a> will be used to derive the radial guidance law</p>
+<p>$$\begin{align}
+    \tan \alpha = A + Bt \tag{C.3.1}\\
+\end{align}$$</p>
+<p>The differential equation of radial motion is </p>
+<p>$$\begin{align}
+    \ddot r = \vec a_T \cdot \hat r + g_{eff} = a_T \sin \alpha + g_{eff} \tag{C.3.2}\\
+\end{align}$$</p>
+<p>where</p>
+<p>$$\begin{align}
+    g_{eff} = -\mu/r^2 + v_{\theta}^2/r \tag{C.3.3} 
+\end{align}$$</p>
+<p>The tangent law can be approximated by </p>
+<p>$$\begin{align}
+    \sin \alpha = A + Bt - g_{eff}/a_T \tag{C.3.4}\\
+\end{align}$$</p>
+<p>The approximation assumes that $\tan \alpha \approx \sin \alpha$, and that $g_{eff}/a_T \approx 0$. The latter approximation becomes more accurate near guidance termination: as the vehicle approaches the cut-off time $T$ when targeting a circular orbit, $g_{eff}$ approaches zero and $a_T$ continues increasing.</p>
+<p>Substituting (C.3.4) into (C.3.2) yields</p>
+<p>$$\begin{align}
+    \ddot r = A a_T + B a_T t \tag{C.3.5}\\
+\end{align}$$</p>
+<p>If A and B are rewritten in terms of other arbitrary constants as $A = c_{1,r} + c_{2,r} T$ and $B = -c_{2,r}$, then the equation can be written in the form of the generalized guidance law (C.2.1) as </p>
+<p>$$\begin{align}
+    \ddot r = c_{1,r}p_1(t) + c_{2,r}p_2(t) \tag{C.3.6}\\
+\end{align}$$</p>
+<p>where</p>
+<p>$$\begin{align}
+    p_1(t) &amp; = a_T \tag{C.3.7} \\
+    p_2(t) &amp; = (T-t)a_T \tag{C.3.8} 
+\end{align}$$</p>
+<p>Given the following boundary conditions</p>
+<p>$$\begin{align}
+    r_o &amp; = r(t_o) \tag{C.3.9}\\
+    \dot r_o &amp; = \dot r(t_o) \tag{C.3.10}\\
+    r_D &amp; = r(T) \tag{C.3.11}\\
+    \dot r_D &amp; = \dot r(T) \tag{C.3.12} 
+\end{align}$$</p>
+<p>$c_{1,r}$ and $c_{2,r}$ can be solved using the matrix form of the equations of constraint (C.2.12). This fully defines the guidance law for $\ddot r(t)$.</p>
+<h3 id="c4-plane-control-guidance-law">C.4. Plane Control Guidance Law<a class="headerlink" href="#c4-plane-control-guidance-law" title="Permanent link">&para;</a></h3>
+<p>The differential equation for $y$, the vehicle's distance from the target orbital plane along the plane's normal axis $\hat y$, is</p>
+<p>$$\begin{align}
+    \ddot y &amp; = \vec a_T \cdot \hat y + \vec g \cdot \hat y \tag{C.4.1}\\
+    &amp; = a_T \sin \alpha_y + \vec g \cdot \hat y \notag\
+\end{align}$$</p>
+<p>The linear tangent law can be approximated as</p>
+<p>$$\begin{align}
+    \sin \alpha_y(t) = A+Bt - \vec g \cdot \hat y/a_T \tag{C.4.2}\\
+\end{align}$$</p>
+<p>The approximation assumes that $\tan \alpha \approx \sin \alpha$, and that $(\vec g \cdot \vec y)/a_T \approx 0$. $\vec g \cdot \hat y$ is small in general, as the launch vehicle is usually a few degrees off of the target orbital plane at launch.</p>
+<p>Substituting (C.4.2) in (C.4.1) yields </p>
+<p>$$\begin{align}
+    \ddot y = A a_T + B a_T t \tag{C.4.3}\\
+\end{align}$$</p>
+<p>If the constants are written in terms of arbitrary constants $c_{1,y}$ and $c_{2,y}$ as $A = c_{1,y} + c_{2,y} T$ and $B = -c_{2,y}$, then the equation can be written in the form of the generalized guidance law (C.2.1) as </p>
+<p>$$\begin{align}
+    \ddot y = c_{1,y}p_1(t) + c_{2,y}p_2(t) \tag{C.4.4}\\
+\end{align}$$</p>
+<p>where</p>
+<p>$$\begin{align}
+    p_1(t) &amp; = a_T \tag{C.4.5}\\
+    p_2(t) &amp; = (T-t)a_T \tag{C.4.6} 
+\end{align}$$</p>
+<p>Given the following boundary conditions</p>
+<p>$$\begin{align}
+    y_o &amp; = y(t_o) \tag{C.4.7}\\
+    \dot y_o &amp; = \dot y(t_o) \tag{C.4.8}\\
+    y_D &amp; = y(T) \tag{C.4.9}\\
+    \dot y_D &amp; = \dot y(T) \tag{C.4.10} 
+\end{align}$$</p>
+<p>$c_{1,y}$ and $c_{2,y}$ can be solved using the matrix form of the equations of constraint (C.2.12). This fully defines the guidance law for $\ddot y(t)$.</p>
+<h3 id="c5-time-to-go">C.5. Time-to-Go<a class="headerlink" href="#c5-time-to-go" title="Permanent link">&para;</a></h3>
+<p>The radial guidance law and plane control guidance law require the cut-off time $T$ to be given in order to solve for the $c_1$ and $c_2$ constants. An iterative method of finding $T$ based on the target circumferential velocity $v_{\theta D}$ is derived.</p>
+<p>The differential equation for $\dot v_\theta$ is </p>
+<p>$$\begin{align}
+    \dot v_\theta = a_T \cos \alpha - \frac{\dot r v_\theta}{r} \tag{C.5.1} 
+\end{align}$$</p>
+<p>$\dot v_\theta$ can be rewritten as </p>
+<p>$$\begin{align}
+    \dot v_\theta = a_T - a_L \tag{C.5.2} 
+\end{align}$$</p>
+<p>where</p>
+<p>$$\begin{align}
+    a_L = (1 - \cos \alpha) a_T + \frac{\dot r v_\theta }{r} \tag{C.5.3}\\
+\end{align}$$</p>
+<p>Integrating (C.5.2) and solving for $T_{go}$ yields</p>
+<p>$$\begin{align}
+    T_{go} = \tau_o \{ 1 - \exp[-(v_{\theta D} - v_{\theta o} + \Delta v_{\theta L})/v_e] \} \tag{C.5.4}
+\end{align}$$</p>
+<p>where</p>
+<p>$$\begin{align}
+    \Delta v_{\theta L} = \int_{t_o}^T a_L(t) dt \tag{C.5.5}\\
+\end{align}$$</p>
+<p>The time-to-go $T_{go}$ is calculated using an iterative method based on varying guesses of $\Delta v_{\theta L}$. The formula for the next estimate of $\Delta v_{\theta L}$ based on the previous one is </p>
+<p>$$\begin{align}
+    \Delta v_{\theta L, n+1} = v_{\theta D} - v_{\theta F, n} + \Delta v_{\theta L, n} \tag{C.5.6} 
+\end{align}$$</p>
+<p>where $v_{\theta D}$ is the target $v_\theta$ at time $T$, and $v_{\theta F, n}$ is the estimated $v_\theta(T)$ for thrust loss estimate $v_{\theta L, n}$. The following figure illustrates the procedure for calculating $\Delta v_{\theta L}$.</p>
+<figure class="centered-fig">
+    <img alt="Figure showing iterative method of calculating Delta-v-theta-loss." width="600px" height="460px" src="../../img/iterative_T_go_algo.svg">
+</figure>
+
+<p>The estimates of $\Delta v_{\theta L}$ continue until the estimated final circumferential velocity is close enough to the desired final circumferential velocity</p>
+<p>$$\begin{align}
+    | v_{\theta D} - v_{\theta F, n} | &lt; \epsilon \tag{C.5.7} 
+\end{align}$$</p>
+<p>where $\epsilon$ is the tolerable guidance scheme error.</p>
+<p>The following rewrites the time-to-go equation (C.5.4) into the final form found in Cherry's <a href="#ref_gcherry">[1]</a> derivation, which is also the form currently used in the program
+$$\begin{align}
+    T_{go, n} = \tau_o \{1 - \exp [-(v_{\theta D} - v_{\theta o})/v_e]\, Q_n\} \tag{C.5.8} 
+\end{align}$$</p>
+<p>where
+$$\begin{align}
+    Q_{n} = \exp(-\Delta v_{\theta L, n}/v_e) \tag{C.5.9}\\
+\end{align}$$</p>
+<p>Equation (C.5.6) then becomes
+$$\begin{align}
+    Q_{n+1} = \exp \begin{bmatrix} \frac{-(v_{\theta D} - v_{\theta o})}{v_e} \end{bmatrix} \frac{Q_n}{H(T_n)} \tag{C.5.10}\\
+\end{align}$$</p>
+<p>where
+$$\begin{align}
+    H(T_n) = H_{F, n} = \exp[-(v_{\theta F, n} - v_{\theta o})/v_e] \tag{C.5.11} 
+\end{align}$$</p>
+<p>An initial guess for the cut-off time $T$ is not necessary: the first iteration uses $Q_o = 1$.</p>
+<h3 id="c6-final-circumferential-velocity">C.6. Final Circumferential Velocity<a class="headerlink" href="#c6-final-circumferential-velocity" title="Permanent link">&para;</a></h3>
+<p>A method for predicting the final circumferential velocity $v_{\theta}(T)$ is derived, to serve as a component of the iterative calculation for cut-off time $T$ in C.5.</p>
+<p>The differential equation for circumferential velocity is
+$$\begin{align}
+    \dot v_{\theta}(t) = \vec a_T \cdot \hat \theta - \dot r v_\theta / r \tag{C.6.1}
+\end{align}$$</p>
+<p>$\dot v_{\theta}(t)$ will be numerically integrated from the initial condition $v_{\theta o}$ to find $v_{\theta}(T)$. Therefore, $v_\theta$ is assumed given. Expressions for $\vec a_T$, $\hat \theta$, $\dot r$, and $r$ must be found.</p>
+<h4 id="finding-dot-rt-and-rt">Finding $\dot r(t)$ and $r(t)$<a class="headerlink" href="#finding-dot-rt-and-rt" title="Permanent link">&para;</a></h4>
+<p>Both $\ddot r(t)$ and $\ddot y(t)$ are assumed given by the guidance laws.
+$\dot r(t)$ and $r(t)$ are both found by integrating the radial guidance law (C.3.6) and using $t$ and $T$ as the boundary conditions
+$$\begin{align}
+    \begin{bmatrix}
+        \dot r(t)\\
+        r(t)
+    \end{bmatrix} =
+    \begin{bmatrix}
+        \dot r_D\\
+        r_D - \dot r(t) T_{go}
+    \end{bmatrix}
+    - F \begin{bmatrix}
+        c_{1,r}\\
+        c_{2, r}
+    \end{bmatrix} \tag{C.6.2}
+\end{align}$$</p>
+<p>Similarly, a solution exists for $\dot y(t)$ and $y(t)$ when integrating (C.4.4)
+$$\begin{align}
+    \begin{bmatrix}
+        \dot y(t)\\
+        y(t)
+    \end{bmatrix} =
+    \begin{bmatrix}
+        0\\
+        - \dot y(t) T_{go}
+    \end{bmatrix}
+    - F \begin{bmatrix}
+        c_{1,y}\\
+        c_{2, y}
+    \end{bmatrix} \tag{C.6.3}
+\end{align}$$</p>
+<h4 id="finding-hat-thetat">Finding $\hat \theta(t)$<a class="headerlink" href="#finding-hat-thetat" title="Permanent link">&para;</a></h4>
+<p>The circumferential unit vector $\hat \theta$ is given by </p>
+<p>$$\begin{align}
+    \hat \theta(t) = \frac{\vec v_\theta(t)}{v_\theta(t)} \tag{C.6.7}
+\end{align}$$</p>
+<p>By definition, circumferential velocity $v_\theta$ in Plane Control Frame (PCF) axes has no $\hat i$ component ($\hat \theta$ is orthogonal to $\hat r$)</p>
+<p>$$\begin{align}
+    \vec v_\theta = \begin{bmatrix}\, 0 &amp; v_{j} &amp; v_{ k} \,\end{bmatrix} \tag{C.6.8}
+\end{align}$$</p>
+<p>The $\hat k$ component of velocity will be calculated from the commanded velocity projected along the $\hat y$ axis
+$$\begin{align}
+    \vec v \cdot \hat y = \dot y \tag{C.6.9}
+\end{align}$$</p>
+<p>where $\dot y$ is given by (C.6.3). Define $\beta (t)$ as the angle of the vehicle's position with respect to the target orbital plane.</p>
+<figure class="centered-fig">
+    <img alt="Figure of y(t) in Plane Control Frame axes." src="../../img/B6_beta_angle.svg" width=303px height=338px/>
+</figure>
+
+<p>Based on the figure, $\hat y$ can be written in PCF axes as
+$$\begin{align}
+    \hat y = \begin{bmatrix}
+        y/r\\
+        0\\
+        \sqrt{r^2 + y^2}/r
+    \end{bmatrix} \tag{C.6.10}
+\end{align}$$</p>
+<p>Substituting (C.6.10) into (C.6.9) and solving for $v_{k}$ yields</p>
+<p>$$\begin{align}
+    v_{ k} &amp; = \frac{\dot y - v_{i} \hat y_{i}}{\hat y_{k}} \tag{C.6.11}\\
+    &amp; = \frac{\dot y - \dot r \hat y_{i}}{\hat y_{k}} \notag
+\end{align}$$</p>
+<p>$v_{\hat j}$ is given by finding the portion of velocity "unused" by the $\hat i$ and $\hat k$ components of velocity
+$$\begin{align}
+    v_{\hat j} = \sqrt{v^2 - v_{\hat i}^2 - v_{\hat k}^2} \tag{C.6.12}
+\end{align}$$</p>
+<p>Equation (C.6.7) can now be solved to yield $\hat \theta(t)$.</p>
+<h4 id="finding-vec-a_tt">Finding $\vec a_T(t)$<a class="headerlink" href="#finding-vec-a_tt" title="Permanent link">&para;</a></h4>
+<p>$a_T$ is given by 
+$$\begin{align}
+    \vec a_T = \begin{bmatrix}\, a_{T \hat i} &amp; a_{T \hat j} &amp; a_{T \hat k} \,\end{bmatrix} \tag{C.6.13}
+\end{align}$$</p>
+<p>$\vec a_T \cdot \hat i$ is given by rearranging the differential equation for radial motion (C.3.2)
+$$\begin{align}
+    \vec a_T \cdot \hat i = \vec a_T \cdot \hat r \\
+    = \ddot r - g_{eff}  \tag{C.6.14}
+\end{align}$$</p>
+<p>$\vec a_T \cdot \hat k$ is found by substituting the expression for $\hat y$ (C.6.10) into the differential equation for $\ddot y$ (C.4.1):
+$$\begin{align}
+    \vec a_T \cdot \hat k = \frac{\vec a_T \cdot \hat y - (\vec a_T \cdot \hat r)(\hat y_{\hat i})}{\hat y_{\hat k}} \tag{C.6.15}
+\end{align}$$</p>
+<p>where
+$$\begin{align}
+    \vec a_T \cdot \hat y &amp; = \ddot y - \vec g \cdot \hat y \tag{C.6.16}\\
+    &amp; = \ddot y + \frac{\mu y}{r^3} \notag
+\end{align}$$</p>
+<p>$\vec a_T \cdot \hat j$ is given by rearranging the definition of magnitude for a vector,
+$$\begin{align}
+    \vec a_T \cdot \hat j = \sqrt{a_T^2 - (\vec a_T \cdot \hat i)^2 - (\vec a_T \cdot \hat k)} \tag{C.6.17}
+\end{align}$$</p>
+<p>All the components of $\vec a_T(t)$ have been found. (C.6.1) can now be used in a numerical integrator to solve for $v_{\theta}(T)$.</p>
+<h3 id="c7-pitch-and-heading">C.7. Pitch and Heading<a class="headerlink" href="#c7-pitch-and-heading" title="Permanent link">&para;</a></h3>
+<p>The pitch and heading commands are found using the commanded thrust acceleration $a_T(t)$ (C.6.13). </p>
+<p>$$\begin{align}
+    \alpha &amp; = \sin^{-1}\left(\frac{\vec a_T \cdot \hat r}{a_T}\right) \tag{C.7.1}\\
+    \psi &amp; = \textrm{atan2}(a_{T}\cdot \hat e,\, a_{T} \cdot \hat n) \tag{C.7.2}
+\end{align}$$</p>
+<p>(C.7.2) uses the topocentric coordinates of $a_T$.</p>
+<h3 id="c8-final-true-anomaly">C.8. Final True Anomaly<a class="headerlink" href="#c8-final-true-anomaly" title="Permanent link">&para;</a></h3>
+<p>Finding the true anomaly $\nu(T)$ at cutoff time is necessary for targeting a series of orbital elements. The true anomaly at cutoff is with respect to the target orbit, but the true anomaly of the vehicle during ascent is with respect to an orbit that is constantly changing. Therefore, for the purpose of this calculation, it is assumed that the true anomaly of the launch vehicle at any point is given by its projection onto the perifocal plane of its target orbit.</p>
+<p>$$\begin{align}
+    \vec r_{peri} &amp;= r_q\, \hat q + r_p\, \hat p \tag{C.8.1} \\
+    \nu_{peri} &amp;= \textrm{atan2}(r_{q},\, r_{p}) \tag{C.8.2} 
+\end{align}$$</p>
+<p>where $\hat p$, $\hat q$, $\hat w$ are the perifocal axes.</p>
+<p>The differential equation for $\dot \nu_{peri}$ is
+$$\begin{align}
+    \dot \nu_{peri} = \frac{\vec v \cdot \hat \theta_{peri}}{r_{peri}} \tag{C.8.3} 
+\end{align}$$</p>
+<p>Where $\hat \theta_{peri}$ is the circumferential unit vector at $\vec r_{peri}$. $\hat \theta_{peri} = \hat j$, so $\dot \nu_{peri}$ is rewritten as</p>
+<p>$$\begin{align}
+    \dot \nu_{peri} = \frac{\vec v \cdot \hat j}{r_{peri}} \tag{C.8.4} 
+\end{align}$$</p>
+<p>Numerically integrating this from $t_o$ to $T$ yields</p>
+<p>$$\begin{align}
+    \nu_{peri}(T) = \Delta \nu_{peri}(T) + \nu_{peri}(t_o) \tag{C.8.5} 
+\end{align}$$</p>
+<p>where </p>
+<p>$$\begin{align}
+    \Delta \nu_{peri}(T) = \int_{t_o}^T \dot \nu_{peri}(t)\; dt \tag{C.8.6}
+\end{align}$$</p>
+<p>(C.8.5) is used to predict the true anomaly at burnout.</p>
+<h3 id="c9-orbit-targeting">C.9. Orbit Targeting<a class="headerlink" href="#c9-orbit-targeting" title="Permanent link">&para;</a></h3>
+<p>The target orbit is described by 
+$$
+\begin{matrix} 
+r_{pe}&amp; r_{ap} &amp; i &amp; \Omega &amp; \omega \tag{C.9.1}
+\end{matrix}
+$$</p>
+<p>The variables required by the algorithm are
+$$\begin{matrix}
+    r_D &amp; \dot r_D &amp; v_\theta &amp; i &amp; \Omega \tag{C.9.2}
+\end{matrix}$$</p>
+<p>The variables $r_{pe}$, $r_{ap}$, and $\omega$ must be converted into $r_D$, $\dot r_D$, and $v_{\theta D}$ to be used in the radial guidance law, and in the calculation of cut-off time.</p>
+<p>True anomaly at cut-off $\nu(T) = \nu_{proj}(T)$ is given by (C.8.5).</p>
+<p>Intermediate orbit values are calculated
+$$\begin{gather}
+    a = \frac{r_{pe} + r_{ap}}{2} \tag{C.9.3}\\
+    e = 1 - \frac{r_{pe}}{a} \tag{C.9.4}\\
+    h = \sqrt{r_{pe} \mu (1+e)} \tag{C.9.5}\\
+\end{gather}$$</p>
+<p>The desired values are found
+$$\begin{gather}
+    r_D = a \frac{(1-e^2)}{1 + e\cos(\nu)} \tag{C.9.6}\\
+    \dot r_D = \mu/h e \sin(\nu) \tag{C.9.7}\\
+    v_{\theta D} = \frac{h}{r} \tag{C.9.8}
+\end{gather}$$</p>
+<p>The orbit targeting is placed outside the time-to-go calculation loop and solved iteratively until the change of $\nu(T)$ between iterations becomes smaller than a certain error value.</p>
+<h3 id="references">References<a class="headerlink" href="#references" title="Permanent link">&para;</a></h3>
+<div id="ref_gcherry" style="margin: 10px">
+    <a href="#ref_gcherry">[1]</a> G. W. Cherry, "A General, Explicit, Optimizing Guidance Law for Rocket-Propelled Spaceflight," in <i>Astrodynamics Guidance and Control Conference, August 24-26, 1964, Los Angeles, CA, USA</i> [Online]. Available: ARC, https://arc.aiaa.org/doi/10.2514/6.1964-638
+</div>
+<div id="ref_bryson_ho" style="margin: 10px">
+    <a href="#ref_bryson_ho">[2]</a> A.E. Bryson, Jr. and Y. Ho, "Optimization Problems for Dynamic Systems," in <i>Applied Optimal Control,</i> Waltham, MA, USA: Ginn, 1969, pp. 61.
+</div>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../B_reference_frames/" class="btn btn-neutral float-left" title="B. Reference Frames"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+      <span><a href="../B_reference_frames/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+  </span>
+</div>
+    <script src="../../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "../..";</script>
+    <script src="../../js/theme_extra.js"></script>
+    <script src="../../js/theme.js"></script>
+      <script src="../../search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>

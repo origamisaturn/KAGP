@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="../img/favicon.ico" />
+    <title>Input File Reference - KAGP Docs</title>
+    <link rel="stylesheet" href="../css/theme.css" />
+    <link rel="stylesheet" href="../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+        <link href="../css/fig.css" rel="stylesheet" />
+    
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Input File Reference";
+        var mkdocs_page_input_path = "inputs.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script>
+    <script>
+    MathJax = {
+        tex: {
+            inlineMath: {'[+]': [['$', '$']]}
+        }
+    };
+    </script>
+    <script defer id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js"></script>
+ 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href=".." class="icon icon-home"> KAGP Docs
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption"><span class="caption-text">KAGP</span></p>
+              <ul class="current">
+                  <li class="toctree-l1"><a class="reference internal" href="..">KAGP - Kerbal Ascent Guidance Procedure</a>
+                  </li>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">Input File Reference</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#spacecraft">spacecraft</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#body">body</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#orbit_targeting_ascent">orbit_targeting_ascent</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#debug_ascent_1">debug_ascent_1</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#integrator">integrator</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#krpc_client">krpc_client</a>
+    </li>
+    </ul>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Implementation</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../implementation_docs/guidance_objects/">Guidance Objects</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../implementation_docs/guidance_components/">Guidance Components</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Appendices</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../implementation_docs/A_symbols/">A. Reference Symbols</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../implementation_docs/B_reference_frames/">B. Reference Frames</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../implementation_docs/C_abbv_derivation/">C. Guidance Derivation</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="..">KAGP Docs</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href=".." class="icon icon-home" aria-label="Docs"></a></li>
+          <li class="breadcrumb-item">KAGP</li>
+      <li class="breadcrumb-item active">Input File Reference</li>
+    <li class="wy-breadcrumbs-aside">
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="input-file-reference">Input File Reference<a class="headerlink" href="#input-file-reference" title="Permanent link">&para;</a></h1>
+<p>The program requires YAML configuration files as input. A configuration file specifies both the guidance method and the simulation environment to be used. The configuration data can be defined in one file, or spread across multiple files, as long as all necessary keys are passed to the program upon execution. </p>
+<p>The following keys are required:</p>
+<ul>
+<li><code>spacecraft</code></li>
+<li><code>body</code></li>
+<li><code>orbit_targeting_ascent</code> | <code>debug_ascent_1</code></li>
+<li><code>integrator</code> | <code>krpc_client</code></li>
+</ul>
+<p>The '|' character indicates that one of the keys in the sequence must be defined. Each key in the sequence is exclusive.</p>
+<p>The following headings are dictionary keys. The content of each section is the available key-value pairs for that dictionary. See <code>examples\</code> for sample YAML configuration files.</p>
+<h2 id="spacecraft">spacecraft<a class="headerlink" href="#spacecraft" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Units</th>
+<th>Required</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>specific_impulse</td>
+<td>s</td>
+<td>Yes</td>
+<td><code>float</code></td>
+<td>Specific impulse of engine in vacuum.</td>
+</tr>
+<tr>
+<td>thrust</td>
+<td>N</td>
+<td>Yes</td>
+<td><code>float</code></td>
+<td>Maximum thrust of engine in vacuum.</td>
+</tr>
+<tr>
+<td>wet_mass</td>
+<td>kg</td>
+<td>Yes</td>
+<td><code>float</code></td>
+<td>Total mass of vehicle at guidance start.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="body">body<a class="headerlink" href="#body" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Units</th>
+<th>Required</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>gravitational_parameter</td>
+<td>m^3/s^-2</td>
+<td>Yes</td>
+<td><code>float</code></td>
+<td>Gravitational parameter of major body.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="orbit_targeting_ascent">orbit_targeting_ascent<a class="headerlink" href="#orbit_targeting_ascent" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Units</th>
+<th>Required</th>
+<th>Default</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>apoapsis</td>
+<td>m</td>
+<td>Yes</td>
+<td></td>
+<td><code>float</code></td>
+<td>Target apoapsis radius, from major body center.</td>
+</tr>
+<tr>
+<td>periapsis</td>
+<td>m</td>
+<td>Yes</td>
+<td></td>
+<td><code>float</code></td>
+<td>Target periapsis radius, from major body center.</td>
+</tr>
+<tr>
+<td>longitude_of_ascending_node</td>
+<td>deg</td>
+<td>Yes</td>
+<td></td>
+<td><code>float</code></td>
+<td></td>
+</tr>
+<tr>
+<td>inclination</td>
+<td>deg</td>
+<td>Yes</td>
+<td></td>
+<td><code>float</code></td>
+<td>Range of [0, 180).</td>
+</tr>
+<tr>
+<td>argument_of_periapsis</td>
+<td>deg</td>
+<td>Yes</td>
+<td></td>
+<td><code>float</code></td>
+<td></td>
+</tr>
+<tr>
+<td>enable_estimator</td>
+<td>N/A</td>
+<td>No</td>
+<td><code>True</code></td>
+<td><code>bool</code></td>
+<td>Enables engine property estimator. Calculates exhaust velocity and mass flow.</td>
+</tr>
+<tr>
+<td>estimator_ignore_time</td>
+<td>s</td>
+<td>No</td>
+<td>5.0</td>
+<td><code>float</code></td>
+<td>Will cause engine estimator to ignore thrust measurements until estimator_ignore_time seconds after guidance start. To avoid engine measurements during engine ramp-up.</td>
+</tr>
+<tr>
+<td>estimator_output_time</td>
+<td>s</td>
+<td>No</td>
+<td>50.0</td>
+<td><code>float</code></td>
+<td>Will start engine estimator calculations estimator_output_time seconds after guidance start. If too low, estimator may not converge.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="debug_ascent_1">debug_ascent_1<a class="headerlink" href="#debug_ascent_1" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Units</th>
+<th>Required</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>terminal_time</td>
+<td>s</td>
+<td>Yes</td>
+<td><code>float</code></td>
+<td>Time at guidance termination.</td>
+</tr>
+<tr>
+<td>radius</td>
+<td>m</td>
+<td>Yes</td>
+<td><code>float</code></td>
+<td></td>
+</tr>
+<tr>
+<td>radial_velocity</td>
+<td>m/s</td>
+<td>Yes</td>
+<td><code>float</code></td>
+<td></td>
+</tr>
+<tr>
+<td>longitude_of_ascending_node</td>
+<td>deg</td>
+<td>Yes</td>
+<td><code>float</code></td>
+<td></td>
+</tr>
+<tr>
+<td>inclination</td>
+<td>deg</td>
+<td>Yes</td>
+<td><code>float</code></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="integrator">integrator<a class="headerlink" href="#integrator" title="Permanent link">&para;</a></h2>
+<p>Uses internal integrator, intended for testing guidance.</p>
+<p>'integrator' sets the guidance to run on an internal integrator.</p>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Units</th>
+<th>Required</th>
+<th>Default</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>simulation_end_time</td>
+<td>s</td>
+<td>Yes</td>
+<td></td>
+<td><code>float</code></td>
+<td>Length of time the simulation will run.</td>
+</tr>
+<tr>
+<td>initial_position</td>
+<td>m</td>
+<td>Yes</td>
+<td></td>
+<td>1x3 <code>list[float]</code></td>
+<td>Position at start of guidance, right-handed global frame.</td>
+</tr>
+<tr>
+<td>initial_velocity</td>
+<td>m/s</td>
+<td>Yes</td>
+<td></td>
+<td>1x3 <code>list[float]</code></td>
+<td>Velocity at start of guidance, right-handed global frame.</td>
+</tr>
+<tr>
+<td>outer_loop_interval</td>
+<td>s</td>
+<td>No</td>
+<td>7</td>
+<td><code>float</code></td>
+<td>Time between successive outer loop calculations.</td>
+</tr>
+<tr>
+<td>outer_loop_cutoff</td>
+<td>s</td>
+<td>No</td>
+<td>10</td>
+<td><code>float</code></td>
+<td>Outer loop calculation will be disabled outer_loop_cutoff seconds before the estimated terminal time. An outer loop iteration calculated less than 10 seconds before terminal time may fail to converge.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="krpc_client">krpc_client<a class="headerlink" href="#krpc_client" title="Permanent link">&para;</a></h2>
+<p>Connects to kRPC server for guidance.</p>
+<p>'krpc_client' connects to a locally hosted kRPC server in KSP and transmits guidance commands to the active spacecraft.</p>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Units</th>
+<th>Required</th>
+<th>Default</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>name</td>
+<td>N/A</td>
+<td>No</td>
+<td><code>kagp</code></td>
+<td><code>string</code></td>
+<td>Name of this program when displayed on kRPC server.</td>
+</tr>
+<tr>
+<td>outer_loop_interval</td>
+<td>s</td>
+<td>No</td>
+<td>7</td>
+<td><code>float</code></td>
+<td>Time between successive outer loop calculations.</td>
+</tr>
+<tr>
+<td>outer_loop_cutoff</td>
+<td>s</td>
+<td>No</td>
+<td>10</td>
+<td><code>float</code></td>
+<td>Outer loop calculation will be disabled outer_loop_cutoff seconds before the estimated terminal time. An outer loop iteration calculated less than 10 seconds before terminal time may fail to converge.</td>
+</tr>
+<tr>
+<td>post_guidance_measurement</td>
+<td>s</td>
+<td>No</td>
+<td>5</td>
+<td><code>float</code></td>
+<td>Client will continue to run and log data until post_guidance_measurement seconds after guidance termination.</td>
+</tr>
+<tr>
+<td>main_engine_cutoff_shift</td>
+<td>s</td>
+<td>No</td>
+<td>-0.061</td>
+<td><code>float</code></td>
+<td>Client will send the thrust off command main_engine_cutoff_shift seconds after terminal time. Default is negative due to 0.060s lag time between client commanding thrust cutoff and KSP turning off engines.</td>
+</tr>
+</tbody>
+</table>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href=".." class="btn btn-neutral float-left" title="KAGP - Kerbal Ascent Guidance Procedure"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../implementation_docs/guidance_objects/" class="btn btn-neutral float-right" title="Guidance Objects">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+      <span><a href=".." style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../implementation_docs/guidance_objects/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "..";</script>
+    <script src="../js/theme_extra.js"></script>
+    <script src="../js/theme.js"></script>
+      <script src="../search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>
