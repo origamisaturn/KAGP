@@ -5,9 +5,9 @@
 
 KAGP is an ascent autopilot for single-stage spacecraft in Kerbal Space Program (KSP).
 
-Docs are hosted on [krpc.github.io](https://krpc.github.io/).
+Docs are hosted on [origamisaturn.github.io/KAGP](https://origamisaturn.github.io/KAGP).
 
-This ascent program is based on the paper by G. Cherry referenced below. A derivation of the version of the ascent algorithm used for this program is provided in the [docs](https://krpc.github.io/implementation_docs/C_abbv_derivation.md).
+This ascent program is based on the paper by G. Cherry referenced below. A derivation of the version of the ascent algorithm used for this program is provided in the [docs](https://origamisaturn.github.io/KAGP/implementation_docs/C_abbv_derivation/).
 
 ## Requirements
 
@@ -33,7 +33,7 @@ Invoke the program with the `kagp` command. There are two subcommands:
 - `kagp run`
 - `kagp plotlog`
 
-`kagp run` accepts a [configuration file](https://krpc.github.io/inputs.md) and runs the ascent autopilot. See `examples/` for example config files. An example invocation for ascent guidance with the internal integrator is
+`kagp run` accepts a [configuration file](https://origamisaturn.github.io/KAGP/inputs/) and runs the ascent autopilot. See `examples/` for example config files. An example invocation for ascent guidance with the internal integrator is
 ```
 kagp run examples/ascent_lem.yaml examples/integrator_lunar_ascent.yaml
 ```
