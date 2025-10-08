@@ -28,7 +28,7 @@ jobs:
           coverage run -m pytest kagp/tests
           coverage-badge -fo coverage.svg
       - name: Verify badge changed
-        uses: tj-actions/verify-changed-files@v16
+        uses: tj-actions/verify-changed-files@v17
         id: verify-badge-changed
         with:
           files: coverage.svg
